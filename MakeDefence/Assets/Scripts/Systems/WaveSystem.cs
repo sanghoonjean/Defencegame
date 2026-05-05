@@ -55,12 +55,20 @@ public class WaveSystem : MonoBehaviour
 
     public void StartWave()
     {
-        if (IsWaveActive) return;
+        if (IsWaveActive) { Debug.Log("[WaveSystem] StartWave: already active"); return; }
         IsWaveActive = true;
+
+        Debug.Log($"[WaveSystem] StartWave stage={CurrentStage}");
+
+        if (normalData == null) Debug.LogError("[WaveSystem] normalData is NULL — Inspector에서 EnemyData 연결 필요");
+        if (magicData == null)  Debug.LogError("[WaveSystem] magicData is NULL");
+        if (rareData == null)   Debug.LogError("[WaveSystem] rareData is NULL");
+        if (uniqueData == null) Debug.LogError("[WaveSystem] uniqueData is NULL");
 
         PlayerSystem.Instance.ResetHp();
 
         var spawnList = BuildSpawnList(CurrentStage);
+        Debug.Log($"[WaveSystem] spawnList count={spawnList.Count}");
         _aliveCount = spawnList.Count;
         _spawnCoroutine = StartCoroutine(SpawnEnemies(spawnList));
 
@@ -112,11 +120,16 @@ public class WaveSystem : MonoBehaviour
     private IEnumerator SpawnEnemies(List<EnemyGrade> spawnList)
     {
         var waypoints = MapTileSystem.Instance.GetFullPath();
+        Debug.Log($"[WaveSystem] SpawnEnemies waypoints={waypoints.Length}");
+        int spawnedCount = 0;
         foreach (var grade in spawnList)
         {
             var data = GetDataForGrade(grade);
+            if (data == null) { Debug.LogError($"[WaveSystem] EnemyData null for grade={grade}"); yield break; }
             var enemy = ObjectPoolSystem.Instance.Get();
             enemy.Initialize(data, CurrentStage, waypoints);
+            spawnedCount++;
+            Debug.Log($"[WaveSystem] Spawned {spawnedCount}/{spawnList.Count} grade={grade}");
             yield return new WaitForSeconds(spawnInterval);
         }
     }
