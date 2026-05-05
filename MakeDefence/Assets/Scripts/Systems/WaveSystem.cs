@@ -168,7 +168,6 @@ public class WaveSystem : MonoBehaviour
             if (CurrentStage == UnlockedStage && UnlockedStage < 16)
                 UnlockedStage++;
 
-            // TODO Phase 2: CubeSystem.DropReward(CurrentStage)
             OnWaveEnded?.Invoke(true);
 
             if (_autoWave)

@@ -18,6 +18,7 @@ public class Enemy : MonoBehaviour
     private int _playerDamage;
     private Vector2[] _waypoints;
     private int _waypointIndex;
+    private float _stunTimer;
 
     private void OnEnable() => ActiveEnemies.Add(this);
     private void OnDisable() => ActiveEnemies.Remove(this);
@@ -54,7 +55,17 @@ public class Enemy : MonoBehaviour
 
     private void Update()
     {
+        if (_stunTimer > 0f)
+        {
+            _stunTimer -= Time.deltaTime;
+            return;
+        }
         MoveAlongPath();
+    }
+
+    public void ApplyStun(float duration)
+    {
+        _stunTimer = Mathf.Max(_stunTimer, duration);
     }
 
     private void MoveAlongPath()
@@ -73,9 +84,10 @@ public class Enemy : MonoBehaviour
         }
     }
 
-    public void TakeDamage(float damage)
+    public void TakeDamage(float damage, float armorPenRatio = 0f)
     {
-        float actual = Mathf.Max(1f, damage - _defense);
+        float effectiveDefense = _defense * (1f - Mathf.Clamp01(armorPenRatio));
+        float actual = Mathf.Max(1f, damage - effectiveDefense);
         CurrentHp -= actual;
         if (CurrentHp <= 0f)
             Die();

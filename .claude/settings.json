@@ -7,7 +7,7 @@
           {
             "type": "agent",
             "if": "Bash(git push *)",
-            "prompt": "git push가 방금 실행됐습니다. stdin JSON에서 실행된 명령을 확인하고, main/master가 아닌 feature 브랜치로 push된 경우 mcp__github__create_pull_request 툴로 sanghoonjean/Defencegame 레포에 PR을 생성하세요. 이미 해당 브랜치에 오픈된 PR이 있으면 생성하지 마세요(mcp__github__list_pull_requests로 확인). base 브랜치는 main, head 브랜치는 방금 push된 브랜치로 하고, 최근 커밋 내용을 바탕으로 제목과 본문을 작성하세요."
+            "prompt": "git push가 방금 실행됐습니다. stdin JSON에서 실행된 명령을 확인하고, main/master가 아닌 feature 브랜치로 push된 경우 아래 절차대로 PR을 생성하세요.\n\n1. mcp__github__list_pull_requests로 해당 브랜치에 이미 오픈된 PR이 있으면 생성하지 마세요.\n2. 없으면 mcp__github__create_pull_request로 PR을 생성하세요.\n   - repository: sanghoonjean/Defencegame\n   - base: main\n   - head: push된 브랜치\n3. PR body는 반드시 .github/PULL_REQUEST_TEMPLATE.md 템플릿을 기반으로 작성하세요. 템플릿의 모든 섹션을 실제 변경 내용으로 채워야 합니다. 빈 항목은 N/A 또는 해당 없음으로 표시하고, 체크박스는 실제 해당하는 항목만 체크하세요."
           }
         ]
       }
