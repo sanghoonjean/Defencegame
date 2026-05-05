@@ -15,6 +15,11 @@ public class PathfindingSystem : MonoBehaviour
         return MapTileSystem.Instance != null ? MapTileSystem.Instance.GetWaypoints() : new Vector2[0];
     }
 
+    public Vector2[] GetFullPath()
+    {
+        return MapTileSystem.Instance != null ? MapTileSystem.Instance.GetFullPath() : new Vector2[0];
+    }
+
     public Vector2 GetSpawnPoint()
     {
         return MapTileSystem.Instance != null ? MapTileSystem.Instance.GetSpawnPoint() : Vector2.zero;
