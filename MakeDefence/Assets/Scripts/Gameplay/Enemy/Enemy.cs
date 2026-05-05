@@ -47,7 +47,7 @@ public class Enemy : MonoBehaviour
 
         if (_waypoints != null && _waypoints.Length > 0)
         {
-            transform.position = _waypoints[0];
+            transform.position = new Vector3(_waypoints[0].x, _waypoints[0].y, -1f);
             _waypointIndex = 1;
         }
     }
@@ -62,7 +62,8 @@ public class Enemy : MonoBehaviour
         if (_waypoints == null || _waypointIndex >= _waypoints.Length) return;
 
         Vector2 target = _waypoints[_waypointIndex];
-        transform.position = Vector2.MoveTowards(transform.position, target, _speed * Time.deltaTime);
+        Vector2 next = Vector2.MoveTowards(transform.position, target, _speed * Time.deltaTime);
+        transform.position = new Vector3(next.x, next.y, -1f);
 
         if (Vector2.Distance(transform.position, target) < 0.05f)
         {
