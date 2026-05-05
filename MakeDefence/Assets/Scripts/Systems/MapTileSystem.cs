@@ -54,10 +54,10 @@ public class MapTileSystem : MonoBehaviour
     public Vector2[] GetFullPath()
     {
         var full = new Vector2[waypoints.Length + 2];
-        full[0] = spawnPoint;
+        full[0] = spawnPoint + Vector2.one * 0.5f;
         for (int i = 0; i < waypoints.Length; i++)
-            full[i + 1] = waypoints[i];
-        full[full.Length - 1] = basePoint;
+            full[i + 1] = waypoints[i] + Vector2.one * 0.5f;
+        full[full.Length - 1] = basePoint + Vector2.one * 0.5f;
         return full;
     }
 }
