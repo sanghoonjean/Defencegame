@@ -11,7 +11,6 @@ public class MapTileSystem : MonoBehaviour
     [SerializeField] private Tilemap buildableTilemap;
     [SerializeField] private Tilemap pathTilemap;
 
-    // 웨이포인트 좌표는 Unity Inspector에서 설정 (tech-debt: 정확한 좌표 미확정)
     [SerializeField] private Vector2[] waypoints;
     [SerializeField] private Vector2 spawnPoint;
     [SerializeField] private Vector2 basePoint;
@@ -51,4 +50,14 @@ public class MapTileSystem : MonoBehaviour
     public Vector2[] GetWaypoints() => waypoints;
     public Vector2 GetSpawnPoint() => spawnPoint;
     public Vector2 GetBasePoint() => basePoint;
+
+    public Vector2[] GetFullPath()
+    {
+        var full = new Vector2[waypoints.Length + 2];
+        full[0] = spawnPoint;
+        for (int i = 0; i < waypoints.Length; i++)
+            full[i + 1] = waypoints[i];
+        full[full.Length - 1] = basePoint;
+        return full;
+    }
 }

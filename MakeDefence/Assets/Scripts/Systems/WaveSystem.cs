@@ -111,7 +111,7 @@ public class WaveSystem : MonoBehaviour
 
     private IEnumerator SpawnEnemies(List<EnemyGrade> spawnList)
     {
-        var waypoints = MapTileSystem.Instance.GetWaypoints();
+        var waypoints = MapTileSystem.Instance.GetFullPath();
         foreach (var grade in spawnList)
         {
             var data = GetDataForGrade(grade);
