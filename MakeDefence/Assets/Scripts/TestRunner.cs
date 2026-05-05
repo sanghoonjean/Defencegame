@@ -7,7 +7,14 @@ public class TestRunner : MonoBehaviour
     {
         // Space: 웨이브 시작
         if (Input.GetKeyDown(KeyCode.Space))
+        {
+            Debug.Log("[TestRunner] Space pressed");
+            if (WaveSystem.Instance == null) { Debug.LogError("[TestRunner] WaveSystem.Instance is NULL"); return; }
+            if (PlayerSystem.Instance == null) { Debug.LogError("[TestRunner] PlayerSystem.Instance is NULL"); return; }
+            if (MapTileSystem.Instance == null) { Debug.LogError("[TestRunner] MapTileSystem.Instance is NULL"); return; }
+            if (ObjectPoolSystem.Instance == null) { Debug.LogError("[TestRunner] ObjectPoolSystem.Instance is NULL"); return; }
             WaveSystem.Instance.StartWave();
+        }
 
         // A: 자동 웨이브 토글
         if (Input.GetKeyDown(KeyCode.A))
