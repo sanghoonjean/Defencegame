@@ -55,7 +55,7 @@ public class ItemSystem : MonoBehaviour
 
         bool success = cube switch
         {
-            CubeType.Lower   => TryConsume(CubeType.Lower,   1, () => item.Reroll()),
+            CubeType.Lower   => TryConsume(CubeType.Lower,   1, () => { item.Reroll(); return true; }),
             CubeType.Upper   => TryConsume(CubeType.Upper,   1, () => item.AddRandomOption()),
             CubeType.TopTier => TryConsume(CubeType.TopTier, 1, () => item.RemoveRandomOption() && item.UpgradeRandomOption()),
             CubeType.Delete  => TryConsume(CubeType.Delete,  1, () => item.RemoveRandomOption()),
