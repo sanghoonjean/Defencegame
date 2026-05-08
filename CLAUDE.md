@@ -6,10 +6,11 @@
 
 ### 1. 플랜 파일 생성 (필수)
 
-파일 경로: `docs/exec-plans/issue-{issue_number}-{short-title}.md`
+파일 경로: `docs/exec-plans/active/issue-{issue_number}-{short-title}.md`
 
 - `issue_number`: GitHub 이슈 번호
 - `short-title`: 이슈 제목 핵심 단어 2~3개, 소문자 하이픈 구분 (예: `issue-14-world-setting`)
+- 구현 완료 후 `docs/exec-plans/completed/`로 이동
 
 ### 2. 플랜 파일 필수 항목
 
