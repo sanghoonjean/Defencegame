@@ -1,7 +1,7 @@
 # PLAN PR
 
 ## 관련 Issue
-- Closes #
+- Refs #
 
 ---
 

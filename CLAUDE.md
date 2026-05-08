@@ -39,7 +39,7 @@
 - 템플릿: `.github/PULL_REQUEST_TEMPLATE/plan.md` 사용
 - PR 제목: `[Plan] Issue #{number} — {이슈 제목}`
 - PR body는 템플릿의 모든 섹션을 실제 내용으로 채운다
-  - **관련 Issue**: `Closes #{number}`
+  - **관련 Issue**: `Refs #{number}` (이슈를 자동 닫지 않도록 `Closes` 대신 `Refs` 사용)
   - **목적**: 이슈의 목적
   - **포함되는 작업 / 제외되는 작업**: 플랜 파일의 시스템 구조/수정 파일/신규 파일 기준
   - **핵심 구조**: 시스템 구조 요약
@@ -47,6 +47,9 @@
 
 이 PR은 **플랜 검토용**이며, 실제 코드 작성 전에 머지하지 않는다.
 플랜 승인 후 별도 구현 브랜치에서 코드 작성 → 별도 구현 PR을 생성한다.
+
+**Plan PR은 절대 Close하지 않는다** — 구현 PR이 머지된 후에도 플랜 검토 기록으로 남겨둔다.
+Claude Code는 Plan PR을 임의로 close/merge하지 않는다 (사용자가 직접 관리).
 
 ---
 
