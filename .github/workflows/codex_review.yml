@@ -1,4 +1,4 @@
-name: Codex Review
+name: Codex Auto Review
 
 on:
   pull_request:
@@ -8,21 +8,32 @@ jobs:
   codex-review:
     runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v4
+    permissions:
+      contents: read
+      pull-requests: write
 
-      - name: Codex Review
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Codex Review
         uses: openai/codex-action@main
         with:
           prompt: |
-            Review this pull request.
+            이 PR을 한국어로 코드 리뷰해줘.
 
-            Focus on:
-            - bugs
-            - architecture
-            - performance
-            - maintainability
-            - test coverage
-            - game logic stability
-            - memory leaks
-            - null safety
+            특히 아래를 집중 검토:
+            - 구조 문제
+            - 성능 문제
+            - 테스트 누락
+            - Unity lifecycle 문제
+            - 이벤트 해제 누락
+            - Null 안정성
+            - 상태 꼬임 가능성
+            - GC Alloc 위험
+
+            코드 스타일보다:
+            유지보수성과 게임 시스템 안정성을 우선 검토해줘.
