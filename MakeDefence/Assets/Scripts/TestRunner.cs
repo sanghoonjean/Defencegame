@@ -19,7 +19,10 @@ public class TestRunner : MonoBehaviour
         // A: 자동 웨이브 ON + 미진행 시 즉시 시작
         if (Input.GetKeyDown(KeyCode.A))
         {
-            if (WaveSystem.Instance == null) { Debug.LogError("[TestRunner] WaveSystem.Instance is NULL"); return; }
+            if (WaveSystem.Instance == null)    { Debug.LogError("[TestRunner] WaveSystem.Instance is NULL");    return; }
+            if (PlayerSystem.Instance == null)  { Debug.LogError("[TestRunner] PlayerSystem.Instance is NULL");  return; }
+            if (MapTileSystem.Instance == null) { Debug.LogError("[TestRunner] MapTileSystem.Instance is NULL"); return; }
+            if (ObjectPoolSystem.Instance == null) { Debug.LogError("[TestRunner] ObjectPoolSystem.Instance is NULL"); return; }
             WaveSystem.Instance.SetAutoWave(true);
             if (!WaveSystem.Instance.IsWaveActive)
                 WaveSystem.Instance.StartWave();
