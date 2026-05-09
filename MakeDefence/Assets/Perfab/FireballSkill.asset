@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: FireballSkill
   m_EditorClassIdentifier: 
   skillType: 1
-  baseDamage: 30
+  baseDamage: 50
   baseCooldown: 0.5
   baseRange: 10
   aoeRadius: 5
