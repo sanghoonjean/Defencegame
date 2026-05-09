@@ -13,7 +13,11 @@ public class FireballProjectile : ProjectileBase
         {
             if (e == null) continue;
             if (((Vector2)e.transform.position - hitPos).sqrMagnitude <= radiusSq)
+            {
                 e.TakeDamage(_damage, _armorPen);
+                if (StunChance > 0f && Random.value < Mathf.Clamp01(StunChance / 100f))
+                    e.ApplyStun(0.5f);
+            }
         }
     }
 }

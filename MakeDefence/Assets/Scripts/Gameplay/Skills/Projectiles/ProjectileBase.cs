@@ -10,6 +10,8 @@ public class ProjectileBase : MonoBehaviour
     protected float _armorPen;
     private bool _launched;
 
+    public float StunChance { get; set; }
+
     public void Launch(Vector2 origin, Enemy target, float damage, float armorPen)
     {
         transform.position = new Vector3(origin.x, origin.y, -1f);
