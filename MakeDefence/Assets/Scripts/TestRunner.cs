@@ -19,6 +19,7 @@ public class TestRunner : MonoBehaviour
         // A: 자동 웨이브 ON + 미진행 시 즉시 시작
         if (Input.GetKeyDown(KeyCode.A))
         {
+            if (WaveSystem.Instance == null) { Debug.LogError("[TestRunner] WaveSystem.Instance is NULL"); return; }
             WaveSystem.Instance.SetAutoWave(true);
             if (!WaveSystem.Instance.IsWaveActive)
                 WaveSystem.Instance.StartWave();
@@ -27,10 +28,13 @@ public class TestRunner : MonoBehaviour
         // R: 완전 리셋 (웨이브 중지 + 적 제거 + HP 초기화 + 상태 복귀)
         if (Input.GetKeyDown(KeyCode.R))
         {
-            WaveSystem.Instance.StopWave();
-            foreach (var e in Enemy.ActiveEnemies.ToArray())
-                ObjectPoolSystem.Instance.Return(e);
-            PlayerSystem.Instance.ResetHp();
+            if (WaveSystem.Instance != null) WaveSystem.Instance.StopWave();
+            if (ObjectPoolSystem.Instance != null)
+            {
+                foreach (var e in Enemy.ActiveEnemies.ToArray())
+                    ObjectPoolSystem.Instance.Return(e);
+            }
+            if (PlayerSystem.Instance != null) PlayerSystem.Instance.ResetHp();
             GameStateSystem.ResetToPlaying();
         }
     }
