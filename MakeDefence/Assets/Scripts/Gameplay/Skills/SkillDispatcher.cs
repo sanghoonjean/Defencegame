@@ -7,16 +7,19 @@ public static class SkillDispatcher
         var skill = tower.EquippedSkill;
         if (skill == null)
         {
+            Debug.Log("[SkillDispatcher] 스킬 없음 → 직접 공격");
             DirectAttack(tower, target);
             return;
         }
 
+        Debug.Log($"[SkillDispatcher] 스킬 타입: {skill.skillType}");
         switch (skill.skillType)
         {
             case SkillType.Fireball:
                 LaunchFireball(tower, target);
                 break;
             default:
+                Debug.Log($"[SkillDispatcher] 미구현 스킬 → 직접 공격");
                 DirectAttack(tower, target);
                 break;
         }
@@ -37,6 +40,7 @@ public static class SkillDispatcher
     private static void LaunchFireball(Tower tower, Enemy target)
     {
         var proj = ObjectPoolSystem.Instance.GetProjectile<FireballProjectile>();
+        Debug.Log($"[SkillDispatcher] FireballProjectile 획득: {(proj != null ? "성공" : "실패")}");
         if (proj == null) { DirectAttack(tower, target); return; }
 
         var   skill  = tower.EquippedSkill;
