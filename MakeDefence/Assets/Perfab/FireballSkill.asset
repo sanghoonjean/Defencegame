@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   skillType: 1
   baseDamage: 30
-  baseCooldown: 1.5
-  baseRange: 0
-  aoeRadius: 2
+  baseCooldown: 0.5
+  baseRange: 10
+  aoeRadius: 5
   stunDuration: 0
   dotDuration: 0

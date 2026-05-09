@@ -197,6 +197,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 43ea235d33ed2554ca478fb067c8f3b9, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  fireballSkill: {fileID: 11400000, guid: 52e03e35f7a3284439ec10cc46d72fd1, type: 2}
 --- !u!4 &156874591
 Transform:
   m_ObjectHideFlags: 0
@@ -248,6 +249,7 @@ MonoBehaviour:
   cloneWeight: 5
   dropMin: 3
   dropMax: 6
+  initialLowerCubes: 5
 --- !u!4 &251072149
 Transform:
   m_ObjectHideFlags: 0
