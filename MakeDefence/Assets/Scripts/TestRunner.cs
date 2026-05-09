@@ -105,13 +105,15 @@ public class TestRunner : MonoBehaviour
         // 스킬 선택 버튼
         if (GUI.Button(new Rect(10, 190, 100, 30), "Fireball"))
         {
-            _selectedSkill = fireballSkill;
-            Debug.Log("[TestRunner] 스킬 선택: Fireball");
+            if (fireballSkill != null) _selectedSkill = fireballSkill;
+            else Debug.LogError("[TestRunner] fireballSkill이 Inspector에 연결되지 않음");
         }
+        GUI.enabled = preciseArrowSkill != null;
         if (GUI.Button(new Rect(120, 190, 100, 30), "정밀 화살"))
         {
             _selectedSkill = preciseArrowSkill;
             Debug.Log("[TestRunner] 스킬 선택: 정밀 화살");
         }
+        GUI.enabled = true;
     }
 }
