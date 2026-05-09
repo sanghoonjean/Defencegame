@@ -33,6 +33,7 @@ public class TestRunner : MonoBehaviour
         {
             if (CubeSystem.Instance == null) { Debug.LogError("[TestRunner] CubeSystem.Instance is NULL"); return; }
             CubeSystem.Instance.Add(CubeType.Lower, 10);
+            Debug.Log($"[TestRunner] C키 — Lower 큐브 +10 (현재: {CubeSystem.Instance.GetCount(CubeType.Lower)})");
         }
 
         // R: 완전 리셋 (웨이브 중지 + 적 제거 + HP 초기화 + 상태 복귀)

@@ -36,7 +36,10 @@ public class CubeSystem : MonoBehaviour
     {
         Instance = this;
         if (initialLowerCubes > 0)
+        {
             Add(CubeType.Lower, initialLowerCubes);
+            Debug.Log($"[CubeSystem] 초기 Lower 큐브 {initialLowerCubes}개 지급");
+        }
     }
 
     private void OnEnable()
