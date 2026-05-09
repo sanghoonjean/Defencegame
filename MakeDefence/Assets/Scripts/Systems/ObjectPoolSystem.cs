@@ -25,6 +25,7 @@ public class ObjectPoolSystem : MonoBehaviour
         {
             foreach (var prefab in projectilePrefabs)
             {
+                if (prefab == null) continue;
                 var comp = prefab.GetComponent<ProjectileBase>();
                 if (comp != null)
                     _projectilePrefabMap[comp.GetType()] = prefab;
