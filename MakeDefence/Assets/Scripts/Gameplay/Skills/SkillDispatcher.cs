@@ -37,7 +37,7 @@ public static class SkillDispatcher
     private static void LaunchFireball(Tower tower, Enemy target)
     {
         var proj = ObjectPoolSystem.Instance.GetProjectile<FireballProjectile>();
-        if (proj == null) return;
+        if (proj == null) { DirectAttack(tower, target); return; }
 
         float dmg    = tower.AttackDamage;
         bool  isCrit = Random.value < Mathf.Clamp01(tower.CritChance / 100f);
