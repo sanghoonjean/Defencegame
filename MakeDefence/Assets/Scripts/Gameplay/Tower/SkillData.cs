@@ -1,6 +1,13 @@
 using UnityEngine;
 
-public enum SkillType { SingleLaser, Missile, EMP, Railgun, Nanobot }
+public enum SkillType
+{
+    PreciseArrow   = 0,
+    Fireball       = 1,
+    ParalysisMagic = 2,
+    LightningSpear = 3,
+    PoisonCloud    = 4,
+}
 
 [CreateAssetMenu(fileName = "SkillData", menuName = "MakeDefence/Skill Data")]
 public class SkillData : ScriptableObject

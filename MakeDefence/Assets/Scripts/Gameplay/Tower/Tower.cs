@@ -160,16 +160,7 @@ public class Tower : MonoBehaviour
 
     private void Attack(Enemy target)
     {
-        float dmg = AttackDamage;
-
-        bool isCrit = UnityEngine.Random.value < Mathf.Clamp01(CritChance / 100f);
-        if (isCrit) dmg *= 1f + CritDamage / 100f;
-
-        target.TakeDamage(dmg, ArmorPen / 100f);
-
-        if (StunChance > 0f && UnityEngine.Random.value < Mathf.Clamp01(StunChance / 100f))
-            target.ApplyStun(0.5f);
-
+        SkillDispatcher.Execute(this, target);
         TryDropCube();
     }
 
