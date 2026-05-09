@@ -20,7 +20,7 @@ jobs:
         uses: actions/checkout@v1
 
       - name: Run Codex Review
-        uses: openai/codex-action@main
+        uses: openai/codex-action@v1
         with:
           prompt: |
             이 PR을 한국어로 코드 리뷰해줘.
