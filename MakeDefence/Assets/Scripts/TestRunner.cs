@@ -4,6 +4,14 @@ using UnityEngine;
 public class TestRunner : MonoBehaviour
 {
     [SerializeField] private SkillData fireballSkill;
+    [SerializeField] private SkillData preciseArrowSkill;
+
+    private SkillData _selectedSkill;
+
+    private void Awake()
+    {
+        _selectedSkill = fireballSkill;
+    }
 
     private void Update()
     {
@@ -46,14 +54,14 @@ public class TestRunner : MonoBehaviour
                 WaveSystem.Instance.StartWave();
         }
 
-        // T: 선택된 타워에 Fireball 스킬 장착
+        // T: 선택된 타워에 선택된 스킬 장착
         if (Input.GetKeyDown(KeyCode.T))
         {
             if (InventorySystem.Instance == null) { Debug.LogError("[TestRunner] InventorySystem.Instance is NULL"); return; }
-            if (fireballSkill == null) { Debug.LogError("[TestRunner] fireballSkill이 Inspector에 연결되지 않음"); return; }
+            if (_selectedSkill == null) { Debug.LogError("[TestRunner] 선택된 스킬이 없음 — Inspector에서 스킬 연결 확인"); return; }
             if (InventorySystem.Instance.SelectedTower == null) { Debug.LogWarning("[TestRunner] 선택된 타워 없음 — 타워를 먼저 클릭하세요"); return; }
-            InventorySystem.Instance.EquipSkill(fireballSkill);
-            Debug.Log($"[TestRunner] T키 — {fireballSkill.name} 장착 완료");
+            InventorySystem.Instance.EquipSkill(_selectedSkill);
+            Debug.Log($"[TestRunner] T키 — {_selectedSkill.name} 장착 완료");
         }
 
         // C: Lower 큐브 10개 지급 (디버그)
@@ -90,7 +98,20 @@ public class TestRunner : MonoBehaviour
             ? $"{InventorySystem.Instance.SelectedTower.TileCoord}"
             : "없음";
         GUI.Label(new Rect(10, 110, 300, 25), $"선택 타워: {selected}");
-        GUI.Label(new Rect(10, 135, 400, 25), "[Space] 웨이브  [A] 자동  [T] 스킬장착  [C] 큐브+10  [R] 리셋");
+        string skillName = _selectedSkill != null ? _selectedSkill.name : "없음";
+        GUI.Label(new Rect(10, 135, 300, 25), $"선택 스킬: {skillName}");
+        GUI.Label(new Rect(10, 160, 400, 25), "[Space] 웨이브  [A] 자동  [T] 스킬장착  [C] 큐브+10  [R] 리셋");
+
+        // 스킬 선택 버튼
+        if (GUI.Button(new Rect(10, 190, 100, 30), "Fireball"))
+        {
+            _selectedSkill = fireballSkill;
+            Debug.Log("[TestRunner] 스킬 선택: Fireball");
+        }
+        if (GUI.Button(new Rect(120, 190, 100, 30), "정밀 화살"))
+        {
+            _selectedSkill = preciseArrowSkill;
+            Debug.Log("[TestRunner] 스킬 선택: 정밀 화살");
+        }
     }
 }
-
