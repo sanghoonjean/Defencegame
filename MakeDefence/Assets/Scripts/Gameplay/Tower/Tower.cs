@@ -138,7 +138,12 @@ public class Tower : MonoBehaviour
         if (_attackTimer < AttackCooldown) return;
 
         var target = FindTarget();
-        if (target == null) return;
+        if (target == null)
+        {
+            Debug.Log($"[Tower] FindTarget null — AttackRange={AttackRange}, ActiveEnemies={Enemy.ActiveEnemies.Count}, Skill={EquippedSkill?.name ?? "없음"}");
+            _attackTimer = 0f;
+            return;
+        }
 
         Attack(target);
         _attackTimer = 0f;
