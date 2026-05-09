@@ -39,8 +39,11 @@ public static class SkillDispatcher
         var proj = ObjectPoolSystem.Instance.GetProjectile<FireballProjectile>();
         if (proj == null) return;
 
-        var skill = tower.EquippedSkill;
-        proj.AoeRadius = skill.aoeRadius;
-        proj.Launch(tower.transform.position, target, skill.baseDamage, tower.ArmorPen / 100f);
+        float dmg    = tower.AttackDamage;
+        bool  isCrit = Random.value < Mathf.Clamp01(tower.CritChance / 100f);
+        if (isCrit) dmg *= 1f + tower.CritDamage / 100f;
+
+        proj.AoeRadius = tower.EquippedSkill.aoeRadius;
+        proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
     }
 }
