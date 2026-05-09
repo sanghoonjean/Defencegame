@@ -42,12 +42,11 @@ public static class SkillDispatcher
         var proj = ObjectPoolSystem.Instance.GetProjectile<PreciseArrowProjectile>();
         if (proj == null) { DirectAttack(tower, target); return; }
 
-        var   skill  = tower.EquippedSkill;
-        float dmg    = tower.AttackDamage + skill.baseDamage;
-        bool  isCrit = Random.value < Mathf.Clamp01(tower.CritChance / 100f);
-        if (isCrit) dmg *= 1f + tower.CritDamage / 100f;
+        var   skill = tower.EquippedSkill;
+        float dmg   = tower.AttackDamage + skill.baseDamage;
 
         proj.BonusCritChance = tower.CritChance;
+        proj.BonusCritDamage = tower.CritDamage;
         proj.StunChance      = 0f;
         proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
     }
