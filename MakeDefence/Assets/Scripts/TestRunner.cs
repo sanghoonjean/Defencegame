@@ -3,8 +3,26 @@ using UnityEngine;
 // 개발 테스트용 — 빌드 전 삭제
 public class TestRunner : MonoBehaviour
 {
+    [SerializeField] private SkillData fireballSkill;
+
     private void Update()
     {
+        // 마우스 좌클릭: 타워 선택
+        if (Input.GetMouseButtonDown(0))
+        {
+            Vector3 worldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            var hit = Physics2D.OverlapPoint(new Vector2(worldPos.x, worldPos.y));
+            if (hit != null)
+            {
+                var tower = hit.GetComponent<Tower>();
+                if (tower != null && InventorySystem.Instance != null)
+                {
+                    InventorySystem.Instance.SelectTower(tower);
+                    Debug.Log($"[TestRunner] 타워 선택: {tower.TileCoord}");
+                }
+            }
+        }
+
         // Space: 웨이브 시작
         if (Input.GetKeyDown(KeyCode.Space))
         {
@@ -26,6 +44,16 @@ public class TestRunner : MonoBehaviour
             WaveSystem.Instance.SetAutoWave(true);
             if (!WaveSystem.Instance.IsWaveActive)
                 WaveSystem.Instance.StartWave();
+        }
+
+        // T: 선택된 타워에 Fireball 스킬 장착
+        if (Input.GetKeyDown(KeyCode.T))
+        {
+            if (InventorySystem.Instance == null) { Debug.LogError("[TestRunner] InventorySystem.Instance is NULL"); return; }
+            if (fireballSkill == null) { Debug.LogError("[TestRunner] fireballSkill이 Inspector에 연결되지 않음"); return; }
+            if (InventorySystem.Instance.SelectedTower == null) { Debug.LogWarning("[TestRunner] 선택된 타워 없음 — 타워를 먼저 클릭하세요"); return; }
+            InventorySystem.Instance.EquipSkill(fireballSkill);
+            Debug.Log($"[TestRunner] T키 — {fireballSkill.name} 장착 완료");
         }
 
         // C: Lower 큐브 10개 지급 (디버그)
@@ -58,6 +86,11 @@ public class TestRunner : MonoBehaviour
         GUI.Label(new Rect(10, 35, 300, 25), $"Wave Active: {WaveSystem.Instance.IsWaveActive}");
         GUI.Label(new Rect(10, 60, 300, 25), $"Player HP: {PlayerSystem.Instance.CurrentHp}");
         GUI.Label(new Rect(10, 85, 300, 25), $"Game State: {GameStateSystem.Current}");
-        GUI.Label(new Rect(10, 120, 300, 25), "[Space] 웨이브 시작  [A] 자동웨이브  [C] 큐브+10  [R] 리셋");
+        string selected = InventorySystem.Instance?.SelectedTower != null
+            ? $"{InventorySystem.Instance.SelectedTower.TileCoord}"
+            : "없음";
+        GUI.Label(new Rect(10, 110, 300, 25), $"선택 타워: {selected}");
+        GUI.Label(new Rect(10, 135, 400, 25), "[Space] 웨이브  [A] 자동  [T] 스킬장착  [C] 큐브+10  [R] 리셋");
     }
 }
+
