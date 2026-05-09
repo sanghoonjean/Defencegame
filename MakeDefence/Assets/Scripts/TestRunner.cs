@@ -7,23 +7,23 @@ public class TestRunner : MonoBehaviour
     [SerializeField] private SkillData preciseArrowSkill;
 
     private SkillData _selectedSkill;
-    private bool _pointerOverGUI;
+    private static readonly Rect SkillButtonArea = new Rect(10, 185, 220, 40);
 
     private void Awake()
     {
         _selectedSkill = fireballSkill;
     }
 
-    private static bool IsMouseOverGUIRect(Rect guiRect)
+    private static bool IsMouseOverSkillButtons()
     {
         Vector2 mouse = new Vector2(Input.mousePosition.x, Screen.height - Input.mousePosition.y);
-        return guiRect.Contains(mouse);
+        return SkillButtonArea.Contains(mouse);
     }
 
     private void Update()
     {
         // 마우스 좌클릭: 타워 선택 (GUI 버튼 영역 클릭 시 제외)
-        if (Input.GetMouseButtonDown(0) && !_pointerOverGUI)
+        if (Input.GetMouseButtonDown(0) && !IsMouseOverSkillButtons())
         {
             Vector3 worldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             var hit = Physics2D.OverlapPoint(new Vector2(worldPos.x, worldPos.y));
@@ -95,9 +95,6 @@ public class TestRunner : MonoBehaviour
 
     private void OnGUI()
     {
-        // 버튼 영역(x:10~230, y:185~225) 위에 마우스가 있으면 타워 선택 차단
-        _pointerOverGUI = IsMouseOverGUIRect(new Rect(10, 185, 220, 40));
-
         if (WaveSystem.Instance == null || PlayerSystem.Instance == null) return;
 
         GUI.Label(new Rect(10, 10, 300, 25), $"Stage: {WaveSystem.Instance.CurrentStage}");
