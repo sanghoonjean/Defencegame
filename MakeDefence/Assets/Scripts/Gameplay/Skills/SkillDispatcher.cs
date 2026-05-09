@@ -47,7 +47,7 @@ public static class SkillDispatcher
 
         proj.BonusCritChance = tower.CritChance;
         proj.BonusCritDamage = tower.CritDamage;
-        proj.StunChance      = 0f;
+        proj.StunChance      = tower.StunChance;
         proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
     }
 
