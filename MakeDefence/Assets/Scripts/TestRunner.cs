@@ -16,13 +16,23 @@ public class TestRunner : MonoBehaviour
             WaveSystem.Instance.StartWave();
         }
 
-        // A: 자동 웨이브 토글
+        // A: 자동 웨이브 ON + 미진행 시 즉시 시작
         if (Input.GetKeyDown(KeyCode.A))
+        {
             WaveSystem.Instance.SetAutoWave(true);
+            if (!WaveSystem.Instance.IsWaveActive)
+                WaveSystem.Instance.StartWave();
+        }
 
-        // R: 게임 상태 리셋
+        // R: 완전 리셋 (웨이브 중지 + 적 제거 + HP 초기화 + 상태 복귀)
         if (Input.GetKeyDown(KeyCode.R))
+        {
+            WaveSystem.Instance.StopWave();
+            foreach (var e in Enemy.ActiveEnemies.ToArray())
+                ObjectPoolSystem.Instance.Return(e);
+            PlayerSystem.Instance.ResetHp();
             GameStateSystem.ResetToPlaying();
+        }
     }
 
     private void OnGUI()
