@@ -16,6 +16,9 @@ public static class SkillDispatcher
             case SkillType.Fireball:
                 LaunchFireball(tower, target);
                 break;
+            case SkillType.PreciseArrow:
+                LaunchPreciseArrow(tower, target);
+                break;
             default:
                 DirectAttack(tower, target);
                 break;
@@ -32,6 +35,20 @@ public static class SkillDispatcher
 
         if (tower.StunChance > 0f && Random.value < Mathf.Clamp01(tower.StunChance / 100f))
             target.ApplyStun(0.5f);
+    }
+
+    private static void LaunchPreciseArrow(Tower tower, Enemy target)
+    {
+        var proj = ObjectPoolSystem.Instance.GetProjectile<PreciseArrowProjectile>();
+        if (proj == null) { DirectAttack(tower, target); return; }
+
+        var   skill = tower.EquippedSkill;
+        float dmg   = tower.AttackDamage + skill.baseDamage;
+
+        proj.BonusCritChance = tower.CritChance;
+        proj.BonusCritDamage = tower.CritDamage;
+        proj.StunChance      = tower.StunChance;
+        proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
     }
 
     private static void LaunchFireball(Tower tower, Enemy target)
