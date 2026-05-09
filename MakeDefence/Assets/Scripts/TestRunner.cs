@@ -28,6 +28,14 @@ public class TestRunner : MonoBehaviour
                 WaveSystem.Instance.StartWave();
         }
 
+        // C: Lower 큐브 10개 지급 (디버그)
+        if (Input.GetKeyDown(KeyCode.C))
+        {
+            if (CubeSystem.Instance == null) { Debug.LogError("[TestRunner] CubeSystem.Instance is NULL"); return; }
+            CubeSystem.Instance.Add(CubeType.Lower, 10);
+            Debug.Log($"[TestRunner] C키 — Lower 큐브 +10 (현재: {CubeSystem.Instance.GetCount(CubeType.Lower)})");
+        }
+
         // R: 완전 리셋 (웨이브 중지 + 적 제거 + HP 초기화 + 상태 복귀)
         if (Input.GetKeyDown(KeyCode.R))
         {
@@ -50,6 +58,6 @@ public class TestRunner : MonoBehaviour
         GUI.Label(new Rect(10, 35, 300, 25), $"Wave Active: {WaveSystem.Instance.IsWaveActive}");
         GUI.Label(new Rect(10, 60, 300, 25), $"Player HP: {PlayerSystem.Instance.CurrentHp}");
         GUI.Label(new Rect(10, 85, 300, 25), $"Game State: {GameStateSystem.Current}");
-        GUI.Label(new Rect(10, 120, 300, 25), "[Space] 웨이브 시작  [A] 자동웨이브  [R] 리셋");
+        GUI.Label(new Rect(10, 120, 300, 25), "[Space] 웨이브 시작  [A] 자동웨이브  [C] 큐브+10  [R] 리셋");
     }
 }

@@ -21,6 +21,8 @@ public class CubeSystem : MonoBehaviour
     [SerializeField] private int dropMin = 3;
     [SerializeField] private int dropMax = 6;
 
+    [SerializeField] private int initialLowerCubes = 5;
+
     private readonly Dictionary<CubeType, int> _counts = new()
     {
         { CubeType.Lower,   0 },
@@ -33,6 +35,11 @@ public class CubeSystem : MonoBehaviour
     private void Awake()
     {
         Instance = this;
+        if (initialLowerCubes > 0)
+        {
+            Add(CubeType.Lower, initialLowerCubes);
+            Debug.Log($"[CubeSystem] 초기 Lower 큐브 {initialLowerCubes}개 지급");
+        }
     }
 
     private void OnEnable()
