@@ -19,7 +19,7 @@ public class SkillData : ScriptableObject
     public float     baseDamage;
     public float     baseCooldown;
     public float     baseRange;
-    public float     aoeRadius;        // AoE 반경 (스플래시 데미지 범위)
+    public float     aoeRadius;        // AoE/스플래시 반경 (모든 스킬 공용)
     public float     baseStunChance;   // FreezingPulse 기본 스턴 확률 (0~100)
     public float     stunDuration;     // FreezingPulse 스턴 지속시간
     public float     dotDuration;      // Nanobot 전용

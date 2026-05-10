@@ -121,8 +121,10 @@ public static class SkillDispatcher
         bool  isCrit = Random.value < Mathf.Clamp01(tower.CritChance / 100f);
         if (isCrit) dmg *= 1f + tower.CritDamage / 100f;
 
-        proj.AoeRadius  = skill.aoeRadius;
-        proj.StunChance = tower.StunChance;
+        proj.AoeRadius         = skill.aoeRadius;
+        proj.StunChance        = tower.StunChance;
+        proj.SplashRadius      = skill.aoeRadius;
+        proj.SplashStunDuration = skill.stunDuration > 0f ? skill.stunDuration : 0.5f;
         proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
     }
 }

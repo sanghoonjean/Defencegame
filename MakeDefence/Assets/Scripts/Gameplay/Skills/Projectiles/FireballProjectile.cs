@@ -6,21 +6,11 @@ public class FireballProjectile : ProjectileBase
 
     protected override float OnHit(Enemy target)
     {
-        Vector2 hitPos   = target.transform.position;
-        float   radiusSq = AoeRadius * AoeRadius;
+        target.TakeDamage(_damage, _armorPen);
+        if (StunChance > 0f && Random.value < Mathf.Clamp01(StunChance / 100f))
+            target.ApplyStun(0.5f);
 
-        foreach (var e in Enemy.ActiveEnemies.ToArray())
-        {
-            if (e == null) continue;
-            if (((Vector2)e.transform.position - hitPos).sqrMagnitude <= radiusSq)
-            {
-                e.TakeDamage(_damage, _armorPen);
-                if (StunChance > 0f && Random.value < Mathf.Clamp01(StunChance / 100f))
-                    e.ApplyStun(0.5f);
-            }
-        }
-
-        GameUIManager.ShowAoeHit(hitPos, AoeRadius);
+        GameUIManager.ShowAoeHit(target.transform.position, AoeRadius);
         return _damage;
     }
 }
