@@ -11,6 +11,7 @@ public class Enemy : MonoBehaviour
     public static readonly List<Enemy> ActiveEnemies = new();
 
     public EnemyGrade Grade { get; private set; }
+    public float MaxHp     { get; private set; }
     public float CurrentHp { get; private set; }
 
     private float _defense;
@@ -45,6 +46,7 @@ public class Enemy : MonoBehaviour
             _defense = Mathf.Floor(data.baseDefense * defMult);
             _speed = data.baseSpeed * speedMult;
         }
+        MaxHp = CurrentHp;
 
         if (_waypoints != null && _waypoints.Length > 0)
         {
