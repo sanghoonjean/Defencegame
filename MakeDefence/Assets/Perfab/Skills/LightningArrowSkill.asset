@@ -10,13 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 698c3616f73151643b5b028c7846f5f0, type: 3}
-  m_Name: FreezingPulseSkill
+  m_Name: LightningArrowSkill
   m_EditorClassIdentifier: 
-  skillType: 5
+  skillType: 6
   baseDamage: 50
   baseCooldown: 0.2
-  baseRange: 5
+  baseRange: 7
   aoeRadius: 5
-  baseStunChance: 5
-  stunDuration: 100
+  baseStunChance: 0
+  stunDuration: 1
   dotDuration: 0

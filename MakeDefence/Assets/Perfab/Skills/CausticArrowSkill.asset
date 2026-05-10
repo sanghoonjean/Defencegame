@@ -10,13 +10,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 698c3616f73151643b5b028c7846f5f0, type: 3}
-  m_Name: FreezingPulseSkill
+  m_Name: CausticArrowSkill
   m_EditorClassIdentifier: 
-  skillType: 5
-  baseDamage: 50
+  skillType: 7
+  baseDamage: 10
   baseCooldown: 0.2
   baseRange: 5
-  aoeRadius: 5
-  baseStunChance: 5
-  stunDuration: 100
-  dotDuration: 0
+  aoeRadius: 200
+  baseStunChance: 0
+  stunDuration: 0
+  dotDuration: 5
