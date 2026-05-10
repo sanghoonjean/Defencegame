@@ -9,12 +9,12 @@ public class CausticArrowProjectile : ProjectileBase
     public float TickDamage   { get; set; }
     public float TickInterval { get; set; }
 
-    protected override void OnHit(Enemy target)
+    protected override float OnHit(Enemy target)
     {
         if (causticGroundPrefab == null)
         {
             Debug.LogError("[CausticArrowProjectile] causticGroundPrefab이 연결되지 않음");
-            return;
+            return 0f;
         }
 
         var go = Instantiate(causticGroundPrefab, target.transform.position, Quaternion.identity);
@@ -23,9 +23,10 @@ public class CausticArrowProjectile : ProjectileBase
         {
             Debug.LogError("[CausticArrowProjectile] causticGroundPrefab에 CausticGround 컴포넌트 없음");
             Destroy(go);
-            return;
+            return 0f;
         }
         cg.Init(AoeRadius, TickDamage, _armorPen, TickInterval, DotDuration);
         GameUIManager.ShowAoeHit(target.transform.position, AoeRadius);
+        return _damage;
     }
 }

@@ -16,7 +16,7 @@ public class FreezingPulseProjectile : ProjectileBase
         Launch(origin, target, damage, armorPen);
     }
 
-    protected override void OnHit(Enemy target)
+    protected override float OnHit(Enemy target)
     {
         float dist       = Vector2.Distance(_launchOrigin, target.transform.position);
         float t          = MaxRange > 0f ? Mathf.Clamp01(dist / MaxRange) : 1f;
@@ -30,5 +30,7 @@ public class FreezingPulseProjectile : ProjectileBase
 
         if (StunChance > 0f && Random.value < Mathf.Clamp01(StunChance / 100f))
             target.ApplyStun(FreezeDuration);
+
+        return dmg;
     }
 }

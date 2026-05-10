@@ -4,7 +4,7 @@ public class FireballProjectile : ProjectileBase
 {
     public float AoeRadius { get; set; }
 
-    protected override void OnHit(Enemy target)
+    protected override float OnHit(Enemy target)
     {
         Vector2 hitPos   = target.transform.position;
         float   radiusSq = AoeRadius * AoeRadius;
@@ -21,5 +21,6 @@ public class FireballProjectile : ProjectileBase
         }
 
         GameUIManager.ShowAoeHit(hitPos, AoeRadius);
+        return _damage;
     }
 }

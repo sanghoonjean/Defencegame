@@ -39,26 +39,28 @@ public class ProjectileBase : MonoBehaviour
 
         if (Vector2.Distance(next, dest) < HitRadius)
         {
-            OnHit(_target);
-            ApplySplash(_target);
+            float actualDmg = OnHit(_target);
+            ApplySplash(_target, actualDmg);
             ReturnToPool();
         }
     }
 
-    protected virtual void OnHit(Enemy target)
+    protected virtual float OnHit(Enemy target)
     {
         target.TakeDamage(_damage, _armorPen);
+        return _damage;
     }
 
-    private void ApplySplash(Enemy primaryTarget)
+    private void ApplySplash(Enemy primaryTarget, float actualDamage)
     {
         if (SplashRadius <= 0f) return;
 
-        float   splashDmg = _damage * 0.5f;
+        float splashDmg = actualDamage * 0.5f;
         if (splashDmg <= 0f) return;
-        float   radiusSq  = SplashRadius * SplashRadius;
-        Vector2 pos       = primaryTarget.transform.position;
-        var     enemies   = Enemy.ActiveEnemies;
+
+        float   radiusSq = SplashRadius * SplashRadius;
+        Vector2 pos      = primaryTarget.transform.position;
+        var     enemies  = Enemy.ActiveEnemies;
 
         for (int i = enemies.Count - 1; i >= 0; i--)
         {
