@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: FreezingPulseSkill
   m_EditorClassIdentifier: 
   skillType: 5
-  baseDamage: 50
+  baseDamage: 500
   baseCooldown: 0.2
-  baseRange: 5
-  aoeRadius: 5
+  baseRange: 3
+  aoeRadius: 2
   baseStunChance: 5
   stunDuration: 100
   dotDuration: 0

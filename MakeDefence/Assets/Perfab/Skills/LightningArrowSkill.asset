@@ -13,10 +13,10 @@ MonoBehaviour:
   m_Name: LightningArrowSkill
   m_EditorClassIdentifier: 
   skillType: 6
-  baseDamage: 50
+  baseDamage: 500
   baseCooldown: 0.2
-  baseRange: 7
-  aoeRadius: 5
+  baseRange: 3
+  aoeRadius: 3
   baseStunChance: 0
   stunDuration: 1
   dotDuration: 0

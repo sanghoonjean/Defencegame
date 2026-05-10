@@ -13,9 +13,10 @@ MonoBehaviour:
   m_Name: PreciseArrowSkill
   m_EditorClassIdentifier: 
   skillType: 0
-  baseDamage: 50
+  baseDamage: 500
   baseCooldown: 0.2
-  baseRange: 7
-  aoeRadius: 5
+  baseRange: 3
+  aoeRadius: 2
+  baseStunChance: 0
   stunDuration: 0
   dotDuration: 0
