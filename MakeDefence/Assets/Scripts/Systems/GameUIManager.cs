@@ -47,11 +47,19 @@ public class GameUIManager : MonoBehaviour
     private Texture2D _fillTex;
     private Material  _rangeMat;
 
+    private GUIStyle _dmgStyle;
+    private GUIStyle _critStyle;
+
     private void Awake()
     {
         _instance = this;
         _bgTex    = MakeTex(Color.gray);
         _fillTex  = MakeTex(Color.green);
+
+        _dmgStyle  = new GUIStyle();
+        _critStyle = new GUIStyle();
+        _dmgStyle.normal.textColor  = Color.black;
+        _critStyle.normal.textColor = Color.red;
 
         var shader = Shader.Find("Hidden/Internal-Colored");
         if (shader == null)
@@ -136,10 +144,7 @@ public class GameUIManager : MonoBehaviour
             float sx = sp.x + dmgXOffset;
             float sy = Screen.height - sp.y + dmgYOffset - progress * dmgFloatSpeed;
 
-            var prevColor = GUI.color;
-            GUI.color = d.isCrit ? Color.red : Color.black;
-            GUI.Label(new Rect(sx, sy, 60f, 20f), d.text);
-            GUI.color = prevColor;
+            GUI.Label(new Rect(sx, sy, 60f, 20f), d.text, d.isCrit ? _critStyle : _dmgStyle);
         }
     }
 
