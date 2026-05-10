@@ -19,7 +19,12 @@ public class CausticArrowProjectile : ProjectileBase
 
         var go = Instantiate(causticGroundPrefab, target.transform.position, Quaternion.identity);
         var cg = go.GetComponent<CausticGround>();
-        if (cg != null)
-            cg.Init(AoeRadius, TickDamage, _armorPen, TickInterval, DotDuration);
+        if (cg == null)
+        {
+            Debug.LogError("[CausticArrowProjectile] causticGroundPrefab에 CausticGround 컴포넌트 없음");
+            Destroy(go);
+            return;
+        }
+        cg.Init(AoeRadius, TickDamage, _armorPen, TickInterval, DotDuration);
     }
 }
