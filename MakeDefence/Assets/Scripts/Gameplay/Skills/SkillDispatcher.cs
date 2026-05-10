@@ -25,6 +25,9 @@ public static class SkillDispatcher
             case SkillType.LightningArrow:
                 LaunchLightningArrow(tower, target);
                 break;
+            case SkillType.CausticArrow:
+                LaunchCausticArrow(tower, target);
+                break;
             default:
                 DirectAttack(tower, target);
                 break;
@@ -88,6 +91,21 @@ public static class SkillDispatcher
         proj.CritDamage    = tower.CritDamage;
         proj.StunChance    = 0f;
         proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
+    }
+
+    private static void LaunchCausticArrow(Tower tower, Enemy target)
+    {
+        var proj = ObjectPoolSystem.Instance.GetProjectile<CausticArrowProjectile>();
+        if (proj == null) { DirectAttack(tower, target); return; }
+
+        var skill = tower.EquippedSkill;
+
+        proj.AoeRadius    = skill.aoeRadius;
+        proj.DotDuration  = skill.dotDuration > 0f ? skill.dotDuration : 3f;
+        proj.TickDamage   = skill.baseDamage;
+        proj.TickInterval = 0.5f;
+        proj.StunChance   = 0f;
+        proj.Launch(tower.transform.position, target, 0f, tower.ArmorPen / 100f);
     }
 
     private static void LaunchFireball(Tower tower, Enemy target)

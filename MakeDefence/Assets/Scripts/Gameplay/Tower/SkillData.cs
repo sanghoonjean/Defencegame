@@ -9,6 +9,7 @@ public enum SkillType
     PoisonCloud    = 4,
     FreezingPulse  = 5,
     LightningArrow = 6,
+    CausticArrow   = 7,
 }
 
 [CreateAssetMenu(fileName = "SkillData", menuName = "MakeDefence/Skill Data")]
