@@ -10,6 +10,7 @@ public class LightningArrowProjectile : ProjectileBase
     protected override float OnHit(Enemy target)
     {
         bool  isCrit = Random.value < Mathf.Clamp01(CritChance / 100f);
+        _hitIsCrit   = isCrit;
         float dmg    = _damage;
         if (isCrit) dmg *= 1f + CritDamage / 100f;
 
