@@ -19,5 +19,7 @@ public class FireballProjectile : ProjectileBase
                     e.ApplyStun(0.5f);
             }
         }
+
+        GameUIManager.ShowAoeHit(hitPos, AoeRadius);
     }
 }

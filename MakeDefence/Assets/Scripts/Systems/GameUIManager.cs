@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class GameUIManager : MonoBehaviour
@@ -11,14 +12,30 @@ public class GameUIManager : MonoBehaviour
     [SerializeField] private Color rangeColor    = new Color(1f, 1f, 0f, 0.8f);
     [SerializeField] private int   rangeSegments = 64;
 
+    [Header("Skill AoE Hit")]
+    [SerializeField] private Color aoeHitColor    = new Color(1f, 0.4f, 0f, 0.9f);
+    [SerializeField] private int   aoeSegments    = 48;
+    [SerializeField] private float aoeHitDuration = 0.5f;
+
+    private struct AoeCircle
+    {
+        public Vector2 pos;
+        public float   radius;
+        public float   expireTime;
+    }
+
+    private static GameUIManager _instance;
+    private readonly List<AoeCircle> _aoeCircles = new();
+
     private Texture2D _bgTex;
     private Texture2D _fillTex;
     private Material  _rangeMat;
 
     private void Awake()
     {
-        _bgTex   = MakeTex(Color.gray);
-        _fillTex = MakeTex(Color.green);
+        _instance = this;
+        _bgTex    = MakeTex(Color.gray);
+        _fillTex  = MakeTex(Color.green);
 
         var shader = Shader.Find("Hidden/Internal-Colored");
         if (shader == null)
@@ -32,9 +49,21 @@ public class GameUIManager : MonoBehaviour
 
     private void OnDestroy()
     {
+        if (_instance == this) _instance = null;
         Destroy(_bgTex);
         Destroy(_fillTex);
         if (_rangeMat != null) Destroy(_rangeMat);
+    }
+
+    public static void ShowAoeHit(Vector2 pos, float radius)
+    {
+        if (_instance == null || radius <= 0f) return;
+        _instance._aoeCircles.Add(new AoeCircle
+        {
+            pos        = pos,
+            radius     = radius,
+            expireTime = Time.time + _instance.aoeHitDuration
+        });
     }
 
     private void OnGUI()
@@ -64,17 +93,26 @@ public class GameUIManager : MonoBehaviour
     private void OnRenderObject()
     {
         if (_rangeMat == null) return;
+
+        _rangeMat.SetPass(0);
+        GL.Begin(GL.LINES);
+
+        DrawTowerRange();
+        DrawAoeCircles();
+
+        GL.End();
+    }
+
+    private void DrawTowerRange()
+    {
         var tower = InventorySystem.Instance?.SelectedTower;
         if (tower == null) return;
 
-        _rangeMat.SetPass(0);
+        GL.Color(rangeColor);
 
         Vector3 center = tower.transform.position;
         float   radius = tower.AttackRange;
         float   step   = 2f * Mathf.PI / rangeSegments;
-
-        GL.Begin(GL.LINES);
-        GL.Color(rangeColor);
 
         for (int i = 0; i < rangeSegments; i++)
         {
@@ -83,8 +121,27 @@ public class GameUIManager : MonoBehaviour
             GL.Vertex3(center.x + Mathf.Cos(a0) * radius, center.y + Mathf.Sin(a0) * radius, center.z);
             GL.Vertex3(center.x + Mathf.Cos(a1) * radius, center.y + Mathf.Sin(a1) * radius, center.z);
         }
+    }
 
-        GL.End();
+    private void DrawAoeCircles()
+    {
+        float now  = Time.time;
+        float step = 2f * Mathf.PI / aoeSegments;
+
+        for (int i = _aoeCircles.Count - 1; i >= 0; i--)
+        {
+            var c = _aoeCircles[i];
+            if (now >= c.expireTime) { _aoeCircles.RemoveAt(i); continue; }
+
+            GL.Color(aoeHitColor);
+            for (int s = 0; s < aoeSegments; s++)
+            {
+                float a0 = step * s;
+                float a1 = step * (s + 1);
+                GL.Vertex3(c.pos.x + Mathf.Cos(a0) * c.radius, c.pos.y + Mathf.Sin(a0) * c.radius, 0f);
+                GL.Vertex3(c.pos.x + Mathf.Cos(a1) * c.radius, c.pos.y + Mathf.Sin(a1) * c.radius, 0f);
+            }
+        }
     }
 
     private static Texture2D MakeTex(Color color)
