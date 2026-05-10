@@ -26,7 +26,6 @@ public class CausticArrowProjectile : ProjectileBase
             return 0f;
         }
         cg.Init(AoeRadius, TickDamage, _armorPen, TickInterval, DotDuration);
-        GameUIManager.ShowAoeHit(target.transform.position, AoeRadius);
         return _damage;
     }
 }
