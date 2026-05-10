@@ -11,7 +11,7 @@ public class PreciseArrowProjectile : ProjectileBase
         bool  isCrit = Random.value < Mathf.Clamp01(BonusCritChance / 100f);
         if (isCrit) dmg *= 1f + BonusCritDamage / 100f;
 
-        target.TakeDamage(dmg, _armorPen);
+        target.TakeDamage(dmg, _armorPen, isCrit);
 
         if (StunChance > 0f && Random.value < Mathf.Clamp01(StunChance / 100f))
             target.ApplyStun(0.5f);
