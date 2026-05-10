@@ -19,8 +19,8 @@ LaunchFireball()
 - Fireball은 `LaunchFireball`에서 `SplashRadius`를 설정하지 않아 스플래시 미작동
 
 **수정 방향:**
-- `SkillData`에 `splashRadius` 전용 필드 추가 (기존 aoeRadius와 분리)
-- 모든 단일 타겟 Launch 메서드에서 `proj.SplashRadius = skill.splashRadius` 사용
+- `SkillData`의 기존 `aoeRadius` 필드를 모든 스킬의 스플래시 반경으로 통일 사용 (신규 필드 불필요)
+- 모든 Launch 메서드에서 `proj.SplashRadius = skill.aoeRadius` 적용
 - Fireball: `SplashRadius = skill.aoeRadius` 설정 + `OnHit()` AoE 루프 제거 → 주 타겟 100% + 스플래시 50%
 
 ---
@@ -29,8 +29,8 @@ LaunchFireball()
 
 | 파일 | 수정 내용 |
 |------|----------|
-| `Assets/Scripts/Gameplay/Tower/SkillData.cs` | `splashRadius` 필드 추가 |
-| `Assets/Scripts/Gameplay/Skills/SkillDispatcher.cs` | PreciseArrow/FreezingPulse/CausticArrow: `splashRadius` 사용, Fireball: `SplashRadius = skill.aoeRadius` 설정 |
+| `Assets/Scripts/Gameplay/Tower/SkillData.cs` | `aoeRadius` 주석 업데이트 (전 스킬 스플래시 반경으로 통일) |
+| `Assets/Scripts/Gameplay/Skills/SkillDispatcher.cs` | 모든 Launch 메서드: `proj.SplashRadius = skill.aoeRadius` 설정 |
 | `Assets/Scripts/Gameplay/Skills/Projectiles/FireballProjectile.cs` | OnHit에서 AoE 루프 제거, 주 타겟만 풀 데미지 → 스플래시가 나머지 처리 |
 
 ---
