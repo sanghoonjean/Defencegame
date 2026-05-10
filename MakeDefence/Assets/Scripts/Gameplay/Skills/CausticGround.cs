@@ -20,6 +20,8 @@ public class CausticGround : MonoBehaviour
         _duration     = duration;
         _tickTimer    = 0f;
         _lifeTimer    = 0f;
+
+        transform.localScale = Vector3.one * radius * 2f;
     }
 
     private void Update()
