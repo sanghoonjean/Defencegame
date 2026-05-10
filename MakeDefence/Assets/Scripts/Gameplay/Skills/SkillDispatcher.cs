@@ -22,6 +22,9 @@ public static class SkillDispatcher
             case SkillType.FreezingPulse:
                 LaunchFreezingPulse(tower, target);
                 break;
+            case SkillType.LightningArrow:
+                LaunchLightningArrow(tower, target);
+                break;
             default:
                 DirectAttack(tower, target);
                 break;
@@ -69,6 +72,22 @@ public static class SkillDispatcher
         proj.CritChance     = tower.CritChance;
         proj.CritDamage     = tower.CritDamage;
         proj.LaunchFrom(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
+    }
+
+    private static void LaunchLightningArrow(Tower tower, Enemy target)
+    {
+        var proj = ObjectPoolSystem.Instance.GetProjectile<LightningArrowProjectile>();
+        if (proj == null) { DirectAttack(tower, target); return; }
+
+        var   skill = tower.EquippedSkill;
+        float dmg   = tower.AttackDamage + skill.baseDamage;
+
+        proj.AoeRadius     = skill.aoeRadius;
+        proj.ShockDuration = skill.stunDuration > 0f ? skill.stunDuration : 0.5f;
+        proj.CritChance    = tower.CritChance;
+        proj.CritDamage    = tower.CritDamage;
+        proj.StunChance    = 0f;
+        proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
     }
 
     private static void LaunchFireball(Tower tower, Enemy target)
