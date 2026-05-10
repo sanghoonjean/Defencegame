@@ -134,7 +134,7 @@ public class GameUIManager : MonoBehaviour
             if (sp.z < 0f) continue;
 
             float sx = sp.x + dmgXOffset;
-            float sy = Screen.height - sp.y + dmgYOffset + progress * dmgFloatSpeed;
+            float sy = Screen.height - sp.y + dmgYOffset - progress * dmgFloatSpeed;
 
             var prevColor = GUI.color;
             GUI.color = d.isCrit ? Color.red : Color.black;

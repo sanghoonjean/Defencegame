@@ -40,7 +40,7 @@ public static class SkillDispatcher
         bool  isCrit = Random.value < Mathf.Clamp01(tower.CritChance / 100f);
         if (isCrit) dmg *= 1f + tower.CritDamage / 100f;
 
-        target.TakeDamage(dmg, tower.ArmorPen / 100f);
+        target.TakeDamage(dmg, tower.ArmorPen / 100f, isCrit);
 
         if (tower.StunChance > 0f && Random.value < Mathf.Clamp01(tower.StunChance / 100f))
             target.ApplyStun(0.5f);
