@@ -5,7 +5,7 @@ public class PreciseArrowProjectile : ProjectileBase
     public float BonusCritChance { get; set; }
     public float BonusCritDamage { get; set; }
 
-    protected override void OnHit(Enemy target)
+    protected override float OnHit(Enemy target)
     {
         float dmg    = _damage;
         bool  isCrit = Random.value < Mathf.Clamp01(BonusCritChance / 100f);
@@ -15,5 +15,7 @@ public class PreciseArrowProjectile : ProjectileBase
 
         if (StunChance > 0f && Random.value < Mathf.Clamp01(StunChance / 100f))
             target.ApplyStun(0.5f);
+
+        return dmg;
     }
 }

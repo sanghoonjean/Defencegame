@@ -7,7 +7,7 @@ public class LightningArrowProjectile : ProjectileBase
     public float CritChance    { get; set; }
     public float CritDamage    { get; set; }
 
-    protected override void OnHit(Enemy target)
+    protected override float OnHit(Enemy target)
     {
         bool  isCrit = Random.value < Mathf.Clamp01(CritChance / 100f);
         float dmg    = _damage;
@@ -27,5 +27,6 @@ public class LightningArrowProjectile : ProjectileBase
         }
 
         GameUIManager.ShowAoeHit(hitPos, AoeRadius);
+        return dmg;
     }
 }
