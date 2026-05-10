@@ -10,8 +10,9 @@ public class ProjectileBase : MonoBehaviour
     protected float _armorPen;
     private bool _launched;
 
-    public float StunChance   { get; set; }
-    public float SplashRadius { get; set; }
+    public float StunChance        { get; set; }
+    public float SplashRadius      { get; set; }
+    public float SplashStunDuration { get; set; }
 
     public void Launch(Vector2 origin, Enemy target, float damage, float armorPen)
     {
@@ -67,7 +68,12 @@ public class ProjectileBase : MonoBehaviour
             var e = enemies[i];
             if (e == null || e == primaryTarget) continue;
             if (((Vector2)e.transform.position - pos).sqrMagnitude <= radiusSq)
+            {
                 e.TakeDamage(splashDmg, _armorPen);
+                if (StunChance > 0f && SplashStunDuration > 0f &&
+                    Random.value < Mathf.Clamp01(StunChance / 100f))
+                    e.ApplyStun(SplashStunDuration);
+            }
         }
     }
 
