@@ -198,6 +198,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fireballSkill: {fileID: 11400000, guid: 52e03e35f7a3284439ec10cc46d72fd1, type: 2}
+  preciseArrowSkill: {fileID: 11400000, guid: b22ad9bcd96634c43abc3702d1cf853c, type: 2}
 --- !u!4 &156874591
 Transform:
   m_ObjectHideFlags: 0
@@ -1421,6 +1422,7 @@ MonoBehaviour:
   initialPoolSize: 30
   projectilePrefabs:
   - {fileID: 6161231276423854446, guid: 647d89445d711424fb68a45d5ab13026, type: 3}
+  - {fileID: 8889647250836929604, guid: 07bd3fcb4fe6e0a48b2d8dfafc1a8353, type: 3}
 --- !u!4 &658746518
 Transform:
   m_ObjectHideFlags: 0
