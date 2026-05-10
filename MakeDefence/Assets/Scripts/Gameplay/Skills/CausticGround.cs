@@ -32,9 +32,9 @@ public class CausticGround : MonoBehaviour
         }
 
         _tickTimer += Time.deltaTime;
-        if (_tickTimer >= _tickInterval)
+        while (_tickTimer >= _tickInterval)
         {
-            _tickTimer = 0f;
+            _tickTimer -= _tickInterval;
             ApplyDot();
         }
     }
