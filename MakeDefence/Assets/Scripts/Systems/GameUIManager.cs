@@ -17,6 +17,12 @@ public class GameUIManager : MonoBehaviour
     [SerializeField] private int   aoeSegments    = 48;
     [SerializeField] private float aoeHitDuration = 0.5f;
 
+    [Header("Damage Text")]
+    [SerializeField] private float dmgFloatSpeed  = 30f;
+    [SerializeField] private float dmgDuration    = 1.2f;
+    [SerializeField] private float dmgXOffset     = -20f;
+    [SerializeField] private float dmgYOffset     = 10f;
+
     private struct AoeCircle
     {
         public Vector2 pos;
@@ -24,18 +30,36 @@ public class GameUIManager : MonoBehaviour
         public float   expireTime;
     }
 
+    private struct DamageText
+    {
+        public Vector2 worldPos;
+        public string  text;
+        public bool    isCrit;
+        public float   startTime;
+        public float   expireTime;
+    }
+
     private static GameUIManager _instance;
-    private readonly List<AoeCircle> _aoeCircles = new();
+    private readonly List<AoeCircle>   _aoeCircles   = new();
+    private readonly List<DamageText>  _damageTexts  = new();
 
     private Texture2D _bgTex;
     private Texture2D _fillTex;
     private Material  _rangeMat;
+
+    private GUIStyle _dmgStyle;
+    private GUIStyle _critStyle;
 
     private void Awake()
     {
         _instance = this;
         _bgTex    = MakeTex(Color.gray);
         _fillTex  = MakeTex(Color.green);
+
+        _dmgStyle  = new GUIStyle();
+        _critStyle = new GUIStyle();
+        _dmgStyle.normal.textColor  = Color.black;
+        _critStyle.normal.textColor = Color.red;
 
         var shader = Shader.Find("Hidden/Internal-Colored");
         if (shader == null)
@@ -53,6 +77,19 @@ public class GameUIManager : MonoBehaviour
         Destroy(_bgTex);
         Destroy(_fillTex);
         if (_rangeMat != null) Destroy(_rangeMat);
+    }
+
+    public static void ShowDamage(Vector2 worldPos, float damage, bool isCrit)
+    {
+        if (_instance == null) return;
+        _instance._damageTexts.Add(new DamageText
+        {
+            worldPos   = worldPos,
+            text       = Mathf.RoundToInt(damage).ToString(),
+            isCrit     = isCrit,
+            startTime  = Time.time,
+            expireTime = Time.time + _instance.dmgDuration
+        });
     }
 
     public static void ShowAoeHit(Vector2 pos, float radius)
@@ -87,6 +124,27 @@ public class GameUIManager : MonoBehaviour
 
             GUI.DrawTexture(new Rect(x, y, barWidth, barHeight), _bgTex);
             GUI.DrawTexture(new Rect(x, y, barWidth * fill, barHeight), _fillTex);
+        }
+
+        DrawDamageTexts(cam);
+    }
+
+    private void DrawDamageTexts(Camera cam)
+    {
+        float now = Time.time;
+        for (int i = _damageTexts.Count - 1; i >= 0; i--)
+        {
+            var d = _damageTexts[i];
+            if (now >= d.expireTime) { _damageTexts.RemoveAt(i); continue; }
+
+            float progress  = (now - d.startTime) / dmgDuration;
+            Vector3 sp      = cam.WorldToScreenPoint(d.worldPos);
+            if (sp.z < 0f) continue;
+
+            float sx = sp.x + dmgXOffset;
+            float sy = Screen.height - sp.y + dmgYOffset - progress * dmgFloatSpeed;
+
+            GUI.Label(new Rect(sx, sy, 60f, 20f), d.text, d.isCrit ? _critStyle : _dmgStyle);
         }
     }
 

@@ -8,6 +8,7 @@ public class ProjectileBase : MonoBehaviour
     private Enemy _target;
     protected float _damage;
     protected float _armorPen;
+    protected bool  _hitIsCrit;
     private bool _launched;
 
     public float StunChance        { get; set; }
@@ -41,7 +42,7 @@ public class ProjectileBase : MonoBehaviour
         if (Vector2.Distance(next, dest) < HitRadius)
         {
             float actualDmg = OnHit(_target);
-            ApplySplash(_target, actualDmg);
+            ApplySplash(_target, actualDmg, _hitIsCrit);
             if (SplashRadius > 0f && actualDmg > 0f)
                 GameUIManager.ShowAoeHit(_target.transform.position, SplashRadius);
             ReturnToPool();
@@ -54,7 +55,7 @@ public class ProjectileBase : MonoBehaviour
         return _damage;
     }
 
-    private void ApplySplash(Enemy primaryTarget, float actualDamage)
+    private void ApplySplash(Enemy primaryTarget, float actualDamage, bool isCrit)
     {
         if (SplashRadius <= 0f) return;
 
@@ -71,7 +72,7 @@ public class ProjectileBase : MonoBehaviour
             if (e == null || e == primaryTarget) continue;
             if (((Vector2)e.transform.position - pos).sqrMagnitude <= radiusSq)
             {
-                e.TakeDamage(splashDmg, _armorPen);
+                e.TakeDamage(splashDmg, _armorPen, isCrit);
                 if (StunChance > 0f && SplashStunDuration > 0f &&
                     Random.value < Mathf.Clamp01(StunChance / 100f))
                     e.ApplyStun(SplashStunDuration);

@@ -10,6 +10,7 @@ public class LightningArrowProjectile : ProjectileBase
     protected override float OnHit(Enemy target)
     {
         bool  isCrit = Random.value < Mathf.Clamp01(CritChance / 100f);
+        _hitIsCrit   = isCrit;
         float dmg    = _damage;
         if (isCrit) dmg *= 1f + CritDamage / 100f;
 
@@ -21,7 +22,7 @@ public class LightningArrowProjectile : ProjectileBase
             if (e == null) continue;
             if (((Vector2)e.transform.position - hitPos).sqrMagnitude > radiusSq) continue;
 
-            e.TakeDamage(dmg, _armorPen);
+            e.TakeDamage(dmg, _armorPen, isCrit);
             if (isCrit)
                 e.ApplyStun(ShockDuration);
         }

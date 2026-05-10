@@ -26,7 +26,8 @@ public class FreezingPulseProjectile : ProjectileBase
         bool  isCrit = Random.value < Mathf.Clamp01(CritChance / 100f);
         if (isCrit) dmg *= 1f + CritDamage / 100f;
 
-        target.TakeDamage(dmg, _armorPen);
+        _hitIsCrit = isCrit;
+        target.TakeDamage(dmg, _armorPen, isCrit);
 
         if (StunChance > 0f && Random.value < Mathf.Clamp01(StunChance / 100f))
             target.ApplyStun(FreezeDuration);

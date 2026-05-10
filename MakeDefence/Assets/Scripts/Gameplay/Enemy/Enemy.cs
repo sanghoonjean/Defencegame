@@ -86,11 +86,12 @@ public class Enemy : MonoBehaviour
         }
     }
 
-    public void TakeDamage(float damage, float armorPenRatio = 0f)
+    public void TakeDamage(float damage, float armorPenRatio = 0f, bool isCrit = false)
     {
         float effectiveDefense = _defense * (1f - Mathf.Clamp01(armorPenRatio));
         float actual = Mathf.Max(1f, damage - effectiveDefense);
         CurrentHp -= actual;
+        GameUIManager.ShowDamage(transform.position, actual, isCrit);
         if (CurrentHp <= 0f)
             Die();
     }
