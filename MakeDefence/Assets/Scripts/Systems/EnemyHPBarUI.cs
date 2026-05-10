@@ -17,6 +17,7 @@ public class EnemyHPBarUI : MonoBehaviour
 
     private void OnGUI()
     {
+        if (Event.current.type != EventType.Repaint) return;
         var cam = Camera.main;
         if (cam == null) return;
 
