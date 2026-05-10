@@ -6,9 +6,10 @@ public class TestRunner : MonoBehaviour
     [SerializeField] private SkillData fireballSkill;
     [SerializeField] private SkillData preciseArrowSkill;
     [SerializeField] private SkillData freezingPulseSkill;
+    [SerializeField] private SkillData lightningArrowSkill;
 
     private SkillData _selectedSkill;
-    private static readonly Rect SkillButtonArea = new Rect(10, 185, 340, 40);
+    private static readonly Rect SkillButtonArea = new Rect(10, 185, 460, 40);
 
     private void Awake()
     {
@@ -127,6 +128,12 @@ public class TestRunner : MonoBehaviour
         {
             _selectedSkill = freezingPulseSkill;
             Debug.Log("[TestRunner] 스킬 선택: Freezing Pulse");
+        }
+        GUI.enabled = lightningArrowSkill != null;
+        if (GUI.Button(new Rect(350, 190, 110, 30), "Lightning Arrow"))
+        {
+            _selectedSkill = lightningArrowSkill;
+            Debug.Log("[TestRunner] 스킬 선택: Lightning Arrow");
         }
         GUI.enabled = true;
     }
