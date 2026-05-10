@@ -52,9 +52,10 @@ public class ProjectileBase : MonoBehaviour
 
     private void ApplySplash(Enemy primaryTarget)
     {
-        if (SplashRadius <= 0f || _damage <= 0f) return;
+        if (SplashRadius <= 0f) return;
 
         float   splashDmg = _damage * 0.5f;
+        if (splashDmg <= 0f) return;
         float   radiusSq  = SplashRadius * SplashRadius;
         Vector2 pos       = primaryTarget.transform.position;
         var     enemies   = Enemy.ActiveEnemies;

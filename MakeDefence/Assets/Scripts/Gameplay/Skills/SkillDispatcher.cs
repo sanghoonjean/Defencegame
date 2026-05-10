@@ -108,7 +108,7 @@ public static class SkillDispatcher
         proj.TickInterval = 0.5f;
         proj.StunChance   = 0f;
         proj.SplashRadius = skill.aoeRadius;
-        proj.Launch(tower.transform.position, target, 0f, tower.ArmorPen / 100f);
+        proj.Launch(tower.transform.position, target, skill.baseDamage, tower.ArmorPen / 100f);
     }
 
     private static void LaunchFireball(Tower tower, Enemy target)
