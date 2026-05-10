@@ -15,14 +15,14 @@ Tower.Attack()
           → ObjectPoolSystem.GetProjectile<FreezingPulseProjectile>()
           → FreezingPulseProjectile.Launch(origin, target, damage, armorPen)
                 → 단일 타겟 추적
-                → 착탄 시 OnHit() — 근거리 보너스 데미지 + 짧은 빙결(스턴)
+                → 착탄 시 OnHit() — 근거리 보너스 데미지 + 확률 빙결(StunChance)
 ```
 
 **근거리 보너스 메커니즘:**
 - 발사 시점 origin 저장
 - OnHit() 시 이동 거리 계산
 - 거리가 짧을수록 데미지 배율 상승 (최대 2배, 최소 1배)
-- 착탄 시 짧은 빙결(ApplyStun) 적용
+- 착탄 시 타워 `StunChance` 기반 확률로 빙결(ApplyStun) 적용
 
 **영향 시스템:**
 - `SkillData.cs` — SkillType 열거형에 FreezingPulse 추가
@@ -54,9 +54,11 @@ Tower.Attack()
 public class FreezingPulseProjectile : ProjectileBase
 {
     public float MaxRangeBonus { get; set; }  // 근거리 최대 배율 (예: 2.0)
+    public float MaxRange      { get; set; }  // 스킬 사거리 (배율 계산 기준)
     public float FreezeDuration { get; set; } // 빙결 지속시간
     protected override void OnHit(Enemy target);
-    // 근거리일수록 데미지 증가: multiplier = lerp(1, MaxRangeBonus, 1 - dist/maxRange)
+    // 근거리일수록 데미지 증가: multiplier = Lerp(MaxRangeBonus, 1f, dist / MaxRange)
+    // 빙결: StunChance(tower) 확률로 target.ApplyStun(FreezeDuration)
 }
 ```
 
@@ -68,7 +70,7 @@ public class FreezingPulseProjectile : ProjectileBase
 - [ ] Freezing Pulse 버튼 클릭 → T키 → 스킬 장착 확인
 - [ ] 근거리 적: 높은 데미지 적용 확인
 - [ ] 원거리 적: 낮은 데미지 적용 확인
-- [ ] 착탄 시 빙결(이동 정지) 적용 확인
+- [ ] 착탄 시 StunChance 확률로 빙결(이동 정지) 적용 확인
 - [ ] 기존 Fireball / 정밀 화살 동작 간섭 없음 확인
 
 ---
