@@ -35,8 +35,11 @@ CausticArrowProjectile.OnHit()
 
 ## 4. 테스트 계획
 
-- [ ] AoeRadius = 1 → Caustic Ground 크기 1 확인
-- [ ] AoeRadius = 5 → Caustic Ground 크기 5 확인
+> 스케일 공식: `localScale = radius * 2f` (프리팹 스프라이트 직경 1 기준)  
+> AoeRadius = 반지름, localScale = 직경(반지름 × 2)
+
+- [ ] AoeRadius = 1 → localScale = 2 (시각적 반지름 1) 확인
+- [ ] AoeRadius = 5 → localScale = 10 (시각적 반지름 5) 확인
 - [ ] 크기 변경 후 데미지 판정 범위도 일치 확인
 - [ ] 기존 스킬 동작 간섭 없음 확인
 
