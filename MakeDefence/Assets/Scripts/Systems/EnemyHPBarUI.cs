@@ -15,6 +15,12 @@ public class EnemyHPBarUI : MonoBehaviour
         _fillTex = MakeTex(Color.green);
     }
 
+    private void OnDestroy()
+    {
+        Destroy(_bgTex);
+        Destroy(_fillTex);
+    }
+
     private void OnGUI()
     {
         if (Event.current.type != EventType.Repaint) return;
