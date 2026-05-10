@@ -19,6 +19,9 @@ public static class SkillDispatcher
             case SkillType.PreciseArrow:
                 LaunchPreciseArrow(tower, target);
                 break;
+            case SkillType.FreezingPulse:
+                LaunchFreezingPulse(tower, target);
+                break;
             default:
                 DirectAttack(tower, target);
                 break;
@@ -49,6 +52,23 @@ public static class SkillDispatcher
         proj.BonusCritDamage = tower.CritDamage;
         proj.StunChance      = tower.StunChance;
         proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
+    }
+
+    private static void LaunchFreezingPulse(Tower tower, Enemy target)
+    {
+        var proj = ObjectPoolSystem.Instance.GetProjectile<FreezingPulseProjectile>();
+        if (proj == null) { DirectAttack(tower, target); return; }
+
+        var skill = tower.EquippedSkill;
+        float dmg = tower.AttackDamage + skill.baseDamage;
+
+        proj.MaxRangeBonus  = 2f;
+        proj.MaxRange       = skill.baseRange;
+        proj.FreezeDuration = skill.stunDuration > 0f ? skill.stunDuration : 0.5f;
+        proj.StunChance     = tower.StunChance;
+        proj.CritChance     = tower.CritChance;
+        proj.CritDamage     = tower.CritDamage;
+        proj.LaunchFrom(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
     }
 
     private static void LaunchFireball(Tower tower, Enemy target)
