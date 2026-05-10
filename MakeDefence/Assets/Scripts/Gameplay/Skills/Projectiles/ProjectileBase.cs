@@ -42,6 +42,8 @@ public class ProjectileBase : MonoBehaviour
         {
             float actualDmg = OnHit(_target);
             ApplySplash(_target, actualDmg);
+            if (SplashRadius > 0f && actualDmg > 0f)
+                GameUIManager.ShowAoeHit(_target.transform.position, SplashRadius);
             ReturnToPool();
         }
     }
