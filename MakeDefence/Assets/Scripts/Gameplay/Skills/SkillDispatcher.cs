@@ -57,6 +57,7 @@ public static class SkillDispatcher
         proj.BonusCritChance = tower.CritChance;
         proj.BonusCritDamage = tower.CritDamage;
         proj.StunChance      = tower.StunChance;
+        proj.SplashRadius    = skill.aoeRadius;
         proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
     }
 
@@ -74,6 +75,7 @@ public static class SkillDispatcher
         proj.StunChance     = skill.baseStunChance + tower.StunChance;
         proj.CritChance     = tower.CritChance;
         proj.CritDamage     = tower.CritDamage;
+        proj.SplashRadius   = skill.aoeRadius;
         proj.LaunchFrom(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
     }
 
@@ -105,6 +107,7 @@ public static class SkillDispatcher
         proj.TickDamage   = skill.baseDamage;
         proj.TickInterval = 0.5f;
         proj.StunChance   = 0f;
+        proj.SplashRadius = skill.aoeRadius;
         proj.Launch(tower.transform.position, target, 0f, tower.ArmorPen / 100f);
     }
 
