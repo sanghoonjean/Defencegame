@@ -65,7 +65,7 @@ public static class SkillDispatcher
         proj.MaxRangeBonus  = 2f;
         proj.MaxRange       = skill.baseRange;
         proj.FreezeDuration = skill.stunDuration > 0f ? skill.stunDuration : 0.5f;
-        proj.StunChance     = tower.StunChance;
+        proj.StunChance     = skill.baseStunChance + tower.StunChance;
         proj.CritChance     = tower.CritChance;
         proj.CritDamage     = tower.CritDamage;
         proj.LaunchFrom(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
