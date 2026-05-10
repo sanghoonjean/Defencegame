@@ -25,11 +25,6 @@ public class CausticGround : MonoBehaviour
     private void Update()
     {
         _lifeTimer += Time.deltaTime;
-        if (_lifeTimer >= _duration)
-        {
-            Destroy(gameObject);
-            return;
-        }
 
         _tickTimer += Time.deltaTime;
         while (_tickTimer >= _tickInterval)
@@ -37,6 +32,9 @@ public class CausticGround : MonoBehaviour
             _tickTimer -= _tickInterval;
             ApplyDot();
         }
+
+        if (_lifeTimer >= _duration)
+            Destroy(gameObject);
     }
 
     private void ApplyDot()
