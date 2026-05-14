@@ -32,6 +32,7 @@ public class InventorySystem : MonoBehaviour
     {
         if (SelectedTower == null) return false;
         SelectedTower.EquipSkill(skill);
+        OnTowerSelected?.Invoke(SelectedTower);
         return true;
     }
 
@@ -39,13 +40,17 @@ public class InventorySystem : MonoBehaviour
     public bool UnlockSupportSlot()
     {
         if (SelectedTower == null) return false;
-        return SelectedTower.UnlockSupportSlot();
+        bool result = SelectedTower.UnlockSupportSlot();
+        if (result) OnTowerSelected?.Invoke(SelectedTower);
+        return result;
     }
 
     public bool SetSupportOption(int slot, SupportOptionData option)
     {
         if (SelectedTower == null) return false;
-        return SelectedTower.SetSupportOption(slot, option);
+        bool result = SelectedTower.SetSupportOption(slot, option);
+        if (result) OnTowerSelected?.Invoke(SelectedTower);
+        return result;
     }
 
     // --- 아이템 ---
