@@ -32,8 +32,7 @@ public class SkillSlotUI : MonoBehaviour
         if (iconImage != null)
         {
             iconImage.gameObject.SetActive(hasSkill);
-            if (hasSkill && skill.icon != null)
-                iconImage.sprite = skill.icon;
+            iconImage.sprite = hasSkill ? skill.icon : null;
         }
 
         if (skillNameText != null)

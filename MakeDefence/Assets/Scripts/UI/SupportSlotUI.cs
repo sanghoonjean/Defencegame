@@ -50,8 +50,7 @@ public class SupportSlotUI : MonoBehaviour
         if (iconImage != null)
         {
             iconImage.gameObject.SetActive(!locked && hasOption);
-            if (!locked && hasOption && option?.icon != null)
-                iconImage.sprite = option.icon;
+            iconImage.sprite = (!locked && hasOption) ? option?.icon : null;
         }
 
         if (optionNameText != null)
