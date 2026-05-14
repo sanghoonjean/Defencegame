@@ -15,6 +15,11 @@ public enum SkillType
 [CreateAssetMenu(fileName = "SkillData", menuName = "MakeDefence/Skill Data")]
 public class SkillData : ScriptableObject
 {
+    [Header("Display")]
+    public string displayName;
+    public Sprite icon;
+
+    [Header("Stats")]
     public SkillType skillType;
     public float     baseDamage;
     public float     baseCooldown;
