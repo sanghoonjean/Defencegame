@@ -23,7 +23,6 @@ public class ShopSystem : MonoBehaviour
     public bool BuySkill(SkillData skill)
     {
         if (!availableSkills.Contains(skill))       return false;
-        if (_ownedSkills.Contains(skill))           return false;
         if (!CubeSystem.Instance.TryConsume(CubeType.Lower, 1)) return false;
         _ownedSkills.Add(skill);
         OnInventoryChanged?.Invoke();
