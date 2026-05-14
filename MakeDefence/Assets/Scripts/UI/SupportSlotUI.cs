@@ -31,7 +31,7 @@ public class SupportSlotUI : MonoBehaviour
 
     private void Refresh(Tower tower)
     {
-        if (tower == null)
+        if (tower == null || slotIndex < 0 || slotIndex >= tower.SupportOptions.Count)
         {
             SetState(locked: false, hasOption: false, option: null);
             return;
