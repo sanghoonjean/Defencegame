@@ -13,6 +13,11 @@ public enum SupportOptionType
 [CreateAssetMenu(fileName = "SupportOptionData", menuName = "MakeDefence/Support Option Data")]
 public class SupportOptionData : ScriptableObject
 {
+    [Header("Display")]
+    public string displayName;
+    public Sprite icon;
+
+    [Header("Stats")]
     public SupportOptionType optionType;
     [TextArea] public string description;
     public float value;
