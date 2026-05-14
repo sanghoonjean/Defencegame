@@ -17,16 +17,12 @@ public class SupportSlotUI : MonoBehaviour
     private void OnEnable()
     {
         InventorySystem.OnTowerSelected += Refresh;
+        Refresh(InventorySystem.Instance != null ? InventorySystem.Instance.SelectedTower : null);
     }
 
     private void OnDisable()
     {
         InventorySystem.OnTowerSelected -= Refresh;
-    }
-
-    private void Start()
-    {
-        Refresh(InventorySystem.Instance != null ? InventorySystem.Instance.SelectedTower : null);
     }
 
     private void Refresh(Tower tower)
