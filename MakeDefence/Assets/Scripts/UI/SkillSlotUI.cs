@@ -26,13 +26,19 @@ public class SkillSlotUI : MonoBehaviour
     private void Refresh(Tower tower)
     {
         var skill = tower?.EquippedSkill;
-
         bool hasSkill = skill != null;
+
+        Debug.Log($"[SkillSlotUI] Refresh — tower={tower?.name ?? "null"} | skill={skill?.skillType.ToString() ?? "null"} | hasSkill={hasSkill} | iconImage={iconImage != null} | icon={skill?.icon?.name ?? "null"}");
 
         if (iconImage != null)
         {
             iconImage.gameObject.SetActive(hasSkill);
             iconImage.sprite = hasSkill ? skill.icon : null;
+            Debug.Log($"[SkillSlotUI] iconImage.gameObject.activeSelf={iconImage.gameObject.activeSelf} | iconImage.enabled={iconImage.enabled} | sprite={iconImage.sprite?.name ?? "null"} | parent.active={iconImage.transform.parent?.gameObject.activeSelf}");
+        }
+        else
+        {
+            Debug.LogWarning("[SkillSlotUI] iconImage 참조가 null — Inspector에서 연결 확인 필요");
         }
 
         if (skillNameText != null)
