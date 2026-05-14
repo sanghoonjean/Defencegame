@@ -12,6 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 698c3616f73151643b5b028c7846f5f0, type: 3}
   m_Name: PreciseArrowSkill
   m_EditorClassIdentifier: 
+  displayName: PreciseArrow
+  icon: {fileID: 21300000, guid: 9cf3ac0b624168545975e8923bfe94e3, type: 3}
   skillType: 0
   baseDamage: 500
   baseCooldown: 0.2

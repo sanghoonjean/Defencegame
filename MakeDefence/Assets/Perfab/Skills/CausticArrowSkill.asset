@@ -12,6 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 698c3616f73151643b5b028c7846f5f0, type: 3}
   m_Name: CausticArrowSkill
   m_EditorClassIdentifier: 
+  displayName: CausticArrow
+  icon: {fileID: 21300000, guid: 9d99d011c762ace4c86ad318e1e624a3, type: 3}
   skillType: 7
   baseDamage: 500
   baseCooldown: 2

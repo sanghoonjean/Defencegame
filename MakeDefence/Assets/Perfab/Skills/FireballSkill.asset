@@ -12,6 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 698c3616f73151643b5b028c7846f5f0, type: 3}
   m_Name: FireballSkill
   m_EditorClassIdentifier: 
+  displayName: Fireball
+  icon: {fileID: 21300000, guid: 85f6db0efa996b342ac40bb7aa6eb2f9, type: 3}
   skillType: 1
   baseDamage: 500
   baseCooldown: 0.5
