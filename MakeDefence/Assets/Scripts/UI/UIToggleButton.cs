@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
+[RequireComponent(typeof(Button))]
 public class UIToggleButton : MonoBehaviour
 {
     [SerializeField] private GameObject targetPanel;
