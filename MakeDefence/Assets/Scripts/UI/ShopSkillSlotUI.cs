@@ -24,18 +24,11 @@ public class ShopSkillSlotUI : MonoBehaviour
             return;
         }
 
-        if (iconImage != null)
-        {
-            iconImage.gameObject.SetActive(true);
-            iconImage.sprite = skillData.icon;
-        }
+        if (iconImage != null) iconImage.sprite = skillData.icon;
 
         if (nameText != null)
-        {
-            nameText.gameObject.SetActive(true);
             nameText.text = string.IsNullOrEmpty(skillData.displayName)
                 ? skillData.skillType.ToString()
                 : skillData.displayName;
-        }
     }
 }
