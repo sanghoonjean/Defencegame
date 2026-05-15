@@ -7,7 +7,8 @@ public class TestRunner : MonoBehaviour
     private void Update()
     {
         // 마우스 좌클릭: 타워 선택 (UI 위 클릭 시 제외)
-        if (Input.GetMouseButtonDown(0) && !EventSystem.current.IsPointerOverGameObject())
+        bool overUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
+        if (Input.GetMouseButtonDown(0) && !overUI)
         {
             Vector3 worldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             var hit = Physics2D.OverlapPoint(new Vector2(worldPos.x, worldPos.y));
