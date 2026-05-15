@@ -18,7 +18,11 @@ public class ShopSkillSlotUI : MonoBehaviour
 
     private void Refresh()
     {
-        if (skillData == null) return;
+        if (skillData == null)
+        {
+            Debug.LogWarning($"[ShopSkillSlotUI] skillData가 null — Inspector에서 SkillData 에셋을 연결하세요 ({gameObject.name})");
+            return;
+        }
 
         if (iconImage != null) iconImage.sprite = skillData.icon;
 
