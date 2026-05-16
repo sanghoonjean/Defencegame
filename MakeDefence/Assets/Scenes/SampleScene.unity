@@ -1808,7 +1808,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 176935038}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f8e6d2cbc2c830f4e8a43d97e9ca2f27, type: 3}
+  m_Script: {fileID: 11500000, guid: 2c90a51417dbda049a5b53a411eed978, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   skillData: {fileID: 11400000, guid: 4d99099158369eb43b653fc21fd76201, type: 2}
@@ -4038,7 +4038,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 353855980}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f8e6d2cbc2c830f4e8a43d97e9ca2f27, type: 3}
+  m_Script: {fileID: 11500000, guid: 2c90a51417dbda049a5b53a411eed978, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   skillData: {fileID: 11400000, guid: 52e03e35f7a3284439ec10cc46d72fd1, type: 2}
@@ -4057,7 +4057,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 377960147}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f8e6d2cbc2c830f4e8a43d97e9ca2f27, type: 3}
+  m_Script: {fileID: 11500000, guid: 2c90a51417dbda049a5b53a411eed978, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   skillData: {fileID: 11400000, guid: 537a5be41b97e3243be832d4ef449ac3, type: 2}
@@ -13681,7 +13681,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1441627393}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f8e6d2cbc2c830f4e8a43d97e9ca2f27, type: 3}
+  m_Script: {fileID: 11500000, guid: 2c90a51417dbda049a5b53a411eed978, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   skillData: {fileID: 11400000, guid: 953407e10a8f9304585520364663d6a3, type: 2}
@@ -15181,7 +15181,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 1737022627}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f8e6d2cbc2c830f4e8a43d97e9ca2f27, type: 3}
+  m_Script: {fileID: 11500000, guid: 2c90a51417dbda049a5b53a411eed978, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
   skillData: {fileID: 11400000, guid: b22ad9bcd96634c43abc3702d1cf853c, type: 2}
