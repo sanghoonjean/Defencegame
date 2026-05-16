@@ -3,17 +3,39 @@ using UnityEngine.UI;
 
 /// <summary>
 /// Shop 패널 내 개별 스킬 슬롯에 부착.
-/// Inspector에서 SkillData 에셋을 지정하면 아이콘/이름을 표시한다.
+/// Inspector에서 SkillData 에셋을 지정하면 아이콘/이름을 표시하고,
+/// 큐브 잔량에 따라 구매 버튼을 활성/비활성화한다.
 /// </summary>
 public class ShopSkillSlotUI : MonoBehaviour
 {
     [SerializeField] private SkillData skillData;
     [SerializeField] private Image     iconImage;
     [SerializeField] private Text      nameText;
+    [SerializeField] private Button    buyButton;
+
+    private void Awake()
+    {
+        if (buyButton == null)
+            buyButton = GetComponentInChildren<Button>();
+
+        if (buyButton != null)
+            buyButton.onClick.AddListener(OnBuyClicked);
+    }
 
     private void OnEnable()
     {
+        CubeSystem.OnCubeChanged += OnCubeChanged;
         Refresh();
+    }
+
+    private void OnDisable()
+    {
+        CubeSystem.OnCubeChanged -= OnCubeChanged;
+    }
+
+    private void OnCubeChanged(CubeType type, int _)
+    {
+        if (type == CubeType.Lower) RefreshBuyButton();
     }
 
     private void Refresh()
@@ -24,18 +46,28 @@ public class ShopSkillSlotUI : MonoBehaviour
             return;
         }
 
-        if (iconImage != null)
-        {
-            iconImage.gameObject.SetActive(true);
-            iconImage.sprite = skillData.icon;
-        }
+        if (iconImage != null) iconImage.sprite = skillData.icon;
 
         if (nameText != null)
-        {
-            nameText.gameObject.SetActive(true);
             nameText.text = string.IsNullOrEmpty(skillData.displayName)
                 ? skillData.skillType.ToString()
                 : skillData.displayName;
-        }
+
+        RefreshBuyButton();
+    }
+
+    private void RefreshBuyButton()
+    {
+        if (buyButton == null) return;
+        bool canBuy = CubeSystem.Instance != null &&
+                      CubeSystem.Instance.GetCount(CubeType.Lower) >= 1;
+        buyButton.interactable = canBuy;
+    }
+
+    public void OnBuyClicked()
+    {
+        if (ShopSystem.Instance == null || skillData == null) return;
+        ShopSystem.Instance.BuySkill(skillData);
+        RefreshBuyButton();
     }
 }

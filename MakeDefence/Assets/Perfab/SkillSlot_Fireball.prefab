@@ -288,7 +288,6 @@ GameObject:
   - component: {fileID: 216919367422676057}
   - component: {fileID: 7328384584924819386}
   - component: {fileID: 956629566919651611}
-  - component: {fileID: 69250455186472331}
   m_Layer: 5
   m_Name: SkillSlot_Fireball
   m_TagString: Untagged
@@ -415,19 +414,6 @@ MonoBehaviour:
   skillData: {fileID: 11400000, guid: 52e03e35f7a3284439ec10cc46d72fd1, type: 2}
   iconImage: {fileID: 2332740500709576124}
   nameText: {fileID: 5155514595727603138}
---- !u!114 &69250455186472331
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4156967889965028386}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f8e6d2cbc2c830f4e8a43d97e9ca2f27, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  skillData: {fileID: 11400000, guid: 52e03e35f7a3284439ec10cc46d72fd1, type: 2}
 --- !u!1 &5633331132364941775
 GameObject:
   m_ObjectHideFlags: 0
