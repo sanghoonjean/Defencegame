@@ -31,24 +31,18 @@ public class InvenUI : MonoBehaviour
 
     private void OnEnable()
     {
-        ShopSystem.OnInventoryChanged   += Refresh;
-        InventorySystem.OnTowerSelected += OnTowerSelected;
+        ShopSystem.OnInventoryChanged += Refresh;
         Refresh();
     }
 
     private void OnDisable()
     {
-        ShopSystem.OnInventoryChanged   -= Refresh;
-        InventorySystem.OnTowerSelected -= OnTowerSelected;
+        ShopSystem.OnInventoryChanged -= Refresh;
     }
-
-    private void OnTowerSelected(Tower _) => Refresh();
 
     private void Refresh()
     {
-        var owned   = ShopSystem.Instance?.OwnedSkills;
-        bool hasTower = InventorySystem.Instance != null &&
-                        InventorySystem.Instance.SelectedTower != null;
+        var owned = ShopSystem.Instance?.OwnedSkills;
         for (int i = 0; i < _slots.Length; i++)
         {
             bool hasSkill = owned != null && i < owned.Count;
@@ -58,7 +52,6 @@ public class InvenUI : MonoBehaviour
 
             if (_slots[i].button == null) continue;
             _slots[i].button.onClick.RemoveAllListeners();
-            _slots[i].button.interactable = hasSkill && hasTower;
             if (hasSkill)
             {
                 var skill = owned[i];
