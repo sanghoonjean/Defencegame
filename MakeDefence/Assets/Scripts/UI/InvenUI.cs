@@ -42,16 +42,7 @@ public class InvenUI : MonoBehaviour
         InventorySystem.OnTowerSelected -= OnTowerSelected;
     }
 
-    private void OnTowerSelected(Tower _) => UpdateButtonInteractable();
-
-    private void UpdateButtonInteractable()
-    {
-        bool hasTower = InventorySystem.Instance != null &&
-                        InventorySystem.Instance.SelectedTower != null;
-        foreach (var slot in _slots)
-            if (slot.button != null)
-                slot.button.interactable = hasTower;
-    }
+    private void OnTowerSelected(Tower _) => Refresh();
 
     private void Refresh()
     {
