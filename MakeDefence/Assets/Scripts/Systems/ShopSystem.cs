@@ -49,4 +49,17 @@ public class ShopSystem : MonoBehaviour
         OnInventoryChanged?.Invoke();
         return true;
     }
+
+    public void ReturnSkill(SkillData skill)
+    {
+        if (skill == null) return;
+        _ownedSkills.Add(skill);
+        OnInventoryChanged?.Invoke();
+    }
+
+    public void RemoveOwnedSkill(SkillData skill)
+    {
+        if (_ownedSkills.Remove(skill))
+            OnInventoryChanged?.Invoke();
+    }
 }
