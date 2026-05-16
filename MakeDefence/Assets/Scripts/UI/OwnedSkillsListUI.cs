@@ -12,6 +12,10 @@ public class OwnedSkillsListUI : MonoBehaviour
 
     private void OnEnable()
     {
+        if (slotPrefab == null)
+            Debug.LogError("[OwnedSkillsListUI] slotPrefab이 null — Inspector에서 OwnedSkillSlot 프리팹을 연결하세요");
+        if (container == null)
+            Debug.LogError("[OwnedSkillsListUI] container가 null — Inspector에서 부모 Transform을 연결하세요");
         ShopSystem.OnInventoryChanged += Refresh;
         Refresh();
     }
@@ -23,11 +27,19 @@ public class OwnedSkillsListUI : MonoBehaviour
 
     private void Refresh()
     {
+        if (container == null || slotPrefab == null) return;
+
         foreach (Transform child in container)
             Destroy(child.gameObject);
 
-        if (ShopSystem.Instance == null) return;
+        if (ShopSystem.Instance == null)
+        {
+            Debug.LogWarning("[OwnedSkillsListUI] Refresh — ShopSystem.Instance가 null");
+            return;
+        }
 
+        int count = ShopSystem.Instance.OwnedSkills.Count;
+        Debug.Log($"[OwnedSkillsListUI] Refresh — 보유 스킬 {count}개 슬롯 생성");
         foreach (var skill in ShopSystem.Instance.OwnedSkills)
         {
             var slot = Instantiate(slotPrefab, container);

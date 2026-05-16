@@ -21,13 +21,17 @@ public class OwnedSkillSlotUI : MonoBehaviour
 
         if (equipButton != null)
             equipButton.onClick.AddListener(OnEquipClicked);
+        else
+            Debug.LogError($"[OwnedSkillSlotUI] equipButton을 찾지 못함 ({gameObject.name})");
     }
 
     public void Setup(SkillData skill)
     {
         _skillData = skill;
+        Debug.Log($"[OwnedSkillSlotUI] Setup — {skill?.skillType.ToString() ?? "null"}");
 
         if (iconImage != null) iconImage.sprite = skill.icon;
+        else Debug.LogWarning($"[OwnedSkillSlotUI] iconImage가 null ({gameObject.name})");
 
         if (nameText != null)
             nameText.text = string.IsNullOrEmpty(skill.displayName)
