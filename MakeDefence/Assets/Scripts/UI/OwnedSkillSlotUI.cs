@@ -14,6 +14,12 @@ public class OwnedSkillSlotUI : MonoBehaviour
 
     private SkillData _skillData;
 
+    private void Awake()
+    {
+        if (equipButton != null)
+            equipButton.onClick.AddListener(OnEquipClicked);
+    }
+
     public void Setup(SkillData skill)
     {
         _skillData = skill;
