@@ -16,6 +16,9 @@ public class OwnedSkillSlotUI : MonoBehaviour
 
     private void Awake()
     {
+        if (equipButton == null)
+            equipButton = GetComponentInChildren<Button>();
+
         if (equipButton != null)
             equipButton.onClick.AddListener(OnEquipClicked);
     }
