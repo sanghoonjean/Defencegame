@@ -20,10 +20,18 @@ public class InvenUI : MonoBehaviour
             if (icon == null) continue;
             var img = icon.GetComponent<Image>();
             if (img == null) continue;
+            var btn = slot.GetComponent<Button>();
+            if (btn != null)
+            {
+                // 슬롯 루트 배경 Image를 투명하게, ICON을 Target Graphic으로 설정
+                var bgImage = slot.GetComponent<Image>();
+                if (bgImage != null) bgImage.color = Color.clear;
+                btn.targetGraphic = img;
+            }
             list.Add(new SlotRef
             {
                 image  = img,
-                button = slot.GetComponent<Button>()
+                button = btn
             });
         }
         _slots = list.ToArray();
