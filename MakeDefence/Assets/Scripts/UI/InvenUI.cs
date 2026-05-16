@@ -20,6 +20,12 @@ public class InvenUI : MonoBehaviour
             if (icon == null) continue;
             var img = icon.GetComponent<Image>();
             if (img == null) continue;
+            // 텍스트 오브젝트 숨기기
+            var nameObj = slot.Find("Name");
+            if (nameObj != null) nameObj.gameObject.SetActive(false);
+            var textObj = slot.Find("Text (TMP)");
+            if (textObj != null) textObj.gameObject.SetActive(false);
+
             var btn = slot.GetComponent<Button>();
             if (btn != null)
             {
