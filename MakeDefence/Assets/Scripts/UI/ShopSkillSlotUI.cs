@@ -20,6 +20,8 @@ public class ShopSkillSlotUI : MonoBehaviour
 
         if (buyButton != null)
             buyButton.onClick.AddListener(OnBuyClicked);
+        else
+            Debug.LogError($"[ShopSkillSlotUI] buyButton을 찾지 못함 — 자식 Button 컴포넌트를 확인하세요 ({gameObject.name})");
     }
 
     private void OnEnable()
@@ -66,8 +68,10 @@ public class ShopSkillSlotUI : MonoBehaviour
 
     public void OnBuyClicked()
     {
+        Debug.Log($"[ShopSkillSlotUI] OnBuyClicked — skillData={skillData?.skillType.ToString() ?? "null"}, ShopSystem={ShopSystem.Instance != null}");
         if (ShopSystem.Instance == null || skillData == null) return;
-        ShopSystem.Instance.BuySkill(skillData);
+        bool result = ShopSystem.Instance.BuySkill(skillData);
+        Debug.Log($"[ShopSkillSlotUI] BuySkill 결과: {result}");
         RefreshBuyButton();
     }
 }

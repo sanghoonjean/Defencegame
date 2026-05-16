@@ -838,6 +838,8 @@ GameObject:
   - component: {fileID: 50365511}
   - component: {fileID: 50365513}
   - component: {fileID: 50365512}
+  - component: {fileID: 50365514}
+  - component: {fileID: 50365515}
   m_Layer: 5
   m_Name: Unit_L_Panel
   m_TagString: Untagged
@@ -902,6 +904,46 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 50365510}
   m_CullTransparentMesh: 1
+--- !u!114 &50365514
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 50365510}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 520f3580c97c4ddc9c0d30f4a04d3535, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  slotPrefab: {fileID: 6666666666666666, guid: c537383d9d9d4c3eb8643cfc87da73e0, type: 3}
+  container: {fileID: 50365511}
+--- !u!114 &50365515
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 50365510}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59f8146938fff824cb5fd6c3d04f0e6b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Padding:
+    m_Left: 4
+    m_Right: 4
+    m_Top: 4
+    m_Bottom: 4
+  m_ChildAlignment: 3
+  m_Spacing: 8
+  m_ReverseArrangement: 0
+  m_ChildControlWidth: 0
+  m_ChildControlHeight: 0
+  m_ChildScaleWidth: 0
+  m_ChildScaleHeight: 0
+  m_ChildForceExpandWidth: 0
+  m_ChildForceExpandHeight: 0
 --- !u!1 &63186670
 GameObject:
   m_ObjectHideFlags: 0
@@ -8635,7 +8677,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 605394e189309064caaaee5bae60e574, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  availableSkills: []
+  availableSkills:
+  - {fileID: 11400000, guid: 4d99099158369eb43b653fc21fd76201, type: 2}
+  - {fileID: 11400000, guid: 52e03e35f7a3284439ec10cc46d72fd1, type: 2}
+  - {fileID: 11400000, guid: 953407e10a8f9304585520364663d6a3, type: 2}
+  - {fileID: 11400000, guid: 537a5be41b97e3243be832d4ef449ac3, type: 2}
+  - {fileID: 11400000, guid: b22ad9bcd96634c43abc3702d1cf853c, type: 2}
   availableSupports: []
 --- !u!1 &723370574
 GameObject:

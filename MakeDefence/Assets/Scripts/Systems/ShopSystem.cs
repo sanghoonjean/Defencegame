@@ -22,9 +22,20 @@ public class ShopSystem : MonoBehaviour
 
     public bool BuySkill(SkillData skill)
     {
-        if (!availableSkills.Contains(skill))       return false;
-        if (!CubeSystem.Instance.TryConsume(CubeType.Lower, 1)) return false;
+        Debug.Log($"[ShopSystem] BuySkill 시도 — skill={skill?.skillType.ToString() ?? "null"}, availableSkills={availableSkills.Count}개");
+        if (!availableSkills.Contains(skill))
+        {
+            Debug.LogWarning($"[ShopSystem] BuySkill 실패 — availableSkills에 {skill?.skillType} 없음");
+            return false;
+        }
+        int lowerCount = CubeSystem.Instance != null ? CubeSystem.Instance.GetCount(CubeType.Lower) : -1;
+        if (!CubeSystem.Instance.TryConsume(CubeType.Lower, 1))
+        {
+            Debug.LogWarning($"[ShopSystem] BuySkill 실패 — Lower 큐브 부족 (현재 {lowerCount}개)");
+            return false;
+        }
         _ownedSkills.Add(skill);
+        Debug.Log($"[ShopSystem] BuySkill 성공 — {skill.skillType} 구매, 보유 스킬 총 {_ownedSkills.Count}개");
         OnInventoryChanged?.Invoke();
         return true;
     }
