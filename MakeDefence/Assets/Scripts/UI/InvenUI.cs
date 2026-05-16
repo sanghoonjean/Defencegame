@@ -5,8 +5,9 @@ public class InvenUI : MonoBehaviour
 {
     private struct SlotRef
     {
-        public Image  image;
-        public Button button;
+        public Image               image;
+        public Button              button;
+        public InvenSlotDragHandler drag;
     }
 
     private SlotRef[] _slots;
@@ -20,23 +21,23 @@ public class InvenUI : MonoBehaviour
             if (icon == null) continue;
             var img = icon.GetComponent<Image>();
             if (img == null) continue;
-            // 슬롯 내 모든 TMP 텍스트 숨기기
+
             foreach (var tmp in slot.GetComponentsInChildren<TMPro.TMP_Text>(true))
                 tmp.gameObject.SetActive(false);
 
             var btn = slot.GetComponent<Button>();
             if (btn != null)
             {
-                // 슬롯 루트 배경 Image를 투명하게, ICON을 Target Graphic으로 설정
                 var bgImage = slot.GetComponent<Image>();
                 if (bgImage != null) bgImage.color = Color.clear;
                 btn.targetGraphic = img;
             }
-            list.Add(new SlotRef
-            {
-                image  = img,
-                button = btn
-            });
+
+            var drag = slot.gameObject.GetComponent<InvenSlotDragHandler>()
+                    ?? slot.gameObject.AddComponent<InvenSlotDragHandler>();
+            drag.Init(img);
+
+            list.Add(new SlotRef { image = img, button = btn, drag = drag });
         }
         _slots = list.ToArray();
     }
@@ -58,17 +59,19 @@ public class InvenUI : MonoBehaviour
         for (int i = 0; i < _slots.Length; i++)
         {
             bool hasSkill = owned != null && i < owned.Count;
+            var  skill    = hasSkill ? owned[i] : null;
 
-            _slots[i].image.sprite = hasSkill ? owned[i].icon : null;
+            _slots[i].image.sprite = hasSkill ? skill.icon : null;
             _slots[i].image.color  = hasSkill ? Color.white : Color.clear;
+            _slots[i].drag.Skill   = skill;
 
             if (_slots[i].button == null) continue;
             _slots[i].button.onClick.RemoveAllListeners();
             if (hasSkill)
             {
-                var skill = owned[i];
+                var s = skill;
                 _slots[i].button.onClick.AddListener(
-                    () => InventorySystem.Instance?.EquipSkill(skill));
+                    () => InventorySystem.Instance?.EquipSkill(s));
             }
         }
     }
