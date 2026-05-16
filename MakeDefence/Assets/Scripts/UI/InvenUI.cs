@@ -70,8 +70,15 @@ public class InvenUI : MonoBehaviour
             if (hasSkill)
             {
                 var s = skill;
-                _slots[i].button.onClick.AddListener(
-                    () => InventorySystem.Instance?.EquipSkill(s));
+                _slots[i].button.onClick.AddListener(() =>
+                {
+                    if (InventorySystem.Instance?.SelectedTower == null) return;
+                    var tower = InventorySystem.Instance.SelectedTower;
+                    if (tower.EquippedSkill != null)
+                        ShopSystem.Instance?.ReturnSkill(tower.EquippedSkill);
+                    ShopSystem.Instance?.RemoveOwnedSkill(s);
+                    InventorySystem.Instance.EquipSkill(s);
+                });
             }
         }
     }
