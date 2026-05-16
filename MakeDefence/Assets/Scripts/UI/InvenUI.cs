@@ -17,10 +17,10 @@ public class InvenUI : MonoBehaviour
         Debug.Log($"[InvenUI] Awake — 자식 수: {transform.childCount}");
         foreach (Transform slot in transform)
         {
-            var itemImage = slot.Find("ItemImage");
+            var itemImage = slot.Find("ICON");
             if (itemImage == null)
             {
-                Debug.LogWarning($"[InvenUI] '{slot.name}' — ItemImage 자식 없음");
+                Debug.LogWarning($"[InvenUI] '{slot.name}' — ICON 자식 없음");
                 continue;
             }
             var img = itemImage.GetComponent<Image>();
