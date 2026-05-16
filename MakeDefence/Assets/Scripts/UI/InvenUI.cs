@@ -3,21 +3,30 @@ using UnityEngine.UI;
 
 public class InvenUI : MonoBehaviour
 {
-    private Image[] _slotImages;
+    private struct SlotRef
+    {
+        public Image  image;
+        public Button button;
+    }
+
+    private SlotRef[] _slots;
 
     private void Awake()
     {
-        var slots = new System.Collections.Generic.List<Image>();
+        var list = new System.Collections.Generic.List<SlotRef>();
         foreach (Transform slot in transform)
         {
             var itemImage = slot.Find("ItemImage");
-            if (itemImage != null)
+            if (itemImage == null) continue;
+            var img = itemImage.GetComponent<Image>();
+            if (img == null) continue;
+            list.Add(new SlotRef
             {
-                var img = itemImage.GetComponent<Image>();
-                if (img != null) slots.Add(img);
-            }
+                image  = img,
+                button = slot.GetComponent<Button>()
+            });
         }
-        _slotImages = slots.ToArray();
+        _slots = list.ToArray();
     }
 
     private void OnEnable()
@@ -34,11 +43,21 @@ public class InvenUI : MonoBehaviour
     private void Refresh()
     {
         var owned = ShopSystem.Instance?.OwnedSkills;
-        for (int i = 0; i < _slotImages.Length; i++)
+        for (int i = 0; i < _slots.Length; i++)
         {
             bool hasSkill = owned != null && i < owned.Count;
-            _slotImages[i].sprite = hasSkill ? owned[i].icon : null;
-            _slotImages[i].color  = hasSkill ? Color.white : Color.clear;
+
+            _slots[i].image.sprite = hasSkill ? owned[i].icon : null;
+            _slots[i].image.color  = hasSkill ? Color.white : Color.clear;
+
+            if (_slots[i].button == null) continue;
+            _slots[i].button.onClick.RemoveAllListeners();
+            if (hasSkill)
+            {
+                var skill = owned[i];
+                _slots[i].button.onClick.AddListener(
+                    () => InventorySystem.Instance?.EquipSkill(skill));
+            }
         }
     }
 }
