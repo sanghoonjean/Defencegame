@@ -15,6 +15,7 @@ public class InvenUI : MonoBehaviour
     private void Awake()
     {
         var list = new System.Collections.Generic.List<SlotRef>();
+        Debug.Log($"[InvenUI] Awake — 자식 수: {transform.childCount}");
         foreach (Transform slot in transform)
         {
             var icon = slot.Find("ICON");
@@ -40,10 +41,12 @@ public class InvenUI : MonoBehaviour
             list.Add(new SlotRef { image = img, button = btn, drag = drag });
         }
         _slots = list.ToArray();
+        Debug.Log($"[InvenUI] Awake 완료 — 등록된 슬롯 수: {_slots.Length}");
     }
 
     private void OnEnable()
     {
+        Debug.Log($"[InvenUI] OnEnable — ShopSystem={ShopSystem.Instance != null}");
         ShopSystem.OnInventoryChanged += Refresh;
         Refresh();
     }
@@ -56,6 +59,7 @@ public class InvenUI : MonoBehaviour
     private void Refresh()
     {
         var owned = ShopSystem.Instance?.OwnedSkills;
+        Debug.Log($"[InvenUI] Refresh — 슬롯 수: {_slots.Length}, 보유 스킬 수: {owned?.Count ?? -1}");
         for (int i = 0; i < _slots.Length; i++)
         {
             bool hasSkill = owned != null && i < owned.Count;
@@ -64,6 +68,9 @@ public class InvenUI : MonoBehaviour
             _slots[i].image.sprite = hasSkill ? skill.icon : null;
             _slots[i].image.color  = hasSkill ? Color.white : Color.clear;
             _slots[i].drag.Skill   = skill;
+
+            if (hasSkill)
+                Debug.Log($"[InvenUI] 슬롯[{i}] — sprite={owned[i].icon?.name ?? "null"}, skillType={owned[i].skillType}");
 
             if (_slots[i].button == null) continue;
             _slots[i].button.onClick.RemoveAllListeners();
