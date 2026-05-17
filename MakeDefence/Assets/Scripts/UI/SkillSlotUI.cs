@@ -70,6 +70,7 @@ public class SkillSlotUI : MonoBehaviour, IDropHandler
         {
             iconImage.gameObject.SetActive(hasSkill);
             iconImage.sprite = hasSkill ? skill.icon : null;
+            iconImage.color  = Color.white;
         }
 
         if (skillNameText != null)
