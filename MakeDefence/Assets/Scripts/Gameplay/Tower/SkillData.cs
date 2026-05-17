@@ -28,4 +28,7 @@ public class SkillData : ScriptableObject
     public float     baseStunChance;   // FreezingPulse 기본 스턴 확률 (0~100)
     public float     stunDuration;     // FreezingPulse 스턴 지속시간
     public float     dotDuration;      // Nanobot 전용
+
+    [Header("Support Restrictions")]
+    public bool isDoTOnly;             // true → Added Fire Damage 미적용 (CausticArrow)
 }

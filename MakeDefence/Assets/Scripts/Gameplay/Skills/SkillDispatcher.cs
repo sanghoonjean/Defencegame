@@ -41,6 +41,7 @@ public static class SkillDispatcher
         if (isCrit) dmg *= 1f + tower.CritDamage / 100f;
 
         target.TakeDamage(dmg, tower.ArmorPen / 100f, isCrit);
+        ApplyFireDamage(tower, target, isCrit);
 
         if (tower.StunChance > 0f && Random.value < Mathf.Clamp01(tower.StunChance / 100f))
             target.ApplyStun(0.5f);
@@ -59,6 +60,7 @@ public static class SkillDispatcher
         proj.StunChance      = tower.StunChance;
         proj.SplashRadius    = skill.aoeRadius;
         proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
+        ApplyFireDamage(tower, target, false);
     }
 
     private static void LaunchFreezingPulse(Tower tower, Enemy target)
@@ -77,6 +79,7 @@ public static class SkillDispatcher
         proj.CritDamage     = tower.CritDamage;
         proj.SplashRadius   = skill.aoeRadius;
         proj.LaunchFrom(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
+        ApplyFireDamage(tower, target, false);
     }
 
     private static void LaunchLightningArrow(Tower tower, Enemy target)
@@ -93,6 +96,7 @@ public static class SkillDispatcher
         proj.CritDamage    = tower.CritDamage;
         proj.StunChance    = 0f;
         proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
+        ApplyFireDamage(tower, target, false);
     }
 
     private static void LaunchCausticArrow(Tower tower, Enemy target)
@@ -127,5 +131,16 @@ public static class SkillDispatcher
         proj.SplashStunDuration = skill.stunDuration > 0f ? skill.stunDuration : 0.5f;
         proj.IsCrit             = isCrit;
         proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
+        ApplyFireDamage(tower, target, isCrit);
+    }
+
+    private static void ApplyFireDamage(Tower tower, Enemy target, bool isCrit)
+    {
+        if (tower.AddedFireRatio <= 0f) return;
+        var skill = tower.EquippedSkill;
+        if (skill != null && skill.isDoTOnly) return;
+
+        float fireDmg = tower.AttackDamage * tower.AddedFireRatio;
+        target.TakeDamage(fireDmg, 0f, isCrit, DamageType.Fire);
     }
 }
