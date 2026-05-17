@@ -139,7 +139,7 @@ public static class SkillDispatcher
         if (tower.AddedFireRatio <= 0f) return;
         if (target.CurrentHp <= 0f) return;
         var skill = tower.EquippedSkill;
-        if (skill != null && skill.isDoTOnly) return;
+        if (skill != null && (skill.isDoTOnly || skill.skillType == SkillType.CausticArrow)) return;
 
         float fireDmg = tower.AttackDamage * tower.AddedFireRatio;
         target.TakeDamage(fireDmg, 0f, isCrit, DamageType.Fire);
