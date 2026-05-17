@@ -36,6 +36,14 @@ public class InventorySystem : MonoBehaviour
         return true;
     }
 
+    public bool UnequipSkill()
+    {
+        if (SelectedTower == null) return false;
+        SelectedTower.UnequipSkill();
+        OnTowerSelected?.Invoke(SelectedTower);
+        return true;
+    }
+
     // --- 보조 옵션 ---
     public bool UnlockSupportSlot()
     {
