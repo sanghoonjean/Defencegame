@@ -7,7 +7,7 @@
 SupportSlotUI → InventorySystem.SetSupportOption(slot, IncendiaryRound 에셋)
   → Tower.SetSupportOption() → RefreshStats()
       → AccumulateSupportOption(IncendiaryRound)
-          → Tower.AddedFireRatio = option.value (e.g. 0.30)
+          → Tower.AddedFireRatio += option.value (e.g. 0.30씩 누적)
 
 [전투 흐름]
 Tower.Attack() → SkillDispatcher.Execute()
