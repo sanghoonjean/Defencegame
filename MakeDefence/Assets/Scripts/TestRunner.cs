@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -6,22 +7,7 @@ public class TestRunner : MonoBehaviour
 {
     private void Update()
     {
-        // 마우스 좌클릭: 타워 선택 (UI 위 클릭 시 제외)
-        bool overUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
-        if (Input.GetMouseButtonDown(0) && !overUI)
-        {
-            Vector3 worldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-            var hit = Physics2D.OverlapPoint(new Vector2(worldPos.x, worldPos.y));
-            if (hit != null)
-            {
-                var tower = hit.GetComponent<Tower>();
-                if (tower != null && InventorySystem.Instance != null)
-                {
-                    InventorySystem.Instance.SelectTower(tower);
-                    Debug.Log($"[TestRunner] 타워 선택: {tower.TileCoord}");
-                }
-            }
-        }
+        HandleClick();
 
         // Space: 웨이브 시작
         if (Input.GetKeyDown(KeyCode.Space))
@@ -66,6 +52,53 @@ public class TestRunner : MonoBehaviour
             if (PlayerSystem.Instance != null) PlayerSystem.Instance.ResetHp();
             GameStateSystem.ResetToPlaying();
         }
+    }
+
+    private void HandleClick()
+    {
+        if (!Input.GetMouseButtonDown(0)) return;
+        if (EventSystem.current == null) return;
+
+        bool overUI = EventSystem.current.IsPointerOverGameObject();
+        if (overUI)
+        {
+            // Inventory/Shop 패널 위 클릭이면 선택 유지
+            if (IsOverKeepSelectionUI()) return;
+            InventorySystem.Instance?.Deselect();
+            return;
+        }
+
+        Vector3 worldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+        var hit = Physics2D.OverlapPoint(new Vector2(worldPos.x, worldPos.y));
+        if (hit != null)
+        {
+            var tower = hit.GetComponent<Tower>();
+            if (tower != null && InventorySystem.Instance != null)
+            {
+                InventorySystem.Instance.SelectTower(tower);
+                Debug.Log($"[TestRunner] 타워 선택: {tower.TileCoord}");
+                return;
+            }
+        }
+
+        InventorySystem.Instance?.Deselect();
+    }
+
+    private static bool IsOverKeepSelectionUI()
+    {
+        var results = new List<RaycastResult>();
+        var pointerData = new PointerEventData(EventSystem.current)
+        {
+            position = Input.mousePosition
+        };
+        EventSystem.current.RaycastAll(pointerData, results);
+
+        foreach (var result in results)
+        {
+            if (result.gameObject.GetComponentInParent<KeepSelectionUI>() != null)
+                return true;
+        }
+        return false;
     }
 
     private void OnGUI()
