@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
@@ -59,13 +58,7 @@ public class TestRunner : MonoBehaviour
         if (!Input.GetMouseButtonDown(0)) return;
 
         bool overUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
-        if (overUI)
-        {
-            // Inventory/Shop 패널 위 클릭이면 선택 유지
-            if (IsOverKeepSelectionUI()) return;
-            InventorySystem.Instance?.Deselect();
-            return;
-        }
+        if (overUI) return;
 
         Vector3 worldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         var hit = Physics2D.OverlapPoint(new Vector2(worldPos.x, worldPos.y));
@@ -81,23 +74,6 @@ public class TestRunner : MonoBehaviour
         }
 
         InventorySystem.Instance?.Deselect();
-    }
-
-    private static bool IsOverKeepSelectionUI()
-    {
-        var results = new List<RaycastResult>();
-        var pointerData = new PointerEventData(EventSystem.current)
-        {
-            position = Input.mousePosition
-        };
-        EventSystem.current.RaycastAll(pointerData, results);
-
-        foreach (var result in results)
-        {
-            if (result.gameObject.GetComponentInParent<KeepSelectionUI>() != null)
-                return true;
-        }
-        return false;
     }
 
     private void OnGUI()
