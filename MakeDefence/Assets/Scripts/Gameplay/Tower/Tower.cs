@@ -33,6 +33,7 @@ public class Tower : MonoBehaviour
     public float ArmorPen       { get; private set; }
     public float SkillCDReduce  { get; private set; }
     public float CubeDropRate   { get; private set; }
+    public float AddedFireRatio { get; private set; }
 
     private float _attackTimer;
 
@@ -92,6 +93,7 @@ public class Tower : MonoBehaviour
         ArmorPen      = 0f;
         SkillCDReduce = 0f;
         CubeDropRate  = 0f;
+        AddedFireRatio = 0f;
 
         // 아이템 옵션 합산
         if (ItemSystem.Instance != null)
@@ -106,6 +108,14 @@ public class Tower : MonoBehaviour
             }
         }
 
+        // 보조 옵션 합산
+        for (int i = 0; i < _unlockedSupportSlots; i++)
+        {
+            var opt = _supportSlots[i];
+            if (opt == null) continue;
+            AccumulateSupportOption(opt);
+        }
+
         AttackDamage   = baseAttackDamage   * (1f + dmgPct   / 100f);
         AttackCooldown = baseAttackCooldown * (1f - spdPct   / 100f);
         AttackRange    = baseAttackRange    * (1f + rangePct / 100f);
@@ -118,6 +128,14 @@ public class Tower : MonoBehaviour
             float cdMult = 1f - Mathf.Clamp01(SkillCDReduce / 100f);
             AttackCooldown = EquippedSkill.baseCooldown * cdMult;
             AttackRange    = EquippedSkill.baseRange;
+        }
+    }
+
+    private void AccumulateSupportOption(SupportOptionData opt)
+    {
+        switch (opt.optionType)
+        {
+            case SupportOptionType.IncendiaryRound: AddedFireRatio += opt.value; break;
         }
     }
 
