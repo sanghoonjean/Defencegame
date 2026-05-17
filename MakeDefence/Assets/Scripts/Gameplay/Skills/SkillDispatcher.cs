@@ -137,6 +137,7 @@ public static class SkillDispatcher
     private static void ApplyFireDamage(Tower tower, Enemy target, bool isCrit)
     {
         if (tower.AddedFireRatio <= 0f) return;
+        if (target.CurrentHp <= 0f) return;
         var skill = tower.EquippedSkill;
         if (skill != null && skill.isDoTOnly) return;
 
