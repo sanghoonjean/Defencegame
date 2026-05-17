@@ -57,9 +57,8 @@ public class TestRunner : MonoBehaviour
     private void HandleClick()
     {
         if (!Input.GetMouseButtonDown(0)) return;
-        if (EventSystem.current == null) return;
 
-        bool overUI = EventSystem.current.IsPointerOverGameObject();
+        bool overUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
         if (overUI)
         {
             // Inventory/Shop 패널 위 클릭이면 선택 유지
