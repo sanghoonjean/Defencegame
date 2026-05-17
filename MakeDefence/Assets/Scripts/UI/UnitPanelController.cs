@@ -2,10 +2,13 @@ using UnityEngine;
 
 public class UnitPanelController : MonoBehaviour
 {
+    [SerializeField] private GameObject panel;
+
     private void OnEnable()
     {
         InventorySystem.OnTowerSelected += OnTowerSelected;
-        gameObject.SetActive(InventorySystem.Instance?.SelectedTower != null);
+        if (panel != null)
+            panel.SetActive(InventorySystem.Instance?.SelectedTower != null);
     }
 
     private void OnDisable()
@@ -15,6 +18,7 @@ public class UnitPanelController : MonoBehaviour
 
     private void OnTowerSelected(Tower tower)
     {
-        gameObject.SetActive(tower != null);
+        if (panel != null)
+            panel.SetActive(tower != null);
     }
 }
