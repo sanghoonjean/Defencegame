@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class UnitPanelController : MonoBehaviour
 {
-    [SerializeField] private GameObject panel;
+    [SerializeField] private CanvasGroup canvasGroup;
 
     private void OnEnable()
     {
@@ -16,7 +16,10 @@ public class UnitPanelController : MonoBehaviour
 
     private void OnTowerSelected(Tower tower)
     {
-        if (panel != null)
-            panel.SetActive(tower != null);
+        if (canvasGroup == null) return;
+        bool show = tower != null;
+        canvasGroup.alpha          = show ? 1f : 0f;
+        canvasGroup.blocksRaycasts = show;
+        canvasGroup.interactable   = show;
     }
 }
