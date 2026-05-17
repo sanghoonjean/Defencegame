@@ -60,6 +60,12 @@ public class Tower : MonoBehaviour
         RefreshStats();
     }
 
+    public void UnequipSkill()
+    {
+        EquippedSkill = null;
+        RefreshStats();
+    }
+
     public bool UnlockSupportSlot()
     {
         if (_unlockedSupportSlots >= 3) return false;

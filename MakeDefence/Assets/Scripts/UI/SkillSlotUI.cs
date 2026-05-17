@@ -14,6 +14,15 @@ public class SkillSlotUI : MonoBehaviour, IDropHandler
     [SerializeField] private Text       skillNameText;
     [SerializeField] private GameObject emptyLabel;
 
+    private SkillSlotDragHandler _dragHandler;
+
+    private void Awake()
+    {
+        _dragHandler = gameObject.GetComponent<SkillSlotDragHandler>()
+                    ?? gameObject.AddComponent<SkillSlotDragHandler>();
+        _dragHandler.Init(iconImage);
+    }
+
     private void OnEnable()
     {
         InventorySystem.OnTowerSelected += Refresh;
