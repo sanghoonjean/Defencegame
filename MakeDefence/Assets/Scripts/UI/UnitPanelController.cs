@@ -7,6 +7,7 @@ public class UnitPanelController : MonoBehaviour
     private void OnEnable()
     {
         InventorySystem.OnTowerSelected += OnTowerSelected;
+        OnTowerSelected(InventorySystem.Instance?.SelectedTower);
     }
 
     private void OnDisable()
