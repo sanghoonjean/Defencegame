@@ -1,12 +1,8 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-/// <summary>
-/// 보조 옵션 슬롯 1칸에 부착.
-/// slotIndex (0~2)를 Inspector에서 지정하고
-/// InventorySystem.OnTowerSelected 이벤트로 갱신된다.
-/// </summary>
-public class SupportSlotUI : MonoBehaviour
+public class SupportSlotUI : MonoBehaviour, IDropHandler
 {
     [SerializeField] private int       slotIndex;
     [SerializeField] private Image     iconImage;
@@ -23,6 +19,23 @@ public class SupportSlotUI : MonoBehaviour
     private void OnDisable()
     {
         InventorySystem.OnTowerSelected -= Refresh;
+    }
+
+    public void OnDrop(PointerEventData eventData)
+    {
+        var drag = eventData.pointerDrag?.GetComponent<InvenSupportSlotDragHandler>();
+        if (drag == null || drag.Option == null) return;
+
+        var tower = InventorySystem.Instance?.SelectedTower;
+        if (tower == null) return;
+        if (slotIndex >= tower.UnlockedSupportSlots) return;
+
+        var existing = tower.SupportOptions[slotIndex];
+        if (existing != null)
+            ShopSystem.Instance?.ReturnSupportOption(existing);
+
+        ShopSystem.Instance?.RemoveOwnedSupportOption(drag.Option);
+        InventorySystem.Instance.SetSupportOption(slotIndex, drag.Option);
     }
 
     private void Refresh(Tower tower)

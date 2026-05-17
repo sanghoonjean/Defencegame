@@ -24,15 +24,23 @@ public class Tower : MonoBehaviour
     public IReadOnlyList<SupportOptionData> SupportOptions => _supportSlots;
 
     // 최종 계산 스탯
-    public float AttackDamage   { get; private set; }
-    public float AttackCooldown { get; private set; }
-    public float AttackRange    { get; private set; }
-    public float StunChance     { get; private set; }
-    public float CritChance     { get; private set; }
-    public float CritDamage     { get; private set; }
-    public float ArmorPen       { get; private set; }
-    public float SkillCDReduce  { get; private set; }
-    public float CubeDropRate   { get; private set; }
+    public float AttackDamage    { get; private set; }
+    public float AttackCooldown  { get; private set; }
+    public float AttackRange     { get; private set; }
+    public float StunChance      { get; private set; }
+    public float CritChance      { get; private set; }
+    public float CritDamage      { get; private set; }
+    public float ArmorPen        { get; private set; }
+    public float SkillCDReduce   { get; private set; }
+    public float CubeDropRate    { get; private set; }
+    public float ThresholdDmg    { get; private set; }
+
+    // 특수 효과 플래그 (2차 구현에서 전투 로직 연결)
+    public bool HasMultiProjectile { get; private set; }
+    public bool HasPiercing        { get; private set; }
+    public bool HasChain           { get; private set; }
+    public bool HasIncendiary      { get; private set; }
+    public bool HasEnergyDrain     { get; private set; }
 
     private float _attackTimer;
 
@@ -86,12 +94,18 @@ public class Tower : MonoBehaviour
     public void RefreshStats()
     {
         float dmgPct   = 0f, spdPct = 0f, rangePct = 0f;
-        StunChance    = 0f;
-        CritChance    = 0f;
-        CritDamage    = 0f;
-        ArmorPen      = 0f;
-        SkillCDReduce = 0f;
-        CubeDropRate  = 0f;
+        StunChance         = 0f;
+        CritChance         = 0f;
+        CritDamage         = 0f;
+        ArmorPen           = 0f;
+        SkillCDReduce      = 0f;
+        CubeDropRate       = 0f;
+        ThresholdDmg       = 0f;
+        HasMultiProjectile = false;
+        HasPiercing        = false;
+        HasChain           = false;
+        HasIncendiary      = false;
+        HasEnergyDrain     = false;
 
         // 아이템 옵션 합산
         if (ItemSystem.Instance != null)
@@ -106,6 +120,14 @@ public class Tower : MonoBehaviour
             }
         }
 
+        // 보조 옵션 합산
+        for (int i = 0; i < _unlockedSupportSlots; i++)
+        {
+            var opt = _supportSlots[i];
+            if (opt == null) continue;
+            AccumulateSupportOption(opt, ref dmgPct, ref spdPct, ref rangePct);
+        }
+
         AttackDamage   = baseAttackDamage   * (1f + dmgPct   / 100f);
         AttackCooldown = baseAttackCooldown * (1f - spdPct   / 100f);
         AttackRange    = baseAttackRange    * (1f + rangePct / 100f);
@@ -118,6 +140,27 @@ public class Tower : MonoBehaviour
             float cdMult = 1f - Mathf.Clamp01(SkillCDReduce / 100f);
             AttackCooldown = EquippedSkill.baseCooldown * cdMult;
             AttackRange    = EquippedSkill.baseRange;
+        }
+    }
+
+    private void AccumulateSupportOption(SupportOptionData opt,
+        ref float dmgPct, ref float spdPct, ref float rangePct)
+    {
+        switch (opt.optionType)
+        {
+            case SupportOptionType.OverloadModule:    dmgPct        += opt.value; break;
+            case SupportOptionType.AccelChip:         spdPct        += opt.value; break;
+            case SupportOptionType.AoeAmplifier:      rangePct      += opt.value; break;
+            case SupportOptionType.CritAmplifier:     CritChance    += opt.value; CritDamage += opt.value; break;
+            case SupportOptionType.EmpAmplifier:      StunChance    += opt.value; break;
+            case SupportOptionType.CorrosiveRound:    ArmorPen      += opt.value; break;
+            case SupportOptionType.CoolantDevice:     SkillCDReduce += opt.value; break;
+            case SupportOptionType.ThresholdCircuit:  ThresholdDmg  += opt.value; break;
+            case SupportOptionType.MultiProjectile:   HasMultiProjectile = true;  break;
+            case SupportOptionType.PiercingRound:     HasPiercing        = true;  break;
+            case SupportOptionType.ChainCircuit:      HasChain           = true;  break;
+            case SupportOptionType.IncendiaryRound:   HasIncendiary      = true;  break;
+            case SupportOptionType.EnergyDrain:       HasEnergyDrain     = true;  break;
         }
     }
 
