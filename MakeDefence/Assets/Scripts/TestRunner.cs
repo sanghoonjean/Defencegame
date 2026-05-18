@@ -4,8 +4,6 @@ using UnityEngine.EventSystems;
 // 개발 테스트용 — 빌드 전 삭제
 public class TestRunner : MonoBehaviour
 {
-    [SerializeField] private SupportOptionData testSupportOption;
-
     private void Update()
     {
         HandleClick();
@@ -33,23 +31,16 @@ public class TestRunner : MonoBehaviour
                 WaveSystem.Instance.StartWave();
         }
 
-        // F: 선택 타워에 테스트 보조 옵션 장착 (디버그)
-        if (Input.GetKeyDown(KeyCode.F))
-        {
-            var tower = InventorySystem.Instance?.SelectedTower;
-            if (tower == null) { Debug.LogError("[TestRunner] 타워를 먼저 선택하세요"); return; }
-            if (testSupportOption == null) { Debug.LogError("[TestRunner] TestRunner에 SupportOptionData 에셋을 연결하세요"); return; }
-            tower.UnlockSupportSlot();
-            bool ok = tower.SetSupportOption(0, testSupportOption);
-            Debug.Log($"[TestRunner] F키 — 보조 옵션 장착 {(ok ? "성공" : "실패")}: {testSupportOption.displayName}, AddedFireRatio={tower.AddedFireRatio}");
-        }
-
-        // C: Lower 큐브 10개 지급 (디버그)
+        // C: 모든 재화 10개 지급 (디버그)
         if (Input.GetKeyDown(KeyCode.C))
         {
             if (CubeSystem.Instance == null) { Debug.LogError("[TestRunner] CubeSystem.Instance is NULL"); return; }
-            CubeSystem.Instance.Add(CubeType.Lower, 10);
-            Debug.Log($"[TestRunner] C키 — Lower 큐브 +10 (현재: {CubeSystem.Instance.GetCount(CubeType.Lower)})");
+            CubeSystem.Instance.Add(CubeType.Lower,   10);
+            CubeSystem.Instance.Add(CubeType.Upper,   10);
+            CubeSystem.Instance.Add(CubeType.TopTier, 10);
+            CubeSystem.Instance.Add(CubeType.Delete,  10);
+            CubeSystem.Instance.Add(CubeType.Clone,   10);
+            Debug.Log("[TestRunner] C키 — 모든 재화 +10");
         }
 
         // R: 완전 리셋 (웨이브 중지 + 적 제거 + HP 초기화 + 상태 복귀)
@@ -101,10 +92,6 @@ public class TestRunner : MonoBehaviour
             ? $"{InventorySystem.Instance.SelectedTower.TileCoord}"
             : "없음";
         GUI.Label(new Rect(10, 110, 300, 25), $"선택 타워: {selected}");
-        string fireRatio = InventorySystem.Instance?.SelectedTower != null
-            ? $"{InventorySystem.Instance.SelectedTower.AddedFireRatio * 100f:F0}%"
-            : "-";
-        GUI.Label(new Rect(10, 135, 400, 25), $"화염 피해 비율: {fireRatio}");
-        GUI.Label(new Rect(10, 160, 400, 25), "[Space] 웨이브  [A] 자동  [C] 큐브+10  [R] 리셋  [F] 보조옵션장착");
+        GUI.Label(new Rect(10, 135, 400, 25), "[Space] 웨이브  [A] 자동  [C] 큐브+10  [R] 리셋");
     }
 }
