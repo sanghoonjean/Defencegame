@@ -15,6 +15,11 @@ public class CubeUIDisplay : MonoBehaviour
         RefreshAll();
     }
 
+    private void Start()
+    {
+        RefreshAll();
+    }
+
     private void OnDisable()
     {
         CubeSystem.OnCubeChanged -= OnCubeChanged;
