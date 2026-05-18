@@ -16,9 +16,9 @@ public class Tower : MonoBehaviour
     // 스킬 슬롯
     public SkillData EquippedSkill { get; private set; }
 
-    // 보조 옵션 슬롯 (최대 3개, 상위 큐브로 해금)
-    private static readonly int[] SupportSlotCost = { 5, 10, 15 };
-    private readonly SupportOptionData[] _supportSlots = new SupportOptionData[3];
+    // 보조 옵션 슬롯 (최대 5개, 상위 큐브로 해금)
+    private static readonly int[] SupportSlotCost = { 5, 10, 15, 20, 25 };
+    private readonly SupportOptionData[] _supportSlots = new SupportOptionData[5];
     private int _unlockedSupportSlots = 0;
     public int UnlockedSupportSlots => _unlockedSupportSlots;
     public IReadOnlyList<SupportOptionData> SupportOptions => _supportSlots;
@@ -69,7 +69,7 @@ public class Tower : MonoBehaviour
 
     public bool UnlockSupportSlot()
     {
-        if (_unlockedSupportSlots >= 3) return false;
+        if (_unlockedSupportSlots >= 5) return false;
         int cost = SupportSlotCost[_unlockedSupportSlots];
         if (!CubeSystem.Instance.TryConsume(CubeType.Upper, cost)) return false;
         _unlockedSupportSlots++;
