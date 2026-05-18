@@ -40,13 +40,12 @@ public class SupportSlotUI : MonoBehaviour, IPointerClickHandler, IDropHandler
     {
         if (_isLocked) return;
 
-        var drag = eventData.pointerDrag?.GetComponent<InvenSlotDragHandler>();
-        if (drag?.Skill != null) return;
-
         var supportDrag = eventData.pointerDrag?.GetComponent<SupportOptionDragHandler>();
         if (supportDrag == null || supportDrag.Option == null) return;
 
-        InventorySystem.Instance?.SetSupportOption(slotIndex, supportDrag.Option);
+        var option = supportDrag.Option;
+        ShopSystem.Instance?.RemoveOwnedSupportOption(option);
+        InventorySystem.Instance?.SetSupportOption(slotIndex, option);
     }
 
     private void Refresh(Tower tower)
