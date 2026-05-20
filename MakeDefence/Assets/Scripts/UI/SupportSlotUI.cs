@@ -30,6 +30,8 @@ public class SupportSlotUI : MonoBehaviour, IPointerClickHandler, IDropHandler
         var tower = InventorySystem.Instance?.SelectedTower;
         if (tower == null) return;
 
+        if (slotIndex != tower.UnlockedSupportSlots) return;
+
         int cost = tower.GetNextSupportSlotCost();
         if (cost < 0) return;
 
