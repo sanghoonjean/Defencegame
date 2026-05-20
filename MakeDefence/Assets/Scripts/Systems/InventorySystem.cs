@@ -53,6 +53,14 @@ public class InventorySystem : MonoBehaviour
         return result;
     }
 
+    public bool UnlockSupportSlot(Tower tower)
+    {
+        if (tower == null) return false;
+        bool result = tower.UnlockSupportSlot();
+        if (result) OnTowerSelected?.Invoke(tower);
+        return result;
+    }
+
     public bool SetSupportOption(int slot, SupportOptionData option)
     {
         if (SelectedTower == null) return false;

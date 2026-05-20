@@ -10,6 +10,8 @@ public class SupportUnlockPopup : MonoBehaviour
     [SerializeField] private Button     confirmButton;
     [SerializeField] private Button     cancelButton;
 
+    private Tower _pendingTower;
+
     private void Awake()
     {
         Instance = this;
@@ -19,8 +21,10 @@ public class SupportUnlockPopup : MonoBehaviour
         cancelButton.onClick.AddListener(Hide);
     }
 
-    public void Show(int cost)
+    public void Show(int cost, Tower tower)
     {
+        _pendingTower = tower;
+
         if (costText != null)
             costText.text = $"상위 큐브 {cost}개를 소모하여 슬롯을 해금합니까?";
 
@@ -33,8 +37,10 @@ public class SupportUnlockPopup : MonoBehaviour
 
     private void OnConfirm()
     {
+        var tower = _pendingTower;
+        _pendingTower = null;
         Hide();
-        InventorySystem.Instance?.UnlockSupportSlot();
+        InventorySystem.Instance?.UnlockSupportSlot(tower);
     }
 
     private void Hide()

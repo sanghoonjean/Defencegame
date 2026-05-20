@@ -33,7 +33,7 @@ public class SupportSlotUI : MonoBehaviour, IPointerClickHandler, IDropHandler
         int cost = tower.GetNextSupportSlotCost();
         if (cost < 0) return;
 
-        SupportUnlockPopup.Instance?.Show(cost);
+        SupportUnlockPopup.Instance?.Show(cost, tower);
     }
 
     public void OnDrop(PointerEventData eventData)
