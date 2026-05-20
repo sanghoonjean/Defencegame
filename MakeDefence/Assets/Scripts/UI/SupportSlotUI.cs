@@ -43,9 +43,18 @@ public class SupportSlotUI : MonoBehaviour, IPointerClickHandler, IDropHandler
         var supportDrag = eventData.pointerDrag?.GetComponent<SupportOptionDragHandler>();
         if (supportDrag == null || supportDrag.Option == null) return;
 
-        var option = supportDrag.Option;
-        ShopSystem.Instance?.RemoveOwnedSupportOption(option);
-        InventorySystem.Instance?.SetSupportOption(slotIndex, option);
+        var tower = InventorySystem.Instance?.SelectedTower;
+        if (tower == null) return;
+
+        var newOption = supportDrag.Option;
+        var prevOption = slotIndex < tower.UnlockedSupportSlots ? tower.SupportOptions[slotIndex] : null;
+
+        bool ok = InventorySystem.Instance.SetSupportOption(slotIndex, newOption);
+        if (!ok) return;
+
+        ShopSystem.Instance?.RemoveOwnedSupportOption(newOption);
+        if (prevOption != null)
+            ShopSystem.Instance?.ReturnSupportOption(prevOption);
     }
 
     private void Refresh(Tower tower)
