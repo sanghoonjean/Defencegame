@@ -48,6 +48,8 @@ public class SupportSlotUI : MonoBehaviour, IPointerClickHandler, IDropHandler
         var tower = InventorySystem.Instance?.SelectedTower;
         if (tower == null) return;
 
+        if (slotIndex < 0 || slotIndex >= tower.SupportOptions.Count) return;
+
         var newOption = supportDrag.Option;
         var prevOption = slotIndex < tower.UnlockedSupportSlots ? tower.SupportOptions[slotIndex] : null;
 
