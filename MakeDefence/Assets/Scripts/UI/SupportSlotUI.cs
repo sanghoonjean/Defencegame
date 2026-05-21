@@ -25,14 +25,18 @@ public class SupportSlotUI : MonoBehaviour, IPointerClickHandler, IDropHandler
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        if (!_isLocked) return;
+        Debug.Log($"[SupportSlotUI] OnPointerClick — slotIndex={slotIndex}, _isLocked={_isLocked}");
+        if (!_isLocked) { Debug.Log($"[SupportSlotUI] 슬롯[{slotIndex}] 이미 해금됨, 무시"); return; }
 
         var tower = InventorySystem.Instance?.SelectedTower;
+        Debug.Log($"[SupportSlotUI] SelectedTower={tower?.name ?? "null"}, InventorySystem={InventorySystem.Instance != null}");
         if (tower == null) return;
 
-        if (slotIndex != tower.UnlockedSupportSlots) return;
+        Debug.Log($"[SupportSlotUI] slotIndex={slotIndex}, UnlockedSupportSlots={tower.UnlockedSupportSlots}");
+        if (slotIndex != tower.UnlockedSupportSlots) { Debug.Log($"[SupportSlotUI] 순서 불일치 — 클릭 무시"); return; }
 
         int cost = tower.GetNextSupportSlotCost();
+        Debug.Log($"[SupportSlotUI] cost={cost}, SupportUnlockPopup.Instance={SupportUnlockPopup.Instance != null}");
         if (cost < 0) return;
 
         SupportUnlockPopup.Instance?.Show(cost, tower);
