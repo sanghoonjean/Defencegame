@@ -7,7 +7,7 @@ public class Tower : MonoBehaviour
     public static event Action<Tower> OnTowerPlaced;
 
     // 기본 스탯 (tech-debt: 수치 미확정 — Inspector에서 조정)
-    [SerializeField] private float baseAttackDamage   = 20f;
+    [SerializeField] private float baseAttackDamage   = 0f;
     [SerializeField] private float baseAttackCooldown = 1f;
     [SerializeField] private float baseAttackRange    = 5f;
 
