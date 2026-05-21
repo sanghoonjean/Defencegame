@@ -67,6 +67,12 @@ public class Tower : MonoBehaviour
         RefreshStats();
     }
 
+    public int GetNextSupportSlotCost()
+    {
+        if (_unlockedSupportSlots >= 5) return -1;
+        return SupportSlotCost[_unlockedSupportSlots];
+    }
+
     public bool UnlockSupportSlot()
     {
         if (_unlockedSupportSlots >= 5) return false;

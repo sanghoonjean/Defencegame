@@ -62,4 +62,17 @@ public class ShopSystem : MonoBehaviour
         if (_ownedSkills.Remove(skill))
             OnInventoryChanged?.Invoke();
     }
+
+    public void ReturnSupportOption(SupportOptionData option)
+    {
+        if (option == null) return;
+        _ownedSupports.Add(option);
+        OnInventoryChanged?.Invoke();
+    }
+
+    public void RemoveOwnedSupportOption(SupportOptionData option)
+    {
+        if (_ownedSupports.Remove(option))
+            OnInventoryChanged?.Invoke();
+    }
 }
