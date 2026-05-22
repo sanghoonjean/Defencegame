@@ -9,22 +9,20 @@ public class ShopSupportSlotUI : MonoBehaviour
     [SerializeField] private Text              nameText;
     [SerializeField] private Button            buyButton;
 
-    private void Awake()
+    private void OnEnable()
     {
         if (buyButton == null)
             buyButton = GetComponentInChildren<Button>();
 
         if (buyButton != null)
         {
+            buyButton.onClick.RemoveListener(OnBuyClicked);
             buyButton.onClick.AddListener(OnBuyClicked);
-            Debug.Log($"[ShopSupportSlotUI] Awake — buyButton 연결 완료, interactable={buyButton.interactable}");
+            Debug.Log($"[ShopSupportSlotUI] OnEnable — buyButton 연결, interactable={buyButton.interactable}");
         }
         else
-            Debug.LogError($"[ShopSupportSlotUI] Awake — buyButton 없음! ({gameObject.name})");
-    }
+            Debug.LogError($"[ShopSupportSlotUI] OnEnable — buyButton 없음! ({gameObject.name})");
 
-    private void OnEnable()
-    {
         CubeSystem.OnCubeChanged      += OnCubeChanged;
         ShopSystem.OnInventoryChanged += OnInventoryChanged;
         Refresh();
@@ -33,6 +31,9 @@ public class ShopSupportSlotUI : MonoBehaviour
 
     private void OnDisable()
     {
+        if (buyButton != null)
+            buyButton.onClick.RemoveListener(OnBuyClicked);
+
         CubeSystem.OnCubeChanged      -= OnCubeChanged;
         ShopSystem.OnInventoryChanged -= OnInventoryChanged;
     }
