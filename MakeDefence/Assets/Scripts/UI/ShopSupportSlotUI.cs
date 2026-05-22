@@ -73,7 +73,15 @@ public class ShopSupportSlotUI : MonoBehaviour
 
     private void OnBuyClicked()
     {
+        Debug.Log($"[ShopSupportSlotUI] OnBuyClicked — optionData={optionData?.optionType.ToString() ?? "null"}, ShopSystem={ShopSystem.Instance != null}");
         if (ShopSystem.Instance == null || optionData == null) return;
-        ShopSystem.Instance.BuySupportOption(optionData);
+
+        bool inCatalog = ShopSystem.Instance.IsAvailableSupport(optionData);
+        bool notOwned  = !ShopSystem.Instance.OwnedSupports.Contains(optionData);
+        bool hasLower  = CubeSystem.Instance != null && CubeSystem.Instance.GetCount(CubeType.Lower) >= 1;
+        Debug.Log($"[ShopSupportSlotUI] inCatalog={inCatalog}, notOwned={notOwned}, hasLower={hasLower}");
+
+        bool result = ShopSystem.Instance.BuySupportOption(optionData);
+        Debug.Log($"[ShopSupportSlotUI] BuySupportOption 결과={result}");
     }
 }
