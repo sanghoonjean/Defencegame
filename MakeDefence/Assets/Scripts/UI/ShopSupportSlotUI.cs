@@ -39,7 +39,11 @@ public class ShopSupportSlotUI : MonoBehaviour
 
     private void Refresh()
     {
-        if (optionData == null) return;
+        if (optionData == null)
+        {
+            if (buyButton != null) buyButton.interactable = false;
+            return;
+        }
 
         if (iconImage != null) iconImage.sprite = optionData.icon;
 
