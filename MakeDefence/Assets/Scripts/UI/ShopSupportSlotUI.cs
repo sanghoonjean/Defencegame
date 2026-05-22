@@ -58,6 +58,7 @@ public class ShopSupportSlotUI : MonoBehaviour
     private void RefreshBuyButton()
     {
         if (buyButton == null) return;
+        if (optionData == null) { buyButton.interactable = false; return; }
 
         bool hasShop   = ShopSystem.Instance != null;
         bool hasLower  = CubeSystem.Instance != null &&
