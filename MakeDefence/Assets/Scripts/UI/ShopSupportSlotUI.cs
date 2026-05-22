@@ -15,19 +15,25 @@ public class ShopSupportSlotUI : MonoBehaviour
             buyButton = GetComponentInChildren<Button>();
 
         if (buyButton != null)
+        {
             buyButton.onClick.AddListener(OnBuyClicked);
+            Debug.Log($"[ShopSupportSlotUI] Awake — buyButton 연결 완료, interactable={buyButton.interactable}");
+        }
+        else
+            Debug.LogError($"[ShopSupportSlotUI] Awake — buyButton 없음! ({gameObject.name})");
     }
 
     private void OnEnable()
     {
-        CubeSystem.OnCubeChanged    += OnCubeChanged;
+        CubeSystem.OnCubeChanged      += OnCubeChanged;
         ShopSystem.OnInventoryChanged += OnInventoryChanged;
         Refresh();
+        Debug.Log($"[ShopSupportSlotUI] OnEnable — optionData={optionData?.optionType.ToString() ?? "null"}, interactable={buyButton?.interactable}");
     }
 
     private void OnDisable()
     {
-        CubeSystem.OnCubeChanged    -= OnCubeChanged;
+        CubeSystem.OnCubeChanged      -= OnCubeChanged;
         ShopSystem.OnInventoryChanged -= OnInventoryChanged;
     }
 
@@ -61,26 +67,20 @@ public class ShopSupportSlotUI : MonoBehaviour
         if (buyButton == null) return;
         if (optionData == null) { buyButton.interactable = false; return; }
 
-        bool hasShop    = ShopSystem.Instance != null;
-        bool hasLower   = CubeSystem.Instance != null &&
-                          CubeSystem.Instance.GetCount(CubeType.Lower) >= 1;
-        bool inCatalog  = hasShop && ShopSystem.Instance.IsAvailableSupport(optionData);
-        bool notOwned   = hasShop &&
-                          !ShopSystem.Instance.OwnedSupports.Contains(optionData);
+        bool hasShop   = ShopSystem.Instance != null;
+        bool hasLower  = CubeSystem.Instance != null &&
+                         CubeSystem.Instance.GetCount(CubeType.Lower) >= 1;
+        bool inCatalog = hasShop && ShopSystem.Instance.IsAvailableSupport(optionData);
+        bool notOwned  = hasShop && !ShopSystem.Instance.OwnedSupports.Contains(optionData);
 
+        Debug.Log($"[ShopSupportSlotUI] RefreshBuyButton — hasShop={hasShop}, hasLower={hasLower}, inCatalog={inCatalog}, notOwned={notOwned}");
         buyButton.interactable = hasLower && inCatalog && notOwned;
     }
 
     private void OnBuyClicked()
     {
-        Debug.Log($"[ShopSupportSlotUI] OnBuyClicked — optionData={optionData?.optionType.ToString() ?? "null"}, ShopSystem={ShopSystem.Instance != null}");
+        Debug.Log($"[ShopSupportSlotUI] OnBuyClicked — optionData={optionData?.optionType.ToString() ?? "null"}");
         if (ShopSystem.Instance == null || optionData == null) return;
-
-        bool inCatalog = ShopSystem.Instance.IsAvailableSupport(optionData);
-        bool notOwned  = !ShopSystem.Instance.OwnedSupports.Contains(optionData);
-        bool hasLower  = CubeSystem.Instance != null && CubeSystem.Instance.GetCount(CubeType.Lower) >= 1;
-        Debug.Log($"[ShopSupportSlotUI] inCatalog={inCatalog}, notOwned={notOwned}, hasLower={hasLower}");
-
         bool result = ShopSystem.Instance.BuySupportOption(optionData);
         Debug.Log($"[ShopSupportSlotUI] BuySupportOption 결과={result}");
     }
