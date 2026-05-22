@@ -55,9 +55,10 @@ public class ShopSupportSlotUI : MonoBehaviour
     {
         if (buyButton == null) return;
 
+        bool hasShop   = ShopSystem.Instance != null;
         bool hasLower  = CubeSystem.Instance != null &&
                          CubeSystem.Instance.GetCount(CubeType.Lower) >= 1;
-        bool notOwned  = ShopSystem.Instance == null ||
+        bool notOwned  = hasShop &&
                          !ShopSystem.Instance.OwnedSupports.Contains(optionData);
 
         buyButton.interactable = hasLower && notOwned;
