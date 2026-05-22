@@ -164,6 +164,8 @@ public class Tower : MonoBehaviour
 
     private void Update()
     {
+        if (EquippedSkill == null) return;
+
         _attackTimer += Time.deltaTime;
         if (_attackTimer < AttackCooldown) return;
 
