@@ -40,6 +40,8 @@ public class ShopSystem : MonoBehaviour
         return true;
     }
 
+    public bool IsAvailableSupport(SupportOptionData option) => availableSupports.Contains(option);
+
     public bool BuySupportOption(SupportOptionData option)
     {
         if (!availableSupports.Contains(option))    return false;
