@@ -9,6 +9,15 @@ public class ShopSupportSlotUI : MonoBehaviour
     [SerializeField] private Text              nameText;
     [SerializeField] private Button            buyButton;
 
+    private bool _started;
+
+    private void Start()
+    {
+        _started = true;
+        Refresh();
+        Debug.Log($"[ShopSupportSlotUI] Start — optionData={optionData?.optionType.ToString() ?? "null"}, interactable={buyButton?.interactable}");
+    }
+
     private void OnEnable()
     {
         if (buyButton == null)
@@ -25,7 +34,7 @@ public class ShopSupportSlotUI : MonoBehaviour
 
         CubeSystem.OnCubeChanged      += OnCubeChanged;
         ShopSystem.OnInventoryChanged += OnInventoryChanged;
-        Refresh();
+        if (_started) Refresh();
         Debug.Log($"[ShopSupportSlotUI] OnEnable — optionData={optionData?.optionType.ToString() ?? "null"}, interactable={buyButton?.interactable}");
     }
 
