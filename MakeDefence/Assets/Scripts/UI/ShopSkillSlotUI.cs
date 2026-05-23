@@ -16,12 +16,16 @@ public class ShopSkillSlotUI : MonoBehaviour
     private void Awake()
     {
         if (buyButton == null)
+        {
             buyButton = GetComponentInChildren<Button>();
+            if (buyButton != null)
+                Debug.LogWarning($"[ShopSkillSlotUI] buyButton 자동 탐색으로 연결 — Inspector에서 직접 연결을 권장합니다 ({gameObject.name})");
+        }
 
         if (buyButton != null)
             buyButton.onClick.AddListener(OnBuyClicked);
         else
-            Debug.LogError($"[ShopSkillSlotUI] buyButton을 찾지 못함 — 자식 Button 컴포넌트를 확인하세요 ({gameObject.name})");
+            Debug.LogError($"[ShopSkillSlotUI] buyButton을 찾지 못함 ({gameObject.name})");
     }
 
     private void OnEnable()
