@@ -86,7 +86,9 @@ public class ShopSupportSlotUI : MonoBehaviour
 
     private void OnBuyClicked()
     {
+        Debug.Log($"[ShopSupportSlotUI] OnBuyClicked — optionData={optionData?.optionType.ToString() ?? "null"}");
         if (ShopSystem.Instance == null || optionData == null) return;
-        ShopSystem.Instance.BuySupportOption(optionData);
+        bool result = ShopSystem.Instance.BuySupportOption(optionData);
+        Debug.Log($"[ShopSupportSlotUI] BuySupportOption 결과={result}");
     }
 }
