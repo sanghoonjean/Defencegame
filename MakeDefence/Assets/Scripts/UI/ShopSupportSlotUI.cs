@@ -11,38 +11,31 @@ public class ShopSupportSlotUI : MonoBehaviour
 
     private bool _started;
 
+    private void Awake()
+    {
+        if (buyButton == null)
+        {
+            Debug.LogError($"[ShopSupportSlotUI] buyButton이 연결되지 않음 — Inspector에서 Buy Button 필드를 설정하세요 ({gameObject.name})");
+            return;
+        }
+        buyButton.onClick.AddListener(OnBuyClicked);
+    }
+
     private void Start()
     {
         _started = true;
         Refresh();
-        Debug.Log($"[ShopSupportSlotUI] Start — optionData={optionData?.optionType.ToString() ?? "null"}, interactable={buyButton?.interactable}");
     }
 
     private void OnEnable()
     {
-        if (buyButton == null)
-            buyButton = GetComponentInChildren<Button>();
-
-        if (buyButton != null)
-        {
-            buyButton.onClick.RemoveListener(OnBuyClicked);
-            buyButton.onClick.AddListener(OnBuyClicked);
-            Debug.Log($"[ShopSupportSlotUI] OnEnable — buyButton 연결, interactable={buyButton.interactable}");
-        }
-        else
-            Debug.LogError($"[ShopSupportSlotUI] OnEnable — buyButton 없음! ({gameObject.name})");
-
         CubeSystem.OnCubeChanged      += OnCubeChanged;
         ShopSystem.OnInventoryChanged += OnInventoryChanged;
         if (_started) Refresh();
-        Debug.Log($"[ShopSupportSlotUI] OnEnable — optionData={optionData?.optionType.ToString() ?? "null"}, interactable={buyButton?.interactable}");
     }
 
     private void OnDisable()
     {
-        if (buyButton != null)
-            buyButton.onClick.RemoveListener(OnBuyClicked);
-
         CubeSystem.OnCubeChanged      -= OnCubeChanged;
         ShopSystem.OnInventoryChanged -= OnInventoryChanged;
     }
@@ -83,15 +76,12 @@ public class ShopSupportSlotUI : MonoBehaviour
         bool inCatalog = hasShop && ShopSystem.Instance.IsAvailableSupport(optionData);
         bool notOwned  = hasShop && !ShopSystem.Instance.OwnedSupports.Contains(optionData);
 
-        Debug.Log($"[ShopSupportSlotUI] RefreshBuyButton — hasShop={hasShop}, hasLower={hasLower}, inCatalog={inCatalog}, notOwned={notOwned}");
         buyButton.interactable = hasLower && inCatalog && notOwned;
     }
 
     private void OnBuyClicked()
     {
-        Debug.Log($"[ShopSupportSlotUI] OnBuyClicked — optionData={optionData?.optionType.ToString() ?? "null"}");
         if (ShopSystem.Instance == null || optionData == null) return;
-        bool result = ShopSystem.Instance.BuySupportOption(optionData);
-        Debug.Log($"[ShopSupportSlotUI] BuySupportOption 결과={result}");
+        ShopSystem.Instance.BuySupportOption(optionData);
     }
 }
