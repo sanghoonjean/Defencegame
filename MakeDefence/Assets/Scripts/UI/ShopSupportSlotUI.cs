@@ -15,10 +15,15 @@ public class ShopSupportSlotUI : MonoBehaviour
     {
         if (buyButton == null)
         {
-            Debug.LogError($"[ShopSupportSlotUI] buyButton이 연결되지 않음 — Inspector에서 Buy Button 필드를 설정하세요 ({gameObject.name})");
-            return;
+            buyButton = GetComponentInChildren<Button>();
+            if (buyButton != null)
+                Debug.LogWarning($"[ShopSupportSlotUI] buyButton 자동 탐색으로 연결 — Inspector에서 직접 연결을 권장합니다 ({gameObject.name})");
         }
-        buyButton.onClick.AddListener(OnBuyClicked);
+
+        if (buyButton != null)
+            buyButton.onClick.AddListener(OnBuyClicked);
+        else
+            Debug.LogError($"[ShopSupportSlotUI] buyButton을 찾지 못함 ({gameObject.name})");
     }
 
     private void Start()
