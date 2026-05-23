@@ -13,11 +13,11 @@ public class ShopSupportSlotUI : MonoBehaviour
 
     private void Awake()
     {
+        Debug.Log($"[ShopSupportSlotUI] Awake — {gameObject.name}, buyButton={buyButton != null}");
         if (buyButton == null)
         {
             buyButton = GetComponentInChildren<Button>();
-            if (buyButton != null)
-                Debug.LogWarning($"[ShopSupportSlotUI] buyButton 자동 탐색으로 연결 — Inspector에서 직접 연결을 권장합니다 ({gameObject.name})");
+            Debug.Log($"[ShopSupportSlotUI] GetComponentInChildren<Button> 결과={buyButton?.name ?? "null"}");
         }
 
         if (buyButton != null)
