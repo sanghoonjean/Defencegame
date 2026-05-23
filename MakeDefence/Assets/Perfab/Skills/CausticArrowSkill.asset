@@ -22,3 +22,4 @@ MonoBehaviour:
   baseStunChance: 0
   stunDuration: 0
   dotDuration: 5
+  isDoTOnly: 1

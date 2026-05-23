@@ -15,10 +15,11 @@ MonoBehaviour:
   displayName: Fireball
   icon: {fileID: 21300000, guid: 85f6db0efa996b342ac40bb7aa6eb2f9, type: 3}
   skillType: 1
-  baseDamage: 500
+  baseDamage: 100
   baseCooldown: 0.5
   baseRange: 3
-  aoeRadius: 5
+  aoeRadius: 1
   baseStunChance: 0
   stunDuration: 0
   dotDuration: 0
+  isDoTOnly: 0

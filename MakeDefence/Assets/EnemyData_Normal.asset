@@ -13,8 +13,8 @@ MonoBehaviour:
   m_Name: EnemyData_Normal
   m_EditorClassIdentifier: 
   grade: 0
-  baseHp: 1000
-  baseDefense: 50
+  baseHp: 250
+  baseDefense: 0
   baseSpeed: 1
   playerDamage: 2
   fixedStats: 0

@@ -99,7 +99,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c7a4647631cf33842b6d80245ce36578, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  baseAttackDamage: 20
+  baseAttackDamage: 0
   baseAttackCooldown: 1
   baseAttackRange: 5
 --- !u!61 &2656914260432286792
