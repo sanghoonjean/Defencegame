@@ -121,10 +121,10 @@ public static class SkillDispatcher
         var proj = ObjectPoolSystem.Instance.GetProjectile<FireballProjectile>();
         if (proj == null) { DirectAttack(tower, target); return; }
 
-        var   skill  = tower.EquippedSkill;
-        float dmg    = tower.AttackDamage + skill.baseDamage;
-        bool  isCrit = Random.value < Mathf.Clamp01(tower.CritChance / 100f);
-        if (isCrit) dmg *= 1f + tower.CritDamage / 100f;
+        var   skill   = tower.EquippedSkill;
+        float baseDmg = tower.AttackDamage + skill.baseDamage;
+        bool  isCrit  = Random.value < Mathf.Clamp01(tower.CritChance / 100f);
+        float dmg     = isCrit ? baseDmg * (1f + tower.CritDamage / 100f) : baseDmg;
 
         proj.AoeRadius          = skill.aoeRadius;
         proj.StunChance         = tower.StunChance;
@@ -132,7 +132,7 @@ public static class SkillDispatcher
         proj.SplashStunDuration = skill.stunDuration > 0f ? skill.stunDuration : 0.5f;
         proj.IsCrit             = isCrit;
         proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
-        ApplyFireDamage(tower, target, dmg, isCrit);
+        ApplyFireDamage(tower, target, baseDmg, isCrit);
     }
 
     // baseDmg: 물리 타격에 사용된 총 데미지 (AttackDamage + skill.baseDamage)
