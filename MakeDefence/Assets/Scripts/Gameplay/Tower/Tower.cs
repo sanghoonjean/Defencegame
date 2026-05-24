@@ -141,7 +141,7 @@ public class Tower : MonoBehaviour
     {
         switch (opt.optionType)
         {
-            case SupportOptionType.IncendiaryRound: AddedFireRatio += opt.value; break;
+            case SupportOptionType.IncendiaryRound: AddedFireRatio += Mathf.Clamp01(opt.value); break;
         }
     }
 

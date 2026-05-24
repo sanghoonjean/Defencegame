@@ -17,8 +17,8 @@ public class SupportOptionData : ScriptableObject
     public string displayName;
     public Sprite icon;
 
-    [Header("Stats")]
+    [Header("Stats — value는 0.0~1.0 비율로 입력 (예: 0.3 = 30%)")]
     public SupportOptionType optionType;
     [TextArea] public string description;
-    public float value;
+    [Range(0f, 1f)] public float value;
 }
