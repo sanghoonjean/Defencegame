@@ -29,7 +29,7 @@ public static class SkillDispatcher
                 LaunchCausticArrow(tower, target);
                 break;
             default:
-                DirectAttack(tower, target);
+                DirectAttack(tower, target, applyFire: !skill.isDoTOnly);
                 break;
         }
     }
