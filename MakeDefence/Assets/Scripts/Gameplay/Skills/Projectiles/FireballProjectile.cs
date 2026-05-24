@@ -11,6 +11,7 @@ public class FireballProjectile : ProjectileBase
         target.TakeDamage(_damage, _armorPen, IsCrit);
         if (StunChance > 0f && Random.value < Mathf.Clamp01(StunChance / 100f))
             target.ApplyStun(0.5f);
+        ApplyFireOnHit(target, IsCrit);
         return _damage;
     }
 }
