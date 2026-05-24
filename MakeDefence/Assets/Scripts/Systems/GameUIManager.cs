@@ -37,6 +37,7 @@ public class GameUIManager : MonoBehaviour
         public bool    isCrit;
         public float   startTime;
         public float   expireTime;
+        public float   extraYOffset;
     }
 
     private static GameUIManager _instance;
@@ -82,13 +83,24 @@ public class GameUIManager : MonoBehaviour
     public static void ShowDamage(Vector2 worldPos, float damage, bool isCrit)
     {
         if (_instance == null) return;
+
+        float yExtra = 0f;
+        float now    = Time.time;
+        foreach (var d in _instance._damageTexts)
+        {
+            if ((d.worldPos - worldPos).sqrMagnitude < 0.01f &&
+                now - d.startTime < 0.1f)
+                yExtra += 15f;
+        }
+
         _instance._damageTexts.Add(new DamageText
         {
-            worldPos   = worldPos,
-            text       = Mathf.RoundToInt(damage).ToString(),
-            isCrit     = isCrit,
-            startTime  = Time.time,
-            expireTime = Time.time + _instance.dmgDuration
+            worldPos     = worldPos,
+            text         = Mathf.RoundToInt(damage).ToString(),
+            isCrit       = isCrit,
+            startTime    = now,
+            expireTime   = now + _instance.dmgDuration,
+            extraYOffset = yExtra
         });
     }
 
@@ -142,7 +154,7 @@ public class GameUIManager : MonoBehaviour
             if (sp.z < 0f) continue;
 
             float sx = sp.x + dmgXOffset;
-            float sy = Screen.height - sp.y + dmgYOffset - progress * dmgFloatSpeed;
+            float sy = Screen.height - sp.y + dmgYOffset + d.extraYOffset - progress * dmgFloatSpeed;
 
             GUI.Label(new Rect(sx, sy, 60f, 20f), d.text, d.isCrit ? _critStyle : _dmgStyle);
         }
