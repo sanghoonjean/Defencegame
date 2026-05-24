@@ -134,9 +134,8 @@ GameObject:
   - component: {fileID: 4341105927684154062}
   - component: {fileID: 4333239483299929393}
   - component: {fileID: 4334382218813214584}
-  - component: {fileID: 1740616855620562723}
   m_Layer: 5
-  m_Name: InvenSlot
+  m_Name: SkillInvenSlot
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -261,20 +260,6 @@ MonoBehaviour:
   iconImage: {fileID: 3390370556186211497}
   nameText: {fileID: 0}
   equipButton: {fileID: 7738230486237104734}
---- !u!114 &1740616855620562723
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4337683774326461461}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 41a00c2a999f17143a2654fc9b35c688, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  iconImage: {fileID: 0}
-  nameText: {fileID: 0}
 --- !u!1 &6145730596273032062
 GameObject:
   m_ObjectHideFlags: 0
