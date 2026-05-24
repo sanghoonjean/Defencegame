@@ -11,9 +11,13 @@ public class ProjectileBase : MonoBehaviour
     protected bool  _hitIsCrit;
     private bool _launched;
 
-    public float StunChance        { get; set; }
-    public float SplashRadius      { get; set; }
+    public float StunChance         { get; set; }
+    public float SplashRadius       { get; set; }
     public float SplashStunDuration { get; set; }
+
+    public float AddedFireRatio { get; set; }
+    public float FireCritDamage { get; set; }
+    public float FireBaseDamage { get; set; }
 
     public void Launch(Vector2 origin, Enemy target, float damage, float armorPen)
     {
@@ -52,7 +56,17 @@ public class ProjectileBase : MonoBehaviour
     protected virtual float OnHit(Enemy target)
     {
         target.TakeDamage(_damage, _armorPen);
+        ApplyFireOnHit(target, false);
         return _damage;
+    }
+
+    protected void ApplyFireOnHit(Enemy target, bool isCrit)
+    {
+        if (AddedFireRatio <= 0f) return;
+        if (target.CurrentHp <= 0f) return;
+        float fireDmg = FireBaseDamage * AddedFireRatio;
+        if (isCrit) fireDmg *= 1f + FireCritDamage / 100f;
+        target.TakeDamage(fireDmg, 0f, isCrit, DamageType.Fire);
     }
 
     private void ApplySplash(Enemy primaryTarget, float actualDamage, bool isCrit)
@@ -84,6 +98,10 @@ public class ProjectileBase : MonoBehaviour
     {
         _launched = false;
         _target   = null;
+        AddedFireRatio = 0f;
+        FireCritDamage = 0f;
+        FireBaseDamage = 0f;
         ObjectPoolSystem.Instance.ReturnProjectile(this);
     }
 }
+

@@ -59,8 +59,10 @@ public static class SkillDispatcher
         proj.BonusCritDamage = tower.CritDamage;
         proj.StunChance      = tower.StunChance;
         proj.SplashRadius    = skill.aoeRadius;
+        proj.AddedFireRatio  = tower.AddedFireRatio;
+        proj.FireCritDamage  = tower.CritDamage;
+        proj.FireBaseDamage  = dmg;
         proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
-        ApplyFireDamage(tower, target, dmg, false);
     }
 
     private static void LaunchFreezingPulse(Tower tower, Enemy target)
@@ -78,8 +80,10 @@ public static class SkillDispatcher
         proj.CritChance     = tower.CritChance;
         proj.CritDamage     = tower.CritDamage;
         proj.SplashRadius   = skill.aoeRadius;
+        proj.AddedFireRatio = tower.AddedFireRatio;
+        proj.FireCritDamage = tower.CritDamage;
+        proj.FireBaseDamage = dmg;
         proj.LaunchFrom(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
-        ApplyFireDamage(tower, target, dmg, false);
     }
 
     private static void LaunchLightningArrow(Tower tower, Enemy target)
@@ -90,13 +94,15 @@ public static class SkillDispatcher
         var   skill = tower.EquippedSkill;
         float dmg   = tower.AttackDamage + skill.baseDamage;
 
-        proj.AoeRadius     = skill.aoeRadius;
-        proj.ShockDuration = skill.stunDuration > 0f ? skill.stunDuration : 0.5f;
-        proj.CritChance    = tower.CritChance;
-        proj.CritDamage    = tower.CritDamage;
-        proj.StunChance    = 0f;
+        proj.AoeRadius      = skill.aoeRadius;
+        proj.ShockDuration  = skill.stunDuration > 0f ? skill.stunDuration : 0.5f;
+        proj.CritChance     = tower.CritChance;
+        proj.CritDamage     = tower.CritDamage;
+        proj.StunChance     = 0f;
+        proj.AddedFireRatio = tower.AddedFireRatio;
+        proj.FireCritDamage = tower.CritDamage;
+        proj.FireBaseDamage = dmg;
         proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
-        ApplyFireDamage(tower, target, dmg, false);
     }
 
     private static void LaunchCausticArrow(Tower tower, Enemy target)
@@ -112,8 +118,8 @@ public static class SkillDispatcher
         proj.TickInterval = 0.5f;
         proj.StunChance   = 0f;
         proj.SplashRadius = skill.aoeRadius;
+        // AddedFireRatio 미설정 — DoT 스킬은 불꽃 데미지 제외
         proj.Launch(tower.transform.position, target, skill.baseDamage, tower.ArmorPen / 100f);
-        // DoT 스킬 — 불꽃 데미지 적용 제외
     }
 
     private static void LaunchFireball(Tower tower, Enemy target)
@@ -131,12 +137,13 @@ public static class SkillDispatcher
         proj.SplashRadius       = skill.aoeRadius;
         proj.SplashStunDuration = skill.stunDuration > 0f ? skill.stunDuration : 0.5f;
         proj.IsCrit             = isCrit;
+        proj.AddedFireRatio     = tower.AddedFireRatio;
+        proj.FireCritDamage     = tower.CritDamage;
+        proj.FireBaseDamage     = baseDmg;  // pre-crit — crit 는 OnHit 에서 단일 적용
         proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
-        ApplyFireDamage(tower, target, baseDmg, isCrit);
     }
 
-    // baseDmg: 물리 타격에 사용된 총 데미지 (AttackDamage + skill.baseDamage)
-    // 불꽃 데미지 = baseDmg * AddedFireRatio, DamageType.Fire로 방어 무시
+    // DirectAttack 전용 — 프로젝타일 없이 즉시 타격하므로 여기서 직접 적용
     private static void ApplyFireDamage(Tower tower, Enemy target, float baseDmg, bool isCrit)
     {
         if (tower.AddedFireRatio <= 0f) return;

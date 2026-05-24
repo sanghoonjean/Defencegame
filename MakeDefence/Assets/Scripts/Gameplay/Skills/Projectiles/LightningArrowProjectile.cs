@@ -28,6 +28,7 @@ public class LightningArrowProjectile : ProjectileBase
         }
 
         GameUIManager.ShowAoeHit(hitPos, AoeRadius);
+        ApplyFireOnHit(target, isCrit);
         return dmg;
     }
 }

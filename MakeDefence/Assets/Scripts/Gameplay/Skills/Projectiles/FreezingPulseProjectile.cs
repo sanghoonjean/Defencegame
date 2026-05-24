@@ -32,6 +32,7 @@ public class FreezingPulseProjectile : ProjectileBase
         if (StunChance > 0f && Random.value < Mathf.Clamp01(StunChance / 100f))
             target.ApplyStun(FreezeDuration);
 
+        ApplyFireOnHit(target, isCrit);
         return dmg;
     }
 }
