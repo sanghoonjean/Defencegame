@@ -94,7 +94,7 @@ public class Enemy : MonoBehaviour
             : 0f;
         float actual = Mathf.Max(1f, damage - effectiveDefense);
         CurrentHp -= actual;
-        GameUIManager.ShowDamage(transform.position, actual, isCrit);
+        GameUIManager.ShowDamage(transform.position, actual, isCrit, type);
         if (CurrentHp <= 0f)
             Die();
     }

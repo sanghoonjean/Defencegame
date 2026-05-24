@@ -32,11 +32,13 @@ public class GameUIManager : MonoBehaviour
 
     private struct DamageText
     {
-        public Vector2 worldPos;
-        public string  text;
-        public bool    isCrit;
-        public float   startTime;
-        public float   expireTime;
+        public Vector2    worldPos;
+        public string     text;
+        public bool       isCrit;
+        public DamageType damageType;
+        public float      startTime;
+        public float      expireTime;
+        public float      extraYOffset;
     }
 
     private static GameUIManager _instance;
@@ -49,6 +51,8 @@ public class GameUIManager : MonoBehaviour
 
     private GUIStyle _dmgStyle;
     private GUIStyle _critStyle;
+    private GUIStyle _fireDmgStyle;
+    private GUIStyle _fireCritStyle;
 
     private void Awake()
     {
@@ -56,10 +60,14 @@ public class GameUIManager : MonoBehaviour
         _bgTex    = MakeTex(Color.gray);
         _fillTex  = MakeTex(Color.green);
 
-        _dmgStyle  = new GUIStyle();
-        _critStyle = new GUIStyle();
-        _dmgStyle.normal.textColor  = Color.black;
-        _critStyle.normal.textColor = Color.red;
+        _dmgStyle      = new GUIStyle();
+        _critStyle     = new GUIStyle();
+        _fireDmgStyle  = new GUIStyle();
+        _fireCritStyle = new GUIStyle();
+        _dmgStyle.normal.textColor      = Color.black;
+        _critStyle.normal.textColor     = Color.red;
+        _fireDmgStyle.normal.textColor  = new Color(1f, 0.45f, 0f);   // 주황
+        _fireCritStyle.normal.textColor = new Color(1f, 0.15f, 0f);   // 진한 주황-빨강
 
         var shader = Shader.Find("Hidden/Internal-Colored");
         if (shader == null)
@@ -79,16 +87,29 @@ public class GameUIManager : MonoBehaviour
         if (_rangeMat != null) Destroy(_rangeMat);
     }
 
-    public static void ShowDamage(Vector2 worldPos, float damage, bool isCrit)
+    public static void ShowDamage(Vector2 worldPos, float damage, bool isCrit,
+                                   DamageType damageType = DamageType.Physical)
     {
         if (_instance == null) return;
+
+        float yExtra = 0f;
+        float now    = Time.time;
+        foreach (var d in _instance._damageTexts)
+        {
+            if ((d.worldPos - worldPos).sqrMagnitude < 0.01f &&
+                now - d.startTime < 0.1f)
+                yExtra += 15f;
+        }
+
         _instance._damageTexts.Add(new DamageText
         {
-            worldPos   = worldPos,
-            text       = Mathf.RoundToInt(damage).ToString(),
-            isCrit     = isCrit,
-            startTime  = Time.time,
-            expireTime = Time.time + _instance.dmgDuration
+            worldPos     = worldPos,
+            text         = Mathf.RoundToInt(damage).ToString(),
+            isCrit       = isCrit,
+            damageType   = damageType,
+            startTime    = now,
+            expireTime   = now + _instance.dmgDuration,
+            extraYOffset = yExtra
         });
     }
 
@@ -142,9 +163,12 @@ public class GameUIManager : MonoBehaviour
             if (sp.z < 0f) continue;
 
             float sx = sp.x + dmgXOffset;
-            float sy = Screen.height - sp.y + dmgYOffset - progress * dmgFloatSpeed;
+            float sy = Screen.height - sp.y + dmgYOffset + d.extraYOffset - progress * dmgFloatSpeed;
 
-            GUI.Label(new Rect(sx, sy, 60f, 20f), d.text, d.isCrit ? _critStyle : _dmgStyle);
+            GUIStyle style = d.damageType == DamageType.Fire
+                ? (d.isCrit ? _fireCritStyle : _fireDmgStyle)
+                : (d.isCrit ? _critStyle     : _dmgStyle);
+            GUI.Label(new Rect(sx, sy, 60f, 20f), d.text, style);
         }
     }
 
