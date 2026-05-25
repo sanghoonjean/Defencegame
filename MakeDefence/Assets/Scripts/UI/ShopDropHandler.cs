@@ -19,8 +19,8 @@ public class ShopDropHandler : MonoBehaviour, IDropHandler
         }
         else
         {
-            // 팝업 미설치 시 즉시 판매 (폴백)
-            tower.UnequipSkill();
+            // 팝업 미설치 시 즉시 판매 (폴백) — InventorySystem 경유로 UI 갱신 보장
+            InventorySystem.Instance.UnequipSkill();
             CubeSystem.Instance?.Add(CubeType.Lower, 1);
         }
     }
