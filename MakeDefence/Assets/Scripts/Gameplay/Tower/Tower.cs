@@ -141,7 +141,10 @@ public class Tower : MonoBehaviour
         }
 
         if (_animator != null)
-            _animator.speed = baseAttackCooldown / Mathf.Max(0.01f, AttackCooldown);
+        {
+            float baseCd = EquippedSkill != null ? EquippedSkill.baseCooldown : baseAttackCooldown;
+            _animator.speed = baseCd / Mathf.Max(0.01f, AttackCooldown);
+        }
     }
 
     private void AccumulateSupportOption(SupportOptionData opt)
