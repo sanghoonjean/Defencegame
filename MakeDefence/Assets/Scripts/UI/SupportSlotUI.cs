@@ -70,14 +70,16 @@ public class SupportSlotUI : MonoBehaviour, IPointerClickHandler, IDropHandler
         // 소스가 장착 슬롯인지 확인
         var sourceSlotUI  = eventData.pointerDrag.GetComponent<SupportSlotUI>();
         int sourceSlotIdx = sourceSlotUI != null ? sourceSlotUI.SlotIndex : -1;
-        bool fromEquipped = sourceSlotIdx >= 0 && sourceSlotIdx != slotIndex;
+
+        // 같은 슬롯에 드롭 시 아무 동작 없음
+        if (sourceSlotIdx == slotIndex) return;
 
         bool ok = InventorySystem.Instance.SetSupportOption(slotIndex, newOption);
         if (!ok) return;
 
-        if (fromEquipped)
+        if (sourceSlotIdx >= 0)
         {
-            // 슬롯 간 이동: 소스 슬롯에 prevOption을 넣어 스왑, 없으면 null로 비움
+            // 장착 슬롯 간 이동: 소스 슬롯에 prevOption을 넣어 스왑
             InventorySystem.Instance.SetSupportOption(sourceSlotIdx, prevOption);
         }
         else
