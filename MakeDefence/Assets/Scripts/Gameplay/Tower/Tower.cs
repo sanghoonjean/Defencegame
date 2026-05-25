@@ -35,10 +35,14 @@ public class Tower : MonoBehaviour
     public float CubeDropRate   { get; private set; }
     public float AddedFireRatio { get; private set; }
 
-    private float _attackTimer;
+    private float    _attackTimer;
+    private Animator _animator;
+
+    private static readonly int AttackTrigger = Animator.StringToHash("Attack");
 
     private void Awake()
     {
+        _animator = GetComponent<Animator>();
         RefreshStats();
     }
 
@@ -135,6 +139,12 @@ public class Tower : MonoBehaviour
             AttackCooldown = EquippedSkill.baseCooldown * cdMult;
             AttackRange    = EquippedSkill.baseRange;
         }
+
+        if (_animator != null)
+        {
+            float baseCd = EquippedSkill != null ? EquippedSkill.baseCooldown : baseAttackCooldown;
+            _animator.speed = baseCd / Mathf.Max(0.01f, AttackCooldown);
+        }
     }
 
     private void AccumulateSupportOption(SupportOptionData opt)
@@ -197,6 +207,7 @@ public class Tower : MonoBehaviour
 
     private void Attack(Enemy target)
     {
+        _animator?.SetTrigger(AttackTrigger);
         SkillDispatcher.Execute(this, target);
         TryDropCube();
     }
