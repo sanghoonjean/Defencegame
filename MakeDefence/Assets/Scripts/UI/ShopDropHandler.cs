@@ -11,7 +11,15 @@ public class ShopDropHandler : MonoBehaviour, IDropHandler
         var tower = InventorySystem.Instance?.SelectedTower;
         if (tower == null || tower.EquippedSkill == null) return;
 
-        InventorySystem.Instance.UnequipSkill();
-        CubeSystem.Instance?.Add(CubeType.Lower, 1);
+        if (SellConfirmPopup.Instance != null)
+        {
+            SellConfirmPopup.Instance.Show(tower.EquippedSkill);
+        }
+        else
+        {
+            // 팝업 미설치 시 즉시 판매 (폴백)
+            InventorySystem.Instance.UnequipSkill();
+            CubeSystem.Instance?.Add(CubeType.Lower, 1);
+        }
     }
 }
