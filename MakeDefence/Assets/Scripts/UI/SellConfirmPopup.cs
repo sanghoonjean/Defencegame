@@ -11,6 +11,7 @@ public class SellConfirmPopup : MonoBehaviour
     [SerializeField] private Button     cancelButton;
 
     private SkillData _pendingSkill;
+    private Tower     _pendingTower;
 
     private void Awake()
     {
@@ -21,8 +22,9 @@ public class SellConfirmPopup : MonoBehaviour
         cancelButton.onClick.AddListener(Hide);
     }
 
-    public void Show(SkillData skill)
+    public void Show(Tower tower, SkillData skill)
     {
+        _pendingTower = tower;
         _pendingSkill = skill;
 
         if (messageText != null)
@@ -33,9 +35,16 @@ public class SellConfirmPopup : MonoBehaviour
 
     private void OnConfirm()
     {
+        var tower = _pendingTower;
+        var skill = _pendingSkill;
+        _pendingTower = null;
         _pendingSkill = null;
         Hide();
-        InventorySystem.Instance?.UnequipSkill();
+
+        if (tower == null || tower.EquippedSkill != skill) return;
+
+        tower.UnequipSkill();
+        InventorySystem.Instance?.SelectTower(tower);   // UI 갱신
         CubeSystem.Instance?.Add(CubeType.Lower, 1);
     }
 
