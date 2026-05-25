@@ -33,6 +33,18 @@ public class SellConfirmPopup : MonoBehaviour
         panel.SetActive(true);
     }
 
+    // 인벤토리 슬롯 → 상점 판매용 (장착 슬롯 아님)
+    public void ShowInventorySell(SkillData skill)
+    {
+        _pendingTower = null;
+        _pendingSkill = skill;
+
+        if (messageText != null)
+            messageText.text = $"'{skill.displayName}'을(를) 판매하시겠습니까?\n하급 큐브 1개를 획득합니다.";
+
+        panel.SetActive(true);
+    }
+
     private void OnConfirm()
     {
         var tower = _pendingTower;
@@ -41,10 +53,20 @@ public class SellConfirmPopup : MonoBehaviour
         _pendingSkill = null;
         Hide();
 
-        if (tower == null || tower.EquippedSkill != skill) return;
+        if (tower != null)
+        {
+            // 장착 슬롯 판매
+            if (tower.EquippedSkill != skill) return;
+            tower.UnequipSkill();
+            InventorySystem.Instance?.SelectTower(tower);
+        }
+        else
+        {
+            // 인벤토리 판매
+            if (!ShopSystem.Instance.OwnedSkills.Contains(skill)) return;
+            ShopSystem.Instance.RemoveOwnedSkill(skill);
+        }
 
-        tower.UnequipSkill();
-        InventorySystem.Instance?.SelectTower(tower);   // UI 갱신
         CubeSystem.Instance?.Add(CubeType.Lower, 1);
     }
 
