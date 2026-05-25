@@ -10,7 +10,15 @@ public class SupportSlotUI : MonoBehaviour, IPointerClickHandler, IDropHandler
     [SerializeField] private Image      lockIcon;
     [SerializeField] private GameObject emptyLabel;
 
-    private bool _isLocked = true;
+    private bool                  _isLocked = true;
+    private SupportOptionDragHandler _dragHandler;
+
+    private void Awake()
+    {
+        _dragHandler = gameObject.GetComponent<SupportOptionDragHandler>()
+                    ?? gameObject.AddComponent<SupportOptionDragHandler>();
+        _dragHandler.Init(iconImage);
+    }
 
     private void OnEnable()
     {
@@ -82,6 +90,9 @@ public class SupportSlotUI : MonoBehaviour, IPointerClickHandler, IDropHandler
 
     private void SetState(bool locked, bool hasOption, SupportOptionData option)
     {
+        if (_dragHandler != null)
+            _dragHandler.Option = (!locked && hasOption) ? option : null;
+
         if (lockIcon != null)
             lockIcon.gameObject.SetActive(locked);
 

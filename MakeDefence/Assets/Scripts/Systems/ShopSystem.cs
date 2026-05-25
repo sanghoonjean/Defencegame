@@ -73,9 +73,10 @@ public class ShopSystem : MonoBehaviour
         OnInventoryChanged?.Invoke();
     }
 
-    public void RemoveOwnedSupportOption(SupportOptionData option)
+    public bool RemoveOwnedSupportOption(SupportOptionData option)
     {
-        if (_ownedSupports.Remove(option))
-            OnInventoryChanged?.Invoke();
+        if (!_ownedSupports.Remove(option)) return false;
+        OnInventoryChanged?.Invoke();
+        return true;
     }
 }
