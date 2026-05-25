@@ -8,6 +8,7 @@ public class SupportSlotUI : MonoBehaviour, IPointerClickHandler, IDropHandler
     [SerializeField] private Image      iconImage;
     [SerializeField] private Text       optionNameText;
     [SerializeField] private GameObject lockedLabel;
+    [SerializeField] private Image      lockIcon;
     [SerializeField] private GameObject emptyLabel;
 
     private bool _isLocked = true;
@@ -84,6 +85,9 @@ public class SupportSlotUI : MonoBehaviour, IPointerClickHandler, IDropHandler
     {
         if (lockedLabel != null)
             lockedLabel.SetActive(locked);
+
+        if (lockIcon != null)
+            lockIcon.gameObject.SetActive(locked);
 
         if (emptyLabel != null)
             emptyLabel.SetActive(!locked && !hasOption);
