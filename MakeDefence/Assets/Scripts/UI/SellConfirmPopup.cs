@@ -63,6 +63,7 @@ public class SellConfirmPopup : MonoBehaviour
         else
         {
             // 인벤토리 판매
+            if (ShopSystem.Instance == null) return;
             if (!ShopSystem.Instance.RemoveOwnedSkill(skill)) return;
         }
 
