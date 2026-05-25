@@ -73,7 +73,7 @@ public class ProjectileBase : MonoBehaviour
     {
         if (SplashRadius <= 0f) return;
 
-        float splashDmg = actualDamage * 0.5f;
+        float splashDmg = actualDamage;
         if (splashDmg <= 0f) return;
 
         float   radiusSq = SplashRadius * SplashRadius;
