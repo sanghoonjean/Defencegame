@@ -47,8 +47,8 @@ public class ShopDropHandler : MonoBehaviour, IDropHandler
         }
         else
         {
-            ShopSystem.Instance.RemoveOwnedSkill(skill);
-            CubeSystem.Instance?.Add(CubeType.Lower, 1);
+            if (ShopSystem.Instance.RemoveOwnedSkill(skill))
+                CubeSystem.Instance?.Add(CubeType.Lower, 1);
         }
     }
 }

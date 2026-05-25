@@ -63,8 +63,7 @@ public class SellConfirmPopup : MonoBehaviour
         else
         {
             // 인벤토리 판매
-            if (!ShopSystem.Instance.OwnedSkills.Contains(skill)) return;
-            ShopSystem.Instance.RemoveOwnedSkill(skill);
+            if (!ShopSystem.Instance.RemoveOwnedSkill(skill)) return;
         }
 
         CubeSystem.Instance?.Add(CubeType.Lower, 1);
