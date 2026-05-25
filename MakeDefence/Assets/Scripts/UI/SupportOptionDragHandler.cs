@@ -40,7 +40,8 @@ public class SupportOptionDragHandler : MonoBehaviour, IBeginDragHandler, IDragH
     public void OnEndDrag(PointerEventData eventData)
     {
         if (_ghost != null) { Destroy(_ghost.gameObject); _ghost = null; }
-        if (_iconImage != null) _iconImage.color = Color.white;
+        if (_iconImage != null)
+            _iconImage.color = Option != null ? Color.white : Color.clear;
     }
 
     private void MoveGhost(PointerEventData eventData)
