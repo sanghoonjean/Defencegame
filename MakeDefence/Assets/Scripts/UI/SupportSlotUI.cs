@@ -10,6 +10,8 @@ public class SupportSlotUI : MonoBehaviour, IPointerClickHandler, IDropHandler
     [SerializeField] private Image      lockIcon;
     [SerializeField] private GameObject emptyLabel;
 
+    public int SlotIndex => slotIndex;
+
     private bool                  _isLocked = true;
     private SupportOptionDragHandler _dragHandler;
 
@@ -62,15 +64,29 @@ public class SupportSlotUI : MonoBehaviour, IPointerClickHandler, IDropHandler
 
         if (slotIndex < 0 || slotIndex >= tower.SupportOptions.Count) return;
 
-        var newOption = supportDrag.Option;
+        var newOption  = supportDrag.Option;
         var prevOption = slotIndex < tower.UnlockedSupportSlots ? tower.SupportOptions[slotIndex] : null;
+
+        // 소스가 장착 슬롯인지 확인
+        var sourceSlotUI  = eventData.pointerDrag.GetComponent<SupportSlotUI>();
+        int sourceSlotIdx = sourceSlotUI != null ? sourceSlotUI.SlotIndex : -1;
+        bool fromEquipped = sourceSlotIdx >= 0 && sourceSlotIdx != slotIndex;
 
         bool ok = InventorySystem.Instance.SetSupportOption(slotIndex, newOption);
         if (!ok) return;
 
-        ShopSystem.Instance?.RemoveOwnedSupportOption(newOption);
-        if (prevOption != null)
-            ShopSystem.Instance?.ReturnSupportOption(prevOption);
+        if (fromEquipped)
+        {
+            // 슬롯 간 이동: 소스 슬롯에 prevOption을 넣어 스왑, 없으면 null로 비움
+            InventorySystem.Instance.SetSupportOption(sourceSlotIdx, prevOption);
+        }
+        else
+        {
+            // 인벤토리에서 드랍: 인벤토리에서 제거 후 밀려난 옵션은 인벤토리로 반환
+            ShopSystem.Instance?.RemoveOwnedSupportOption(newOption);
+            if (prevOption != null)
+                ShopSystem.Instance?.ReturnSupportOption(prevOption);
+        }
     }
 
     private void Refresh(Tower tower)
