@@ -76,8 +76,10 @@ public class SellConfirmPopup : MonoBehaviour
         if (support != null)
         {
             // 서포트 판매: 인벤토리 우선, 없으면 장착 슬롯 탐색
-            if (ShopSystem.Instance == null) return;
-            if (!ShopSystem.Instance.RemoveOwnedSupportOption(support))
+            bool removed = ShopSystem.Instance != null &&
+                           ShopSystem.Instance.RemoveOwnedSupportOption(support);
+
+            if (!removed)
             {
                 var t = InventorySystem.Instance?.SelectedTower;
                 if (t == null) return;
