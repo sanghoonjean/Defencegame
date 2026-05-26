@@ -38,7 +38,10 @@ public class SellConfirmPopup : MonoBehaviour
     // equippedSlotIndex: -1=인벤토리 출처, >=0=장착 슬롯 인덱스
     public void ShowSupportSell(SupportOptionData option, int equippedSlotIndex = -1)
     {
-        _pendingTower          = null;
+        // 장착 슬롯 출처면 현재 타워를 캡처 (팝업 열린 사이 선택 변경 대비)
+        _pendingTower          = equippedSlotIndex >= 0
+                                 ? InventorySystem.Instance?.SelectedTower
+                                 : null;
         _pendingSkill          = null;
         _pendingSupport        = option;
         _pendingSupportSlotIdx = equippedSlotIndex;
@@ -82,11 +85,11 @@ public class SellConfirmPopup : MonoBehaviour
         {
             if (supportIdx >= 0)
             {
-                // 장착 슬롯 출처: 해당 슬롯만 제거
-                var t = InventorySystem.Instance?.SelectedTower;
-                if (t == null) return;
-                if (t.SupportOptions[supportIdx] != support) return;
-                InventorySystem.Instance.SetSupportOption(supportIdx, null);
+                // 장착 슬롯 출처: 드래그 시점에 캡처한 타워 사용
+                if (tower == null) return;
+                if (tower.SupportOptions[supportIdx] != support) return;
+                tower.SetSupportOption(supportIdx, null);
+                InventorySystem.Instance?.SelectTower(tower);
             }
             else
             {
