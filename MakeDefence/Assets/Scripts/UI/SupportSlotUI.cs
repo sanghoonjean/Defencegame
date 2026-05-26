@@ -10,7 +10,17 @@ public class SupportSlotUI : MonoBehaviour, IPointerClickHandler, IDropHandler
     [SerializeField] private Image      lockIcon;
     [SerializeField] private GameObject emptyLabel;
 
-    private bool _isLocked = true;
+    public int SlotIndex => slotIndex;
+
+    private bool                  _isLocked = true;
+    private SupportOptionDragHandler _dragHandler;
+
+    private void Awake()
+    {
+        _dragHandler = gameObject.GetComponent<SupportOptionDragHandler>()
+                    ?? gameObject.AddComponent<SupportOptionDragHandler>();
+        _dragHandler.Init(iconImage);
+    }
 
     private void OnEnable()
     {
@@ -54,15 +64,31 @@ public class SupportSlotUI : MonoBehaviour, IPointerClickHandler, IDropHandler
 
         if (slotIndex < 0 || slotIndex >= tower.SupportOptions.Count) return;
 
-        var newOption = supportDrag.Option;
+        var newOption  = supportDrag.Option;
         var prevOption = slotIndex < tower.UnlockedSupportSlots ? tower.SupportOptions[slotIndex] : null;
+
+        // 소스가 장착 슬롯인지 확인
+        var sourceSlotUI  = eventData.pointerDrag.GetComponent<SupportSlotUI>();
+        int sourceSlotIdx = sourceSlotUI != null ? sourceSlotUI.SlotIndex : -1;
+
+        // 같은 슬롯에 드롭 시 아무 동작 없음
+        if (sourceSlotIdx == slotIndex) return;
 
         bool ok = InventorySystem.Instance.SetSupportOption(slotIndex, newOption);
         if (!ok) return;
 
-        ShopSystem.Instance?.RemoveOwnedSupportOption(newOption);
-        if (prevOption != null)
-            ShopSystem.Instance?.ReturnSupportOption(prevOption);
+        if (sourceSlotIdx >= 0)
+        {
+            // 장착 슬롯 간 이동: 소스 슬롯에 prevOption을 넣어 스왑
+            InventorySystem.Instance.SetSupportOption(sourceSlotIdx, prevOption);
+        }
+        else
+        {
+            // 인벤토리에서 드랍: 인벤토리에서 제거 후 밀려난 옵션은 인벤토리로 반환
+            ShopSystem.Instance?.RemoveOwnedSupportOption(newOption);
+            if (prevOption != null)
+                ShopSystem.Instance?.ReturnSupportOption(prevOption);
+        }
     }
 
     private void Refresh(Tower tower)
@@ -82,6 +108,9 @@ public class SupportSlotUI : MonoBehaviour, IPointerClickHandler, IDropHandler
 
     private void SetState(bool locked, bool hasOption, SupportOptionData option)
     {
+        if (_dragHandler != null)
+            _dragHandler.Option = (!locked && hasOption) ? option : null;
+
         if (lockIcon != null)
             lockIcon.gameObject.SetActive(locked);
 
