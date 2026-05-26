@@ -79,11 +79,13 @@ public class ShopSystem : MonoBehaviour
     public bool MoveOwnedSkill(int fromIndex, int toIndex)
     {
         if (fromIndex < 0 || fromIndex >= _ownedSkills.Count) return false;
-        if (toIndex < 0 || toIndex > _ownedSkills.Count) return false;
+        if (toIndex < 0) return false;
         if (fromIndex == toIndex) return false;
         var skill = _ownedSkills[fromIndex];
         _ownedSkills.RemoveAt(fromIndex);
-        int insertAt = toIndex > fromIndex ? toIndex - 1 : toIndex;
+        // toIndex가 count를 초과하면 맨 뒤에 삽입
+        int insertAt = Mathf.Min(toIndex > fromIndex ? toIndex - 1 : toIndex,
+                                 _ownedSkills.Count);
         _ownedSkills.Insert(insertAt, skill);
         OnInventoryChanged?.Invoke();
         return true;

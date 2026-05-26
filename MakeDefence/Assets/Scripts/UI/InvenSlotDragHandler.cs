@@ -47,12 +47,25 @@ public class InvenSlotDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandl
 
     public void OnDrop(PointerEventData eventData)
     {
-        var source = eventData.pointerDrag?.GetComponent<InvenSlotDragHandler>();
+        if (eventData.pointerDrag == null) return;
+
+        // 장착 슬롯에서 드랍: 언이퀴 + 인벤토리 반환 (InvenDropHandler와 동일)
+        if (eventData.pointerDrag.GetComponent<SkillSlotDragHandler>() != null)
+        {
+            var tower = InventorySystem.Instance?.SelectedTower;
+            if (tower == null || tower.EquippedSkill == null) return;
+            var skill = tower.EquippedSkill;
+            InventorySystem.Instance.UnequipSkill();
+            ShopSystem.Instance?.ReturnSkill(skill);
+            return;
+        }
+
+        // 인벤토리 슬롯 간 드랍: 스왑 / 이동
+        var source = eventData.pointerDrag.GetComponent<InvenSlotDragHandler>();
         if (source == null || source == this) return;
         if (SlotIndex < 0 || source.SlotIndex < 0) return;
         if (ShopSystem.Instance == null) return;
 
-        // 소스에 스킬 있고 목적지가 빈 슬롯이면 이동, 둘 다 스킬 있으면 스왑
         if (source.Skill != null && Skill == null)
             ShopSystem.Instance.MoveOwnedSkill(source.SlotIndex, SlotIndex);
         else if (source.Skill != null && Skill != null)
