@@ -45,7 +45,6 @@ public class ShopSystem : MonoBehaviour
     public bool BuySupportOption(SupportOptionData option)
     {
         if (!availableSupports.Contains(option))    return false;
-        if (_ownedSupports.Contains(option))        return false;
         if (!CubeSystem.Instance.TryConsume(CubeType.Lower, 1)) return false;
         _ownedSupports.Add(option);
         OnInventoryChanged?.Invoke();
