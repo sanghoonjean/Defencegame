@@ -13,6 +13,7 @@ public class SellConfirmPopup : MonoBehaviour
     private SkillData          _pendingSkill;
     private Tower              _pendingTower;
     private SupportOptionData  _pendingSupport;
+    private int                _pendingSupportSlotIdx; // -1=인벤토리, >=0=장착 슬롯 인덱스
 
     private void Awake()
     {
@@ -34,11 +35,13 @@ public class SellConfirmPopup : MonoBehaviour
         panel.SetActive(true);
     }
 
-    public void ShowSupportSell(SupportOptionData option)
+    // equippedSlotIndex: -1=인벤토리 출처, >=0=장착 슬롯 인덱스
+    public void ShowSupportSell(SupportOptionData option, int equippedSlotIndex = -1)
     {
-        _pendingTower   = null;
-        _pendingSkill   = null;
-        _pendingSupport = option;
+        _pendingTower          = null;
+        _pendingSkill          = null;
+        _pendingSupport        = option;
+        _pendingSupportSlotIdx = equippedSlotIndex;
 
         if (messageText != null)
         {
@@ -65,33 +68,31 @@ public class SellConfirmPopup : MonoBehaviour
 
     private void OnConfirm()
     {
-        var tower   = _pendingTower;
-        var skill   = _pendingSkill;
-        var support = _pendingSupport;
-        _pendingTower   = null;
-        _pendingSkill   = null;
-        _pendingSupport = null;
+        var tower      = _pendingTower;
+        var skill      = _pendingSkill;
+        var support    = _pendingSupport;
+        int supportIdx = _pendingSupportSlotIdx;
+        _pendingTower          = null;
+        _pendingSkill          = null;
+        _pendingSupport        = null;
+        _pendingSupportSlotIdx = -1;
         Hide();
 
         if (support != null)
         {
-            // 서포트 판매: 인벤토리 우선, 없으면 장착 슬롯 탐색
-            bool removed = ShopSystem.Instance != null &&
-                           ShopSystem.Instance.RemoveOwnedSupportOption(support);
-
-            if (!removed)
+            if (supportIdx >= 0)
             {
+                // 장착 슬롯 출처: 해당 슬롯만 제거
                 var t = InventorySystem.Instance?.SelectedTower;
                 if (t == null) return;
-                bool found = false;
-                for (int i = 0; i < t.UnlockedSupportSlots; i++)
-                {
-                    if (t.SupportOptions[i] != support) continue;
-                    InventorySystem.Instance.SetSupportOption(i, null);
-                    found = true;
-                    break;
-                }
-                if (!found) return;
+                if (t.SupportOptions[supportIdx] != support) return;
+                InventorySystem.Instance.SetSupportOption(supportIdx, null);
+            }
+            else
+            {
+                // 인벤토리 출처
+                if (ShopSystem.Instance == null) return;
+                if (!ShopSystem.Instance.RemoveOwnedSupportOption(support)) return;
             }
         }
         else if (tower != null)
@@ -113,8 +114,9 @@ public class SellConfirmPopup : MonoBehaviour
 
     private void Hide()
     {
-        _pendingSkill   = null;
-        _pendingSupport = null;
+        _pendingSkill          = null;
+        _pendingSupport        = null;
+        _pendingSupportSlotIdx = -1;
         panel.SetActive(false);
     }
 }
