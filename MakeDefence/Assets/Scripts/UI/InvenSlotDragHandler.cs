@@ -1,9 +1,13 @@
+using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public class InvenSlotDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
+    public static event Action OnSkillDragStarted;
+    public static event Action OnSkillDragEnded;
+
     public SkillData Skill { get; set; }
 
     private Image  _iconImage;
@@ -33,6 +37,8 @@ public class InvenSlotDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandl
 
         if (_iconImage != null)
             _iconImage.color = new Color(1f, 1f, 1f, 0.3f);
+
+        OnSkillDragStarted?.Invoke();
     }
 
     public void OnDrag(PointerEventData eventData) => MoveGhost(eventData);
@@ -42,6 +48,8 @@ public class InvenSlotDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandl
         if (_ghost != null) { Destroy(_ghost.gameObject); _ghost = null; }
         if (_iconImage != null)
             _iconImage.color = Skill != null ? Color.white : Color.clear;
+
+        OnSkillDragEnded?.Invoke();
     }
 
     private void MoveGhost(PointerEventData eventData)
