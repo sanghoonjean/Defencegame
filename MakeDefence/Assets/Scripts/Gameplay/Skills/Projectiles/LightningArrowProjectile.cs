@@ -22,6 +22,7 @@ public class LightningArrowProjectile : ProjectileBase
             if (e == null) continue;
             if (((Vector2)e.transform.position - hitPos).sqrMagnitude > radiusSq) continue;
 
+            AddHitEnemy(e);
             e.TakeDamage(dmg, _armorPen, isCrit);
             if (isCrit)
                 e.ApplyStun(ShockDuration);

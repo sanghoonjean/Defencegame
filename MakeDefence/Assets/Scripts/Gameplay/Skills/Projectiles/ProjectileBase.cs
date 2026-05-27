@@ -89,6 +89,8 @@ public class ProjectileBase : MonoBehaviour
         target.TakeDamage(fireDmg, 0f, isCrit, DamageType.Fire);
     }
 
+    protected void AddHitEnemy(Enemy e) => _hitEnemies.Add(e);
+
     private bool TryChain()
     {
         Vector2 currentPos = transform.position;
@@ -127,6 +129,7 @@ public class ProjectileBase : MonoBehaviour
             if (e == null || e == primaryTarget) continue;
             if (((Vector2)e.transform.position - pos).sqrMagnitude <= radiusSq)
             {
+                _hitEnemies.Add(e);
                 e.TakeDamage(splashDmg, _armorPen, isCrit);
                 if (StunChance > 0f && SplashStunDuration > 0f &&
                     Random.value < Mathf.Clamp01(StunChance / 100f))
