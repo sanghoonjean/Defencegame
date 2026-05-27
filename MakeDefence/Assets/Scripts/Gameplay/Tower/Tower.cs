@@ -33,6 +33,7 @@ public class Tower : MonoBehaviour
     public float ArmorPen       { get; private set; }
     public float SkillCDReduce  { get; private set; }
     public float CubeDropRate   { get; private set; }
+    public float IgniteChance      { get; private set; }
     public float AddedFireRatio   { get; private set; }
     public float DotDamageRatio   { get; private set; }
     public float DotDuration      { get; private set; }
@@ -107,6 +108,7 @@ public class Tower : MonoBehaviour
         ArmorPen      = 0f;
         SkillCDReduce = 0f;
         CubeDropRate  = 0f;
+        IgniteChance   = 0f;
         AddedFireRatio = 0f;
         DotDamageRatio = 0f;
         DotDuration    = 0f;
@@ -187,6 +189,7 @@ public class Tower : MonoBehaviour
             case ItemOptionType.ArmorPenetration:    ArmorPen      += opt.Value; break;
             case ItemOptionType.SkillCooldownReduce: SkillCDReduce += opt.Value; break;
             case ItemOptionType.CubeDropRate:        CubeDropRate  += opt.Value; break;
+            case ItemOptionType.IgniteChance:        IgniteChance  += opt.Value; break;
         }
     }
 

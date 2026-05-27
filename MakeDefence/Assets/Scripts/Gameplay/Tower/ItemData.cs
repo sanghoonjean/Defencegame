@@ -6,7 +6,7 @@ public enum ItemOptionType
 {
     AttackPower, AttackSpeed, AttackRange, StunChance,
     CritChance, CritDamage, ArmorPenetration,
-    SkillCooldownReduce, CubeDropRate
+    SkillCooldownReduce, CubeDropRate, IgniteChance
 }
 
 public class ItemOption
@@ -40,6 +40,7 @@ public class ItemData
         { ItemOptionType.ArmorPenetration,     (5f,  30f) },
         { ItemOptionType.SkillCooldownReduce,  (5f,  20f) },
         { ItemOptionType.CubeDropRate,         (2f,  10f) },
+        { ItemOptionType.IgniteChance,         (5f,  30f) },
     };
 
     public static ItemData CreateRandom()
