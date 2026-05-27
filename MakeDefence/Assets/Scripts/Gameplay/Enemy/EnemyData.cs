@@ -13,4 +13,7 @@ public class EnemyData : ScriptableObject
 
     // LastBoss는 난이도 공식 미적용
     public bool fixedStats;
+
+    [Header("저항 (0 = 없음, 0.5 = 50% 감소, -0.25 = 25% 증가)")]
+    [Range(-1f, 0.9f)] public float fireResistance;
 }
