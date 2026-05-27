@@ -23,6 +23,7 @@ public class Enemy : MonoBehaviour
     private float _stunTimer;
 
     private float _fireResistance;
+    private float _coldResistance;
 
     private Coroutine _dotCoroutine;
     private Coroutine _burnCoroutine;
@@ -63,6 +64,7 @@ public class Enemy : MonoBehaviour
         }
         MaxHp = CurrentHp;
         _fireResistance = Mathf.Clamp(data.fireResistance, -1f, 0.9f);
+        _coldResistance = Mathf.Clamp(data.coldResistance, -1f, 0.9f);
 
         if (_waypoints != null && _waypoints.Length > 0)
         {
@@ -157,7 +159,12 @@ public class Enemy : MonoBehaviour
         float effectiveDefense = (type == DamageType.Physical)
             ? _defense * (1f - Mathf.Clamp01(armorPenRatio))
             : 0f;
-        float resistance = type == DamageType.Fire ? _fireResistance : 0f;
+        float resistance = type switch
+        {
+            DamageType.Fire => _fireResistance,
+            DamageType.Cold => _coldResistance,
+            _               => 0f
+        };
         float actual = Mathf.Max(1f, (damage - effectiveDefense) * (1f - resistance));
         CurrentHp -= actual;
         GameUIManager.ShowDamage(transform.position, actual, isCrit, type);
