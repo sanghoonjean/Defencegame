@@ -91,6 +91,8 @@ public class ProjectileBase : MonoBehaviour
 
     protected void AddHitEnemy(Enemy e) => _hitEnemies.Add(e);
 
+    protected virtual void OnChain(Vector2 chainOrigin) { }
+
     private bool TryChain()
     {
         Vector2 currentPos = transform.position;
@@ -107,6 +109,7 @@ public class ProjectileBase : MonoBehaviour
         if (nearest == null) return false;
 
         ChainCount--;
+        OnChain(currentPos);
         _target   = nearest;
         _launched = true;
         return true;

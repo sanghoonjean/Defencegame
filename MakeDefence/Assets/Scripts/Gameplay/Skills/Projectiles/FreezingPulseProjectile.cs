@@ -16,6 +16,8 @@ public class FreezingPulseProjectile : ProjectileBase
         Launch(origin, target, damage, armorPen);
     }
 
+    protected override void OnChain(Vector2 chainOrigin) => _launchOrigin = chainOrigin;
+
     protected override float OnHit(Enemy target)
     {
         float dist       = Vector2.Distance(_launchOrigin, target.transform.position);
