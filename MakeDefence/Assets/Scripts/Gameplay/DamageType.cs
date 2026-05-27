@@ -1,1 +1,1 @@
-public enum DamageType { Physical, Fire }
+public enum DamageType { Physical, Fire, Energy }

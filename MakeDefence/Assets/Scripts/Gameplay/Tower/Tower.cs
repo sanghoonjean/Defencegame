@@ -33,7 +33,9 @@ public class Tower : MonoBehaviour
     public float ArmorPen       { get; private set; }
     public float SkillCDReduce  { get; private set; }
     public float CubeDropRate   { get; private set; }
-    public float AddedFireRatio { get; private set; }
+    public float AddedFireRatio   { get; private set; }
+    public float DotDamageRatio   { get; private set; }
+    public float DotDuration      { get; private set; }
 
     private float    _attackTimer;
     private Animator _animator;
@@ -104,6 +106,8 @@ public class Tower : MonoBehaviour
         SkillCDReduce = 0f;
         CubeDropRate  = 0f;
         AddedFireRatio = 0f;
+        DotDamageRatio = 0f;
+        DotDuration    = 0f;
 
         // 아이템 옵션 합산
         if (ItemSystem.Instance != null)
@@ -152,6 +156,10 @@ public class Tower : MonoBehaviour
         switch (opt.optionType)
         {
             case SupportOptionType.IncendiaryRound: AddedFireRatio += Mathf.Clamp01(opt.value); break;
+            case SupportOptionType.EnergyDrain:
+                DotDamageRatio += Mathf.Clamp01(opt.value);
+                DotDuration     = 3f;
+                break;
         }
     }
 

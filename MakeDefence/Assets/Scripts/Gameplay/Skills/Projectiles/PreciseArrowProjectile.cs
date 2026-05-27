@@ -18,6 +18,7 @@ public class PreciseArrowProjectile : ProjectileBase
             target.ApplyStun(0.5f);
 
         ApplyFireOnHit(target, isCrit);
+        ApplyDotOnHit(target);
         return dmg;
     }
 }

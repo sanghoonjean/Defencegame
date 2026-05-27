@@ -62,6 +62,8 @@ public static class SkillDispatcher
         proj.AddedFireRatio  = tower.AddedFireRatio;
         proj.FireCritDamage  = tower.CritDamage;
         proj.FireBaseDamage  = dmg;
+        proj.DotTickDamage   = tower.AttackDamage * tower.DotDamageRatio;
+        proj.DotDuration     = tower.DotDuration;
         proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
     }
 
@@ -83,6 +85,8 @@ public static class SkillDispatcher
         proj.AddedFireRatio = tower.AddedFireRatio;
         proj.FireCritDamage = tower.CritDamage;
         proj.FireBaseDamage = dmg;
+        proj.DotTickDamage  = tower.AttackDamage * tower.DotDamageRatio;
+        proj.DotDuration    = tower.DotDuration;
         proj.LaunchFrom(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
     }
 
@@ -102,6 +106,8 @@ public static class SkillDispatcher
         proj.AddedFireRatio = tower.AddedFireRatio;
         proj.FireCritDamage = tower.CritDamage;
         proj.FireBaseDamage = dmg;
+        proj.DotTickDamage  = tower.AttackDamage * tower.DotDamageRatio;
+        proj.DotDuration    = tower.DotDuration;
         proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
     }
 
@@ -112,12 +118,14 @@ public static class SkillDispatcher
 
         var skill = tower.EquippedSkill;
 
-        proj.AoeRadius    = skill.aoeRadius;
-        proj.DotDuration  = skill.dotDuration > 0f ? skill.dotDuration : 3f;
-        proj.TickDamage   = skill.baseDamage;
-        proj.TickInterval = 0.5f;
-        proj.StunChance   = 0f;
-        proj.SplashRadius = skill.aoeRadius;
+        proj.AoeRadius      = skill.aoeRadius;
+        proj.PoisonDuration = skill.dotDuration > 0f ? skill.dotDuration : 3f;
+        proj.TickDamage     = skill.baseDamage;
+        proj.TickInterval   = 0.5f;
+        proj.StunChance     = 0f;
+        proj.SplashRadius   = skill.aoeRadius;
+        proj.DotTickDamage  = tower.AttackDamage * tower.DotDamageRatio;
+        proj.DotDuration    = tower.DotDuration;
         // AddedFireRatio 미설정 — DoT 스킬은 불꽃 데미지 제외
         proj.Launch(tower.transform.position, target, skill.baseDamage, tower.ArmorPen / 100f);
     }
@@ -139,7 +147,9 @@ public static class SkillDispatcher
         proj.IsCrit             = isCrit;
         proj.AddedFireRatio     = tower.AddedFireRatio;
         proj.FireCritDamage     = tower.CritDamage;
-        proj.FireBaseDamage     = baseDmg;  // pre-crit — crit 는 OnHit 에서 단일 적용
+        proj.FireBaseDamage     = baseDmg;
+        proj.DotTickDamage      = tower.AttackDamage * tower.DotDamageRatio;
+        proj.DotDuration        = tower.DotDuration;
         proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
     }
 

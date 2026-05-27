@@ -4,10 +4,10 @@ public class CausticArrowProjectile : ProjectileBase
 {
     [SerializeField] private GameObject causticGroundPrefab;
 
-    public float AoeRadius    { get; set; }
-    public float DotDuration  { get; set; }
-    public float TickDamage   { get; set; }
-    public float TickInterval { get; set; }
+    public float AoeRadius      { get; set; }
+    public float PoisonDuration { get; set; }
+    public float TickDamage     { get; set; }
+    public float TickInterval   { get; set; }
 
     protected override float OnHit(Enemy target)
     {
@@ -25,7 +25,8 @@ public class CausticArrowProjectile : ProjectileBase
             Destroy(go);
             return 0f;
         }
-        cg.Init(AoeRadius, TickDamage, _armorPen, TickInterval, DotDuration);
+        cg.Init(AoeRadius, TickDamage, _armorPen, TickInterval, PoisonDuration);
+        ApplyDotOnHit(target);
         return _damage;
     }
 }

@@ -33,6 +33,7 @@ public class FreezingPulseProjectile : ProjectileBase
             target.ApplyStun(FreezeDuration);
 
         ApplyFireOnHit(target, isCrit);
+        ApplyDotOnHit(target);
         return dmg;
     }
 }
