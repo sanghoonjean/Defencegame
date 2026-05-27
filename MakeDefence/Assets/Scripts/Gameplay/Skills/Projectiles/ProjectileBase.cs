@@ -25,6 +25,7 @@ public class ProjectileBase : MonoBehaviour
 
     public int ChainCount  { get; set; }
     public int PierceCount { get; set; }
+    public DamageType SplashDamageType { get; set; } = DamageType.Physical;
     private readonly HashSet<Enemy> _hitEnemies = new();
     private Vector2 _lastMoveDir;
 
@@ -162,7 +163,7 @@ public class ProjectileBase : MonoBehaviour
             if (((Vector2)e.transform.position - pos).sqrMagnitude <= radiusSq)
             {
                 _hitEnemies.Add(e);
-                e.TakeDamage(splashDmg, _armorPen, isCrit);
+                e.TakeDamage(splashDmg, _armorPen, isCrit, SplashDamageType);
                 if (StunChance > 0f && SplashStunDuration > 0f &&
                     Random.value < Mathf.Clamp01(StunChance / 100f))
                     e.ApplyStun(SplashStunDuration);
@@ -180,9 +181,10 @@ public class ProjectileBase : MonoBehaviour
         FireBaseDamage = 0f;
         DotTickDamage  = 0f;
         DotDuration    = 0f;
-        ChainCount     = 0;
-        PierceCount    = 0;
-        _lastMoveDir   = Vector2.zero;
+        ChainCount         = 0;
+        PierceCount        = 0;
+        SplashDamageType   = DamageType.Physical;
+        _lastMoveDir       = Vector2.zero;
         _hitEnemies.Clear();
         ObjectPoolSystem.Instance.ReturnProjectile(this);
     }

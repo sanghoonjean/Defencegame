@@ -153,6 +153,7 @@ public static class SkillDispatcher
         proj.SplashRadius       = skill.aoeRadius;
         proj.SplashStunDuration = skill.stunDuration > 0f ? skill.stunDuration : 0.5f;
         proj.IsCrit             = isCrit;
+        proj.SplashDamageType   = DamageType.Fire;
         proj.AddedFireRatio     = tower.AddedFireRatio;
         proj.FireCritDamage     = tower.CritDamage;
         proj.FireBaseDamage     = baseDmg;
