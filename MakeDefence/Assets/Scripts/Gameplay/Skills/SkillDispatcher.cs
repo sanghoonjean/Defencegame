@@ -64,6 +64,7 @@ public static class SkillDispatcher
         proj.FireBaseDamage  = dmg;
         proj.DotTickDamage   = tower.AttackDamage * tower.DotDamageRatio;
         proj.DotDuration     = tower.DotDuration;
+        proj.ChainCount      = tower.ChainCount;
         proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
     }
 
@@ -87,6 +88,7 @@ public static class SkillDispatcher
         proj.FireBaseDamage = dmg;
         proj.DotTickDamage  = tower.AttackDamage * tower.DotDamageRatio;
         proj.DotDuration    = tower.DotDuration;
+        proj.ChainCount     = tower.ChainCount;
         proj.LaunchFrom(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
     }
 
@@ -108,6 +110,7 @@ public static class SkillDispatcher
         proj.FireBaseDamage = dmg;
         proj.DotTickDamage  = tower.AttackDamage * tower.DotDamageRatio;
         proj.DotDuration    = tower.DotDuration;
+        proj.ChainCount     = tower.ChainCount;
         proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
     }
 
@@ -126,6 +129,7 @@ public static class SkillDispatcher
         proj.SplashRadius   = skill.aoeRadius;
         proj.DotTickDamage  = tower.AttackDamage * tower.DotDamageRatio;
         proj.DotDuration    = tower.DotDuration;
+        proj.ChainCount     = tower.ChainCount;
         // AddedFireRatio 미설정 — DoT 스킬은 불꽃 데미지 제외
         proj.Launch(tower.transform.position, target, skill.baseDamage, tower.ArmorPen / 100f);
     }
@@ -150,6 +154,7 @@ public static class SkillDispatcher
         proj.FireBaseDamage     = baseDmg;
         proj.DotTickDamage      = tower.AttackDamage * tower.DotDamageRatio;
         proj.DotDuration        = tower.DotDuration;
+        proj.ChainCount         = tower.ChainCount;
         proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
     }
 
