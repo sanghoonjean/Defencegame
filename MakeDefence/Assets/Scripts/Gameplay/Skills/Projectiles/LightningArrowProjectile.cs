@@ -25,10 +25,10 @@ public class LightningArrowProjectile : ProjectileBase
             e.TakeDamage(dmg, _armorPen, isCrit);
             if (isCrit)
                 e.ApplyStun(ShockDuration);
+            ApplyFireOnHit(e, isCrit);
         }
 
         GameUIManager.ShowAoeHit(hitPos, AoeRadius);
-        ApplyFireOnHit(target, isCrit);
         return dmg;
     }
 }
