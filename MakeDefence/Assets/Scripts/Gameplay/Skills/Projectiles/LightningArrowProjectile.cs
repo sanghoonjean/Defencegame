@@ -26,6 +26,7 @@ public class LightningArrowProjectile : ProjectileBase
             if (isCrit)
                 e.ApplyStun(ShockDuration);
             ApplyFireOnHit(e, isCrit);
+            ApplyDotOnHit(e);
         }
 
         GameUIManager.ShowAoeHit(hitPos, AoeRadius);
