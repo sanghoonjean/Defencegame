@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class ProjectileBase : MonoBehaviour
@@ -21,6 +22,9 @@ public class ProjectileBase : MonoBehaviour
 
     public float DotTickDamage  { get; set; }
     public float DotDuration    { get; set; }
+
+    public int ChainCount { get; set; }
+    private readonly HashSet<Enemy> _hitEnemies = new();
 
     public void Launch(Vector2 origin, Enemy target, float damage, float armorPen)
     {
@@ -48,10 +52,15 @@ public class ProjectileBase : MonoBehaviour
 
         if (Vector2.Distance(next, dest) < HitRadius)
         {
+            _hitEnemies.Add(_target);
             float actualDmg = OnHit(_target);
             ApplySplash(_target, actualDmg, _hitIsCrit);
             if (SplashRadius > 0f && actualDmg > 0f)
                 GameUIManager.ShowAoeHit(_target.transform.position, SplashRadius);
+
+            if (ChainCount > 0 && TryChain())
+                return;
+
             ReturnToPool();
         }
     }
@@ -78,6 +87,27 @@ public class ProjectileBase : MonoBehaviour
         float fireDmg = FireBaseDamage * AddedFireRatio;
         if (isCrit) fireDmg *= 1f + FireCritDamage / 100f;
         target.TakeDamage(fireDmg, 0f, isCrit, DamageType.Fire);
+    }
+
+    private bool TryChain()
+    {
+        Vector2 currentPos = transform.position;
+        Enemy   nearest    = null;
+        float   minDist    = float.MaxValue;
+
+        foreach (var e in Enemy.ActiveEnemies)
+        {
+            if (e == null || _hitEnemies.Contains(e)) continue;
+            float dist = Vector2.Distance(currentPos, e.transform.position);
+            if (dist < minDist) { minDist = dist; nearest = e; }
+        }
+
+        if (nearest == null) return false;
+
+        ChainCount--;
+        _target   = nearest;
+        _launched = true;
+        return true;
     }
 
     private void ApplySplash(Enemy primaryTarget, float actualDamage, bool isCrit)
@@ -115,6 +145,8 @@ public class ProjectileBase : MonoBehaviour
         FireBaseDamage = 0f;
         DotTickDamage  = 0f;
         DotDuration    = 0f;
+        ChainCount     = 0;
+        _hitEnemies.Clear();
         ObjectPoolSystem.Instance.ReturnProjectile(this);
     }
 }

@@ -36,6 +36,7 @@ public class Tower : MonoBehaviour
     public float AddedFireRatio   { get; private set; }
     public float DotDamageRatio   { get; private set; }
     public float DotDuration      { get; private set; }
+    public int   ChainCount       { get; private set; }
 
     private float    _attackTimer;
     private Animator _animator;
@@ -108,6 +109,7 @@ public class Tower : MonoBehaviour
         AddedFireRatio = 0f;
         DotDamageRatio = 0f;
         DotDuration    = 0f;
+        ChainCount     = 0;
 
         // 아이템 옵션 합산
         if (ItemSystem.Instance != null)
@@ -159,6 +161,9 @@ public class Tower : MonoBehaviour
             case SupportOptionType.EnergyDrain:
                 DotDamageRatio += Mathf.Clamp01(opt.value);
                 DotDuration     = 3f;
+                break;
+            case SupportOptionType.ChainCircuit:
+                ChainCount += Mathf.Max(1, Mathf.RoundToInt(opt.value * 10));
                 break;
         }
     }
