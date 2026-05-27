@@ -90,6 +90,7 @@ public class ProjectileBase : MonoBehaviour
                 if (StunChance > 0f && SplashStunDuration > 0f &&
                     Random.value < Mathf.Clamp01(StunChance / 100f))
                     e.ApplyStun(SplashStunDuration);
+                ApplyFireOnHit(e, isCrit);
             }
         }
     }
