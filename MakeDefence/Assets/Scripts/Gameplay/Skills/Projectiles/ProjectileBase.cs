@@ -23,8 +23,10 @@ public class ProjectileBase : MonoBehaviour
     public float DotTickDamage  { get; set; }
     public float DotDuration    { get; set; }
 
-    public int ChainCount { get; set; }
+    public int ChainCount  { get; set; }
+    public int PierceCount { get; set; }
     private readonly HashSet<Enemy> _hitEnemies = new();
+    private Vector2 _lastMoveDir;
 
     public void Launch(Vector2 origin, Enemy target, float damage, float armorPen)
     {
@@ -47,6 +49,7 @@ public class ProjectileBase : MonoBehaviour
 
         Vector2 current = transform.position;
         Vector2 dest    = _target.transform.position;
+        _lastMoveDir    = (dest - current).normalized;
         Vector2 next    = Vector2.MoveTowards(current, dest, MoveSpeed * Time.deltaTime);
         transform.position = new Vector3(next.x, next.y, -1f);
 
@@ -57,6 +60,9 @@ public class ProjectileBase : MonoBehaviour
             ApplySplash(_target, actualDmg, _hitIsCrit);
             if (SplashRadius > 0f && actualDmg > 0f)
                 GameUIManager.ShowAoeHit(_target.transform.position, SplashRadius);
+
+            if (PierceCount > 0 && TryPierce())
+                return;
 
             if (ChainCount > 0 && TryChain())
                 return;
@@ -90,6 +96,29 @@ public class ProjectileBase : MonoBehaviour
     }
 
     protected void AddHitEnemy(Enemy e) => _hitEnemies.Add(e);
+
+    private bool TryPierce()
+    {
+        Vector2 currentPos = transform.position;
+        Enemy   nearest    = null;
+        float   minDist    = float.MaxValue;
+
+        foreach (var e in Enemy.ActiveEnemies)
+        {
+            if (e == null || _hitEnemies.Contains(e)) continue;
+            Vector2 toEnemy = (Vector2)e.transform.position - currentPos;
+            if (Vector2.Dot(_lastMoveDir, toEnemy.normalized) <= 0f) continue;
+            float dist = toEnemy.magnitude;
+            if (dist < minDist) { minDist = dist; nearest = e; }
+        }
+
+        if (nearest == null) return false;
+
+        PierceCount--;
+        _target   = nearest;
+        _launched = true;
+        return true;
+    }
 
     protected virtual void OnChain(Vector2 chainOrigin) { }
 
@@ -152,6 +181,8 @@ public class ProjectileBase : MonoBehaviour
         DotTickDamage  = 0f;
         DotDuration    = 0f;
         ChainCount     = 0;
+        PierceCount    = 0;
+        _lastMoveDir   = Vector2.zero;
         _hitEnemies.Clear();
         ObjectPoolSystem.Instance.ReturnProjectile(this);
     }
