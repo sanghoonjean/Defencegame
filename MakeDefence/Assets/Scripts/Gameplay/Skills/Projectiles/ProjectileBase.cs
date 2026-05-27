@@ -19,6 +19,9 @@ public class ProjectileBase : MonoBehaviour
     public float FireCritDamage { get; set; }
     public float FireBaseDamage { get; set; }
 
+    public float DotTickDamage  { get; set; }
+    public float DotDuration    { get; set; }
+
     public void Launch(Vector2 origin, Enemy target, float damage, float armorPen)
     {
         transform.position = new Vector3(origin.x, origin.y, -1f);
@@ -57,7 +60,15 @@ public class ProjectileBase : MonoBehaviour
     {
         target.TakeDamage(_damage, _armorPen);
         ApplyFireOnHit(target, false);
+        ApplyDotOnHit(target);
         return _damage;
+    }
+
+    protected void ApplyDotOnHit(Enemy target)
+    {
+        if (DotTickDamage <= 0f || DotDuration <= 0f) return;
+        if (target.CurrentHp <= 0f) return;
+        target.ApplyDot(DotTickDamage, DotDuration);
     }
 
     protected void ApplyFireOnHit(Enemy target, bool isCrit)
@@ -102,6 +113,8 @@ public class ProjectileBase : MonoBehaviour
         AddedFireRatio = 0f;
         FireCritDamage = 0f;
         FireBaseDamage = 0f;
+        DotTickDamage  = 0f;
+        DotDuration    = 0f;
         ObjectPoolSystem.Instance.ReturnProjectile(this);
     }
 }

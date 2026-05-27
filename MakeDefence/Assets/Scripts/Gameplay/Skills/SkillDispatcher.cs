@@ -62,6 +62,8 @@ public static class SkillDispatcher
         proj.AddedFireRatio  = tower.AddedFireRatio;
         proj.FireCritDamage  = tower.CritDamage;
         proj.FireBaseDamage  = dmg;
+        proj.DotTickDamage   = tower.AttackDamage * tower.DotDamageRatio;
+        proj.DotDuration     = tower.DotDuration;
         proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
     }
 
@@ -83,6 +85,8 @@ public static class SkillDispatcher
         proj.AddedFireRatio = tower.AddedFireRatio;
         proj.FireCritDamage = tower.CritDamage;
         proj.FireBaseDamage = dmg;
+        proj.DotTickDamage  = tower.AttackDamage * tower.DotDamageRatio;
+        proj.DotDuration    = tower.DotDuration;
         proj.LaunchFrom(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
     }
 
@@ -102,6 +106,8 @@ public static class SkillDispatcher
         proj.AddedFireRatio = tower.AddedFireRatio;
         proj.FireCritDamage = tower.CritDamage;
         proj.FireBaseDamage = dmg;
+        proj.DotTickDamage  = tower.AttackDamage * tower.DotDamageRatio;
+        proj.DotDuration    = tower.DotDuration;
         proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
     }
 
@@ -139,7 +145,9 @@ public static class SkillDispatcher
         proj.IsCrit             = isCrit;
         proj.AddedFireRatio     = tower.AddedFireRatio;
         proj.FireCritDamage     = tower.CritDamage;
-        proj.FireBaseDamage     = baseDmg;  // pre-crit — crit 는 OnHit 에서 단일 적용
+        proj.FireBaseDamage     = baseDmg;
+        proj.DotTickDamage      = tower.AttackDamage * tower.DotDamageRatio;
+        proj.DotDuration        = tower.DotDuration;
         proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
     }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -21,8 +22,16 @@ public class Enemy : MonoBehaviour
     private int _waypointIndex;
     private float _stunTimer;
 
+    private Coroutine _dotCoroutine;
+    private const float DotTickInterval = 0.5f;
+
     private void OnEnable() => ActiveEnemies.Add(this);
-    private void OnDisable() => ActiveEnemies.Remove(this);
+
+    private void OnDisable()
+    {
+        ActiveEnemies.Remove(this);
+        if (_dotCoroutine != null) { StopCoroutine(_dotCoroutine); _dotCoroutine = null; }
+    }
 
     public void Initialize(EnemyData data, int stage, Vector2[] waypoints)
     {
@@ -68,6 +77,26 @@ public class Enemy : MonoBehaviour
     public void ApplyStun(float duration)
     {
         _stunTimer = Mathf.Max(_stunTimer, duration);
+    }
+
+    public void ApplyDot(float tickDamage, float duration)
+    {
+        if (tickDamage <= 0f || duration <= 0f) return;
+        if (_dotCoroutine != null) StopCoroutine(_dotCoroutine);
+        _dotCoroutine = StartCoroutine(DotCoroutine(tickDamage, duration));
+    }
+
+    private IEnumerator DotCoroutine(float tickDamage, float duration)
+    {
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            yield return new WaitForSeconds(DotTickInterval);
+            elapsed += DotTickInterval;
+            if (CurrentHp <= 0f) break;
+            TakeDamage(tickDamage, 0f, false, DamageType.Energy);
+        }
+        _dotCoroutine = null;
     }
 
     private void MoveAlongPath()
