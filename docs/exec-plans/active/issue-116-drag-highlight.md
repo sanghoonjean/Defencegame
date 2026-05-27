@@ -34,9 +34,10 @@ public static event Action OnSkillDragEnded;
 ## 5. Unity Inspector 설정
 
 아래 GameObject에 `DropTargetHighlight` 컴포넌트 추가:
-- SkillSlotUI가 있는 GameObject
-- InvenDropHandler가 있는 GameObject
-- ShopDropHandler가 있는 GameObject
+- SkillSlotUI가 있는 GameObject (스킬 장착 슬롯)
+- ShopDropHandler가 있는 GameObject (판매 영역)
+
+`InvenDropHandler`는 `SkillSlotDragHandler`에서 온 드래그만 받으므로 부착하지 않는다 (인벤토리 슬롯 드래그를 무시함).
 
 ## 6. 테스트 계획
 
