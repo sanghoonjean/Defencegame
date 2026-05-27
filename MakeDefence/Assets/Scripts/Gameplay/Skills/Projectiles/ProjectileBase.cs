@@ -22,6 +22,7 @@ public class ProjectileBase : MonoBehaviour
 
     public float DotTickDamage  { get; set; }
     public float DotDuration    { get; set; }
+    public float IgniteChance   { get; set; }
 
     public int ChainCount  { get; set; }
     public int PierceCount { get; set; }
@@ -94,6 +95,20 @@ public class ProjectileBase : MonoBehaviour
         float fireDmg = FireBaseDamage * AddedFireRatio;
         if (isCrit) fireDmg *= 1f + FireCritDamage / 100f;
         target.TakeDamage(fireDmg, 0f, isCrit, DamageType.Fire);
+        TryIgnite(target, fireDmg);
+    }
+
+    protected void TryIgnite(Enemy target, float fireDamage)
+    {
+        if (IgniteChance <= 0f) return;
+        if (target.CurrentHp <= 0f) return;
+        if (Random.value < Mathf.Clamp01(IgniteChance / 100f))
+        {
+            const float igniteDamageRatio = 0.40f;
+            const float igniteDuration    = 4f;
+            float burnDps = fireDamage * igniteDamageRatio / igniteDuration;
+            target.ApplyBurning(burnDps, igniteDuration);
+        }
     }
 
     protected void AddHitEnemy(Enemy e) => _hitEnemies.Add(e);
@@ -164,6 +179,8 @@ public class ProjectileBase : MonoBehaviour
             {
                 _hitEnemies.Add(e);
                 e.TakeDamage(splashDmg, _armorPen, isCrit, SplashDamageType);
+                if (SplashDamageType == DamageType.Fire)
+                    TryIgnite(e, splashDmg);
                 if (StunChance > 0f && SplashStunDuration > 0f &&
                     Random.value < Mathf.Clamp01(StunChance / 100f))
                     e.ApplyStun(SplashStunDuration);
@@ -181,6 +198,7 @@ public class ProjectileBase : MonoBehaviour
         FireBaseDamage = 0f;
         DotTickDamage  = 0f;
         DotDuration    = 0f;
+        IgniteChance   = 0f;
         ChainCount         = 0;
         PierceCount        = 0;
         SplashDamageType   = DamageType.Physical;

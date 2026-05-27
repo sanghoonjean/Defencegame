@@ -64,6 +64,7 @@ public static class SkillDispatcher
         proj.FireBaseDamage  = dmg;
         proj.DotTickDamage   = tower.AttackDamage * tower.DotDamageRatio;
         proj.DotDuration     = tower.DotDuration;
+        proj.IgniteChance    = tower.IgniteChance;
         proj.ChainCount      = tower.ChainCount;
         proj.PierceCount     = tower.PierceCount;
         proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
@@ -89,6 +90,7 @@ public static class SkillDispatcher
         proj.FireBaseDamage = dmg;
         proj.DotTickDamage  = tower.AttackDamage * tower.DotDamageRatio;
         proj.DotDuration    = tower.DotDuration;
+        proj.IgniteChance   = tower.IgniteChance;
         proj.ChainCount     = tower.ChainCount;
         proj.PierceCount    = tower.PierceCount;
         proj.LaunchFrom(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
@@ -112,6 +114,7 @@ public static class SkillDispatcher
         proj.FireBaseDamage = dmg;
         proj.DotTickDamage  = tower.AttackDamage * tower.DotDamageRatio;
         proj.DotDuration    = tower.DotDuration;
+        proj.IgniteChance   = tower.IgniteChance;
         proj.ChainCount     = tower.ChainCount;
         proj.PierceCount    = tower.PierceCount;
         proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
@@ -132,6 +135,7 @@ public static class SkillDispatcher
         proj.SplashRadius   = skill.aoeRadius;
         proj.DotTickDamage  = tower.AttackDamage * tower.DotDamageRatio;
         proj.DotDuration    = tower.DotDuration;
+        proj.IgniteChance   = tower.IgniteChance;
         proj.ChainCount     = tower.ChainCount;
         proj.PierceCount    = tower.PierceCount;
         // AddedFireRatio 미설정 — DoT 스킬은 불꽃 데미지 제외
@@ -159,6 +163,7 @@ public static class SkillDispatcher
         proj.FireBaseDamage     = baseDmg;
         proj.DotTickDamage      = tower.AttackDamage * tower.DotDamageRatio;
         proj.DotDuration        = tower.DotDuration;
+        proj.IgniteChance       = tower.IgniteChance;
         proj.ChainCount         = tower.ChainCount;
         proj.PierceCount        = tower.PierceCount;
         proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
@@ -173,5 +178,13 @@ public static class SkillDispatcher
         float fireDmg = baseDmg * tower.AddedFireRatio;
         if (isCrit) fireDmg *= 1f + tower.CritDamage / 100f;
         target.TakeDamage(fireDmg, 0f, isCrit, DamageType.Fire);
+
+        if (tower.IgniteChance > 0f && target.CurrentHp > 0f &&
+            Random.value < Mathf.Clamp01(tower.IgniteChance / 100f))
+        {
+            const float igniteDamageRatio = 0.40f;
+            const float igniteDuration    = 4f;
+            target.ApplyBurning(fireDmg * igniteDamageRatio / igniteDuration, igniteDuration);
+        }
     }
 }

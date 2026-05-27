@@ -25,6 +25,8 @@ public class Enemy : MonoBehaviour
     private float _fireResistance;
 
     private Coroutine _dotCoroutine;
+    private Coroutine _burnCoroutine;
+    private float     _currentBurnDps;
     private const float DotTickInterval = 0.5f;
 
     private void OnEnable() => ActiveEnemies.Add(this);
@@ -32,7 +34,9 @@ public class Enemy : MonoBehaviour
     private void OnDisable()
     {
         ActiveEnemies.Remove(this);
-        if (_dotCoroutine != null) { StopCoroutine(_dotCoroutine); _dotCoroutine = null; }
+        if (_dotCoroutine  != null) { StopCoroutine(_dotCoroutine);  _dotCoroutine  = null; }
+        if (_burnCoroutine != null) { StopCoroutine(_burnCoroutine); _burnCoroutine = null; }
+        _currentBurnDps = 0f;
     }
 
     public void Initialize(EnemyData data, int stage, Vector2[] waypoints)
@@ -80,6 +84,35 @@ public class Enemy : MonoBehaviour
     public void ApplyStun(float duration)
     {
         _stunTimer = Mathf.Max(_stunTimer, duration);
+    }
+
+    public void ApplyBurning(float dps, float duration)
+    {
+        if (dps <= 0f || duration <= 0f) return;
+        if (dps <= _currentBurnDps) return;
+
+        _currentBurnDps = dps;
+        if (_burnCoroutine != null) StopCoroutine(_burnCoroutine);
+        _burnCoroutine = StartCoroutine(BurnCoroutine(dps, duration));
+    }
+
+    private IEnumerator BurnCoroutine(float dps, float duration)
+    {
+        float elapsed = 0f;
+        while (elapsed < duration)
+        {
+            yield return new WaitForSeconds(DotTickInterval);
+            elapsed += DotTickInterval;
+            if (CurrentHp <= 0f) break;
+            float tickDmg = dps * DotTickInterval;
+            float resistance = _fireResistance;
+            float actual = Mathf.Max(1f, tickDmg * (1f - resistance));
+            CurrentHp -= actual;
+            GameUIManager.ShowDamage(transform.position, actual, false, DamageType.Fire);
+            if (CurrentHp <= 0f) { Die(); break; }
+        }
+        if (_currentBurnDps == dps) _currentBurnDps = 0f;
+        _burnCoroutine = null;
     }
 
     public void ApplyDot(float tickDamage, float duration)
