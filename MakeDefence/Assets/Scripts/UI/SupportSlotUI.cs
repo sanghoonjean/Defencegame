@@ -74,6 +74,14 @@ public class SupportSlotUI : MonoBehaviour, IPointerClickHandler, IDropHandler
         // 같은 슬롯에 드롭 시 아무 동작 없음
         if (sourceSlotIdx == slotIndex) return;
 
+        // 같은 타워의 다른 슬롯에 이미 동일 옵션이 장착돼 있으면 거부
+        for (int i = 0; i < tower.UnlockedSupportSlots; i++)
+        {
+            if (i == slotIndex) continue;   // 교체 대상 슬롯은 제외
+            if (i == sourceSlotIdx) continue; // 소스 슬롯(스왑 시 비워질 자리)은 제외
+            if (tower.SupportOptions[i] == newOption) return;
+        }
+
         bool ok = InventorySystem.Instance.SetSupportOption(slotIndex, newOption);
         if (!ok) return;
 
