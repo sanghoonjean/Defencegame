@@ -87,10 +87,10 @@ public class ProjectileBase : MonoBehaviour
             if (((Vector2)e.transform.position - pos).sqrMagnitude <= radiusSq)
             {
                 e.TakeDamage(splashDmg, _armorPen, isCrit);
-                ApplyFireOnHit(e, isCrit);
                 if (StunChance > 0f && SplashStunDuration > 0f &&
                     Random.value < Mathf.Clamp01(StunChance / 100f))
                     e.ApplyStun(SplashStunDuration);
+                ApplyFireOnHit(e, isCrit);
             }
         }
     }
