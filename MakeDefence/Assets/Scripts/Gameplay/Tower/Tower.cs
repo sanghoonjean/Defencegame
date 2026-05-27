@@ -37,6 +37,7 @@ public class Tower : MonoBehaviour
     public float DotDamageRatio   { get; private set; }
     public float DotDuration      { get; private set; }
     public int   ChainCount       { get; private set; }
+    public int   PierceCount      { get; private set; }
 
     private float    _attackTimer;
     private Animator _animator;
@@ -110,6 +111,7 @@ public class Tower : MonoBehaviour
         DotDamageRatio = 0f;
         DotDuration    = 0f;
         ChainCount     = 0;
+        PierceCount    = 0;
 
         // 아이템 옵션 합산
         if (ItemSystem.Instance != null)
@@ -164,6 +166,9 @@ public class Tower : MonoBehaviour
                 break;
             case SupportOptionType.ChainCircuit:
                 ChainCount += Mathf.Max(1, Mathf.RoundToInt(opt.value * 10));
+                break;
+            case SupportOptionType.PiercingRound:
+                PierceCount += Mathf.Max(1, Mathf.RoundToInt(opt.value * 5));
                 break;
         }
     }
