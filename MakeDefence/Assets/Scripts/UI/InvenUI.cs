@@ -37,6 +37,7 @@ public class InvenUI : MonoBehaviour
             var drag = slot.gameObject.GetComponent<InvenSlotDragHandler>()
                     ?? slot.gameObject.AddComponent<InvenSlotDragHandler>();
             drag.Init(img);
+            drag.SlotIndex = list.Count;
 
             list.Add(new SlotRef { image = img, button = btn, drag = drag });
         }

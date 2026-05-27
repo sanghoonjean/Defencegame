@@ -65,6 +65,31 @@ public class ShopSystem : MonoBehaviour
         return true;
     }
 
+    public bool SwapOwnedSkills(int indexA, int indexB)
+    {
+        if (indexA < 0 || indexB < 0) return false;
+        if (indexA >= _ownedSkills.Count || indexB >= _ownedSkills.Count) return false;
+        if (indexA == indexB) return false;
+        (_ownedSkills[indexA], _ownedSkills[indexB]) = (_ownedSkills[indexB], _ownedSkills[indexA]);
+        OnInventoryChanged?.Invoke();
+        return true;
+    }
+
+    public bool MoveOwnedSkill(int fromIndex, int toIndex)
+    {
+        if (fromIndex < 0 || fromIndex >= _ownedSkills.Count) return false;
+        if (toIndex < 0) return false;
+        if (fromIndex == toIndex) return false;
+        var skill = _ownedSkills[fromIndex];
+        _ownedSkills.RemoveAt(fromIndex);
+        // toIndex가 count를 초과하면 맨 뒤에 삽입
+        int insertAt = Mathf.Min(toIndex > fromIndex ? toIndex - 1 : toIndex,
+                                 _ownedSkills.Count);
+        _ownedSkills.Insert(insertAt, skill);
+        OnInventoryChanged?.Invoke();
+        return true;
+    }
+
     public void ReturnSupportOption(SupportOptionData option)
     {
         if (option == null) return;
