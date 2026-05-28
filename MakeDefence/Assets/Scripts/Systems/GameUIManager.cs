@@ -55,6 +55,8 @@ public class GameUIManager : MonoBehaviour
     private GUIStyle _fireCritStyle;
     private GUIStyle _energyDmgStyle;
     private GUIStyle _coldDmgStyle;
+    private GUIStyle _lightningDmgStyle;
+    private GUIStyle _poisonDmgStyle;
 
     private void Awake()
     {
@@ -73,7 +75,11 @@ public class GameUIManager : MonoBehaviour
         _energyDmgStyle = new GUIStyle();
         _energyDmgStyle.normal.textColor = new Color(0.4f, 0.8f, 1f); // 하늘색
         _coldDmgStyle = new GUIStyle();
-        _coldDmgStyle.normal.textColor = new Color(0.5f, 0.85f, 1f);  // 연한 아이스 블루
+        _coldDmgStyle.normal.textColor = new Color(0.5f, 0.85f, 1f);       // 연한 아이스 블루
+        _lightningDmgStyle = new GUIStyle();
+        _lightningDmgStyle.normal.textColor = new Color(1f, 0.95f, 0.2f);  // 노란색
+        _poisonDmgStyle = new GUIStyle();
+        _poisonDmgStyle.normal.textColor = new Color(0.3f, 0.9f, 0.3f);    // 초록색
 
         var shader = Shader.Find("Hidden/Internal-Colored");
         if (shader == null)
@@ -173,10 +179,12 @@ public class GameUIManager : MonoBehaviour
 
             GUIStyle style = d.damageType switch
             {
-                DamageType.Fire   => d.isCrit ? _fireCritStyle : _fireDmgStyle,
-                DamageType.Energy => _energyDmgStyle,
-                DamageType.Cold   => _coldDmgStyle,
-                _                 => d.isCrit ? _critStyle : _dmgStyle
+                DamageType.Fire      => d.isCrit ? _fireCritStyle : _fireDmgStyle,
+                DamageType.Energy    => _energyDmgStyle,
+                DamageType.Cold      => _coldDmgStyle,
+                DamageType.Lightning => _lightningDmgStyle,
+                DamageType.Poison    => _poisonDmgStyle,
+                _                    => d.isCrit ? _critStyle : _dmgStyle
             };
             GUI.Label(new Rect(sx, sy, 60f, 20f), d.text, style);
         }

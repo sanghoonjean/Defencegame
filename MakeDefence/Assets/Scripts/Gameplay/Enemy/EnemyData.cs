@@ -17,4 +17,6 @@ public class EnemyData : ScriptableObject
     [Header("저항 (0 = 없음, 0.5 = 50% 감소, -0.25 = 25% 증가)")]
     [Range(-1f, 0.9f)] public float fireResistance;
     [Range(-1f, 0.9f)] public float coldResistance;
+    [Range(-1f, 0.9f)] public float lightningResistance;
+    [Range(-1f, 0.9f)] public float poisonResistance;
 }

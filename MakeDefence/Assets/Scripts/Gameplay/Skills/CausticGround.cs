@@ -50,7 +50,7 @@ public class CausticGround : MonoBehaviour
             var e = enemies[i];
             if (e == null) continue;
             if (((Vector2)e.transform.position - pos).sqrMagnitude <= radiusSq)
-                e.TakeDamage(_tickDamage, _armorPen);
+                e.TakeDamage(_tickDamage, _armorPen, false, DamageType.Poison);
         }
     }
 }
