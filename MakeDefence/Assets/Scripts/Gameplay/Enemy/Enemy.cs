@@ -24,6 +24,8 @@ public class Enemy : MonoBehaviour
 
     private float _fireResistance;
     private float _coldResistance;
+    private float _lightningResistance;
+    private float _poisonResistance;
 
     private Coroutine _dotCoroutine;
     private Coroutine _burnCoroutine;
@@ -63,8 +65,10 @@ public class Enemy : MonoBehaviour
             _speed = data.baseSpeed * speedMult;
         }
         MaxHp = CurrentHp;
-        _fireResistance = Mathf.Clamp(data.fireResistance, -1f, 0.9f);
-        _coldResistance = Mathf.Clamp(data.coldResistance, -1f, 0.9f);
+        _fireResistance      = Mathf.Clamp(data.fireResistance,      -1f, 0.9f);
+        _coldResistance      = Mathf.Clamp(data.coldResistance,      -1f, 0.9f);
+        _lightningResistance = Mathf.Clamp(data.lightningResistance, -1f, 0.9f);
+        _poisonResistance    = Mathf.Clamp(data.poisonResistance,    -1f, 0.9f);
 
         if (_waypoints != null && _waypoints.Length > 0)
         {
@@ -161,9 +165,11 @@ public class Enemy : MonoBehaviour
             : 0f;
         float resistance = type switch
         {
-            DamageType.Fire => _fireResistance,
-            DamageType.Cold => _coldResistance,
-            _               => 0f
+            DamageType.Fire      => _fireResistance,
+            DamageType.Cold      => _coldResistance,
+            DamageType.Lightning => _lightningResistance,
+            DamageType.Poison    => _poisonResistance,
+            _                    => 0f
         };
         float actual = Mathf.Max(1f, (damage - effectiveDefense) * (1f - resistance));
         CurrentHp -= actual;
