@@ -84,15 +84,16 @@ public static class SkillDispatcher
         proj.StunChance     = skill.baseStunChance + tower.StunChance;
         proj.CritChance     = tower.CritChance;
         proj.CritDamage     = tower.CritDamage;
-        proj.SplashRadius   = skill.aoeRadius;
-        proj.AddedFireRatio = tower.AddedFireRatio;
-        proj.FireCritDamage = tower.CritDamage;
-        proj.FireBaseDamage = dmg;
-        proj.DotTickDamage  = tower.AttackDamage * tower.DotDamageRatio;
-        proj.DotDuration    = tower.DotDuration;
-        proj.IgniteChance   = tower.IgniteChance;
-        proj.ChainCount     = tower.ChainCount;
-        proj.PierceCount    = tower.PierceCount;
+        proj.SplashRadius     = skill.aoeRadius;
+        proj.SplashDamageType = DamageType.Cold;
+        proj.AddedFireRatio   = tower.AddedFireRatio;
+        proj.FireCritDamage   = tower.CritDamage;
+        proj.FireBaseDamage   = dmg;
+        proj.DotTickDamage    = tower.AttackDamage * tower.DotDamageRatio;
+        proj.DotDuration      = tower.DotDuration;
+        proj.IgniteChance     = tower.IgniteChance;
+        proj.ChainCount       = tower.ChainCount;
+        proj.PierceCount      = tower.PierceCount;
         proj.LaunchFrom(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
     }
 

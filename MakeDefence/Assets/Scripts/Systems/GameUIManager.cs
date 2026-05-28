@@ -54,6 +54,7 @@ public class GameUIManager : MonoBehaviour
     private GUIStyle _fireDmgStyle;
     private GUIStyle _fireCritStyle;
     private GUIStyle _energyDmgStyle;
+    private GUIStyle _coldDmgStyle;
 
     private void Awake()
     {
@@ -71,6 +72,8 @@ public class GameUIManager : MonoBehaviour
         _fireCritStyle.normal.textColor = new Color(1f, 0.15f, 0f);   // 진한 주황-빨강
         _energyDmgStyle = new GUIStyle();
         _energyDmgStyle.normal.textColor = new Color(0.4f, 0.8f, 1f); // 하늘색
+        _coldDmgStyle = new GUIStyle();
+        _coldDmgStyle.normal.textColor = new Color(0.5f, 0.85f, 1f);  // 연한 아이스 블루
 
         var shader = Shader.Find("Hidden/Internal-Colored");
         if (shader == null)
@@ -172,6 +175,7 @@ public class GameUIManager : MonoBehaviour
             {
                 DamageType.Fire   => d.isCrit ? _fireCritStyle : _fireDmgStyle,
                 DamageType.Energy => _energyDmgStyle,
+                DamageType.Cold   => _coldDmgStyle,
                 _                 => d.isCrit ? _critStyle : _dmgStyle
             };
             GUI.Label(new Rect(sx, sy, 60f, 20f), d.text, style);
