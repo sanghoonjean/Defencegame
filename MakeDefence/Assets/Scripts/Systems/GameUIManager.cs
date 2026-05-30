@@ -13,6 +13,8 @@ public class GameUIManager : MonoBehaviour
     [SerializeField] private int   rangeSegments = 64;
 
     [Header("Skill AoE Hit")]
+    [SerializeField] private Color aoeHitColor    = new Color(1f, 0.4f, 0f, 0.9f);
+    [SerializeField] private int   aoeSegments    = 48;
     [SerializeField] private float aoeHitDuration = 0.5f;
 
     [Header("Damage Text")]
@@ -20,6 +22,13 @@ public class GameUIManager : MonoBehaviour
     [SerializeField] private float dmgDuration    = 1.2f;
     [SerializeField] private float dmgXOffset     = -20f;
     [SerializeField] private float dmgYOffset     = 10f;
+
+    private struct AoeCircle
+    {
+        public Vector2 pos;
+        public float   radius;
+        public float   expireTime;
+    }
 
     private struct DamageText
     {
@@ -33,6 +42,7 @@ public class GameUIManager : MonoBehaviour
     }
 
     private static GameUIManager _instance;
+    private readonly List<AoeCircle>  _aoeCircles  = new();
     private readonly List<DamageText> _damageTexts = new();
 
     private Texture2D _bgTex;
@@ -120,6 +130,13 @@ public class GameUIManager : MonoBehaviour
     public static void ShowAoeHit(Vector2 pos, float radius, GameObject fxPrefab = null)
     {
         if (_instance == null || radius <= 0f) return;
+        float now = Time.time;
+        _instance._aoeCircles.Add(new AoeCircle
+        {
+            pos        = pos,
+            radius     = radius,
+            expireTime = now + _instance.aoeHitDuration
+        });
         if (fxPrefab != null)
             _instance.SpawnAoeFx(pos, radius, fxPrefab);
     }
@@ -193,6 +210,7 @@ public class GameUIManager : MonoBehaviour
         _rangeMat.SetPass(0);
         GL.Begin(GL.LINES);
         DrawTowerRange();
+        DrawAoeCircles();
         GL.End();
     }
 
@@ -213,6 +231,27 @@ public class GameUIManager : MonoBehaviour
             float a1 = step * (i + 1);
             GL.Vertex3(center.x + Mathf.Cos(a0) * radius, center.y + Mathf.Sin(a0) * radius, center.z);
             GL.Vertex3(center.x + Mathf.Cos(a1) * radius, center.y + Mathf.Sin(a1) * radius, center.z);
+        }
+    }
+
+    private void DrawAoeCircles()
+    {
+        float now  = Time.time;
+        float step = 2f * Mathf.PI / aoeSegments;
+
+        GL.Color(aoeHitColor);
+        for (int i = _aoeCircles.Count - 1; i >= 0; i--)
+        {
+            var c = _aoeCircles[i];
+            if (now >= c.expireTime) { _aoeCircles.RemoveAt(i); continue; }
+
+            for (int s = 0; s < aoeSegments; s++)
+            {
+                float a0 = step * s;
+                float a1 = step * (s + 1);
+                GL.Vertex3(c.pos.x + Mathf.Cos(a0) * c.radius, c.pos.y + Mathf.Sin(a0) * c.radius, 0f);
+                GL.Vertex3(c.pos.x + Mathf.Cos(a1) * c.radius, c.pos.y + Mathf.Sin(a1) * c.radius, 0f);
+            }
         }
     }
 
