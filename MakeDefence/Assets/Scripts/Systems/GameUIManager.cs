@@ -27,6 +27,7 @@ public class GameUIManager : MonoBehaviour
     {
         public Vector2 pos;
         public float   radius;
+        public float   startTime;
         public float   expireTime;
     }
 
@@ -128,11 +129,13 @@ public class GameUIManager : MonoBehaviour
     public static void ShowAoeHit(Vector2 pos, float radius)
     {
         if (_instance == null || radius <= 0f) return;
+        float now = Time.time;
         _instance._aoeCircles.Add(new AoeCircle
         {
             pos        = pos,
             radius     = radius,
-            expireTime = Time.time + _instance.aoeHitDuration
+            startTime  = now,
+            expireTime = now + _instance.aoeHitDuration
         });
     }
 
@@ -233,13 +236,16 @@ public class GameUIManager : MonoBehaviour
             var c = _aoeCircles[i];
             if (now >= c.expireTime) { _aoeCircles.RemoveAt(i); continue; }
 
-            GL.Color(aoeHitColor);
+            float progress = Mathf.Clamp01((now - c.startTime) / aoeHitDuration);
+            float r        = c.radius * progress;
+            float alpha    = 1f - progress;
+            GL.Color(new Color(aoeHitColor.r, aoeHitColor.g, aoeHitColor.b, aoeHitColor.a * alpha));
             for (int s = 0; s < aoeSegments; s++)
             {
                 float a0 = step * s;
                 float a1 = step * (s + 1);
-                GL.Vertex3(c.pos.x + Mathf.Cos(a0) * c.radius, c.pos.y + Mathf.Sin(a0) * c.radius, 0f);
-                GL.Vertex3(c.pos.x + Mathf.Cos(a1) * c.radius, c.pos.y + Mathf.Sin(a1) * c.radius, 0f);
+                GL.Vertex3(c.pos.x + Mathf.Cos(a0) * r, c.pos.y + Mathf.Sin(a0) * r, 0f);
+                GL.Vertex3(c.pos.x + Mathf.Cos(a1) * r, c.pos.y + Mathf.Sin(a1) * r, 0f);
             }
         }
     }
