@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class LightningArrowProjectile : ProjectileBase
 {
+    [SerializeField] private GameObject _aoeFxPrefab;
+
     public float AoeRadius     { get; set; }
     public float ShockDuration { get; set; }
     public float CritChance    { get; set; }
@@ -30,7 +32,7 @@ public class LightningArrowProjectile : ProjectileBase
             ApplyDotOnHit(e);
         }
 
-        GameUIManager.ShowAoeHit(hitPos, AoeRadius);
+        GameUIManager.ShowAoeHit(hitPos, AoeRadius, _aoeFxPrefab);
         return dmg;
     }
 }
