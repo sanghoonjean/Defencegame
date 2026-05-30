@@ -89,7 +89,9 @@ public class GameUIManager : MonoBehaviour
             return;
         }
         _rangeMat = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
-        _rangeMat.SetInt("_ZTest", (int)UnityEngine.Rendering.CompareFunction.Always);
+        _rangeMat.SetInt("_ZTest",    (int)UnityEngine.Rendering.CompareFunction.Always);
+        _rangeMat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        _rangeMat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
     }
 
     private void OnDestroy()
