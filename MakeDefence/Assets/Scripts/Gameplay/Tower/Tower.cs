@@ -42,6 +42,7 @@ public class Tower : MonoBehaviour
 
     private float    _attackTimer;
     private Animator _animator;
+    private bool     _hasDirectionParams;
 
     private static readonly int AttackTrigger  = Animator.StringToHash("Attack");
     private static readonly int DirectionXParam = Animator.StringToHash("DirectionX");
@@ -50,6 +51,8 @@ public class Tower : MonoBehaviour
     private void Awake()
     {
         _animator = GetComponent<Animator>();
+        if (_animator != null)
+            _hasDirectionParams = HasAnimatorParam("DirectionX") && HasAnimatorParam("DirectionY");
         RefreshStats();
     }
 
@@ -234,11 +237,24 @@ public class Tower : MonoBehaviour
         float   angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
         transform.rotation = Quaternion.Euler(0f, 0f, angle);
 
-        _animator?.SetFloat(DirectionXParam, dir.x);
-        _animator?.SetFloat(DirectionYParam, dir.y);
-        _animator?.SetTrigger(AttackTrigger);
+        if (_animator != null)
+        {
+            if (_hasDirectionParams)
+            {
+                _animator.SetFloat(DirectionXParam, dir.x);
+                _animator.SetFloat(DirectionYParam, dir.y);
+            }
+            _animator.SetTrigger(AttackTrigger);
+        }
         SkillDispatcher.Execute(this, target);
         TryDropCube();
+    }
+
+    private bool HasAnimatorParam(string paramName)
+    {
+        foreach (var p in _animator.parameters)
+            if (p.name == paramName) return true;
+        return false;
     }
 
     private void TryDropCube()
