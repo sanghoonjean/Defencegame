@@ -11,9 +11,6 @@ public class Tower : MonoBehaviour
     [SerializeField] private float baseAttackCooldown = 1f;
     [SerializeField] private float baseAttackRange    = 5f;
 
-    [Tooltip("회전할 시각 오브젝트. 비워두면 이 GameObject 전체가 회전합니다.")]
-    [SerializeField] private Transform visual;
-
     public Vector2Int TileCoord { get; private set; }
 
     // 스킬 슬롯
@@ -236,18 +233,12 @@ public class Tower : MonoBehaviour
 
     private void Attack(Enemy target)
     {
-        Vector2 dir   = ((Vector2)target.transform.position - (Vector2)transform.position).normalized;
-        float   angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+        Vector2 dir = ((Vector2)target.transform.position - (Vector2)transform.position).normalized;
 
         if (_hasDirectionParams)
         {
             _animator.SetFloat(DirectionXParam, dir.x);
             _animator.SetFloat(DirectionYParam, dir.y);
-        }
-        else
-        {
-            var rotTarget = visual != null ? visual : transform;
-            rotTarget.rotation = Quaternion.Euler(0f, 0f, angle);
         }
 
         _animator?.SetTrigger(AttackTrigger);

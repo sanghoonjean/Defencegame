@@ -52,6 +52,8 @@ public class ProjectileBase : MonoBehaviour
         Vector2 current = transform.position;
         Vector2 dest    = _target.transform.position;
         _lastMoveDir    = (dest - current).normalized;
+        float   angle   = Mathf.Atan2(_lastMoveDir.y, _lastMoveDir.x) * Mathf.Rad2Deg;
+        transform.rotation = Quaternion.Euler(0f, 0f, angle);
         Vector2 next    = Vector2.MoveTowards(current, dest, MoveSpeed * Time.deltaTime);
         transform.position = new Vector3(next.x, next.y, -1f);
 
