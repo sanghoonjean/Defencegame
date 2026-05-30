@@ -130,15 +130,20 @@ public class GameUIManager : MonoBehaviour
     public static void ShowAoeHit(Vector2 pos, float radius, GameObject fxPrefab = null)
     {
         if (_instance == null || radius <= 0f) return;
-        float now = Time.time;
-        _instance._aoeCircles.Add(new AoeCircle
-        {
-            pos        = pos,
-            radius     = radius,
-            expireTime = now + _instance.aoeHitDuration
-        });
         if (fxPrefab != null)
+        {
             _instance.SpawnAoeFx(pos, radius, fxPrefab);
+        }
+        else
+        {
+            float now = Time.time;
+            _instance._aoeCircles.Add(new AoeCircle
+            {
+                pos        = pos,
+                radius     = radius,
+                expireTime = now + _instance.aoeHitDuration
+            });
+        }
     }
 
     private void SpawnAoeFx(Vector2 pos, float radius, GameObject fxPrefab)
