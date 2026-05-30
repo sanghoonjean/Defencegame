@@ -33,10 +33,14 @@ public class ProjectileBase : MonoBehaviour
     public void Launch(Vector2 origin, Enemy target, float damage, float armorPen)
     {
         transform.position = new Vector3(origin.x, origin.y, -1f);
-        _target = target;
-        _damage = damage;
+        _target   = target;
+        _damage   = damage;
         _armorPen = armorPen;
         _launched = true;
+
+        Vector2 dir   = ((Vector2)target.transform.position - origin).normalized;
+        float   angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+        transform.rotation = Quaternion.Euler(0f, 0f, angle);
     }
 
     private void Update()
@@ -52,6 +56,8 @@ public class ProjectileBase : MonoBehaviour
         Vector2 current = transform.position;
         Vector2 dest    = _target.transform.position;
         _lastMoveDir    = (dest - current).normalized;
+        float   angle   = Mathf.Atan2(_lastMoveDir.y, _lastMoveDir.x) * Mathf.Rad2Deg;
+        transform.rotation = Quaternion.Euler(0f, 0f, angle);
         Vector2 next    = Vector2.MoveTowards(current, dest, MoveSpeed * Time.deltaTime);
         transform.position = new Vector3(next.x, next.y, -1f);
 
