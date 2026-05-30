@@ -27,6 +27,7 @@ public class ProjectileBase : MonoBehaviour
     public int ChainCount  { get; set; }
     public int PierceCount { get; set; }
     public DamageType SplashDamageType { get; set; } = DamageType.Physical;
+    public GameObject AoeFxPrefab { get; set; }
     private readonly HashSet<Enemy> _hitEnemies = new();
     private Vector2 _lastMoveDir;
 
@@ -67,7 +68,7 @@ public class ProjectileBase : MonoBehaviour
             float actualDmg = OnHit(_target);
             ApplySplash(_target, actualDmg, _hitIsCrit);
             if (SplashRadius > 0f && actualDmg > 0f)
-                GameUIManager.ShowAoeHit(_target.transform.position, SplashRadius);
+                GameUIManager.ShowAoeHit(_target.transform.position, SplashRadius, AoeFxPrefab);
 
             if (PierceCount > 0 && TryPierce())
                 return;
@@ -208,6 +209,7 @@ public class ProjectileBase : MonoBehaviour
         ChainCount         = 0;
         PierceCount        = 0;
         SplashDamageType   = DamageType.Physical;
+        AoeFxPrefab        = null;
         _lastMoveDir       = Vector2.zero;
         _hitEnemies.Clear();
         ObjectPoolSystem.Instance.ReturnProjectile(this);

@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class FreezingPulseProjectile : ProjectileBase
 {
+    [SerializeField] private GameObject _aoeFxPrefab;
+
     public float MaxRangeBonus  { get; set; }
     public float MaxRange       { get; set; }
     public float FreezeDuration { get; set; }
@@ -20,7 +22,8 @@ public class FreezingPulseProjectile : ProjectileBase
 
     protected override float OnHit(Enemy target)
     {
-        float dist       = Vector2.Distance(_launchOrigin, target.transform.position);
+        AoeFxPrefab = _aoeFxPrefab;
+        float dist  = Vector2.Distance(_launchOrigin, target.transform.position);
         float t          = MaxRange > 0f ? Mathf.Clamp01(dist / MaxRange) : 1f;
         float multiplier = Mathf.Lerp(MaxRangeBonus, 1f, t);
 

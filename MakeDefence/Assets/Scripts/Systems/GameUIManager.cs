@@ -13,10 +13,9 @@ public class GameUIManager : MonoBehaviour
     [SerializeField] private int   rangeSegments = 64;
 
     [Header("Skill AoE Hit")]
-    [SerializeField] private Color      aoeHitColor    = new Color(1f, 0.4f, 0f, 0.9f);
-    [SerializeField] private int        aoeSegments    = 48;
-    [SerializeField] private float      aoeHitDuration = 0.5f;
-    [SerializeField] private GameObject aoeFxPrefab    = null;
+    [SerializeField] private Color aoeHitColor    = new Color(1f, 0.4f, 0f, 0.9f);
+    [SerializeField] private int   aoeSegments    = 48;
+    [SerializeField] private float aoeHitDuration = 0.5f;
 
     [Header("Damage Text")]
     [SerializeField] private float dmgFloatSpeed  = 30f;
@@ -129,7 +128,7 @@ public class GameUIManager : MonoBehaviour
         });
     }
 
-    public static void ShowAoeHit(Vector2 pos, float radius)
+    public static void ShowAoeHit(Vector2 pos, float radius, GameObject fxPrefab = null)
     {
         if (_instance == null || radius <= 0f) return;
         float now = Time.time;
@@ -140,13 +139,13 @@ public class GameUIManager : MonoBehaviour
             startTime  = now,
             expireTime = now + _instance.aoeHitDuration
         });
-        _instance.SpawnAoeFx(pos, radius);
+        if (fxPrefab != null)
+            _instance.SpawnAoeFx(pos, radius, fxPrefab);
     }
 
-    private void SpawnAoeFx(Vector2 pos, float radius)
+    private void SpawnAoeFx(Vector2 pos, float radius, GameObject fxPrefab)
     {
-        if (aoeFxPrefab == null) return;
-        var go = Instantiate(aoeFxPrefab, new Vector3(pos.x, pos.y, -1f), Quaternion.identity);
+        var go = Instantiate(fxPrefab, new Vector3(pos.x, pos.y, -1f), Quaternion.identity);
         float diameter = radius * 2f;
         go.transform.localScale = new Vector3(diameter, diameter, 1f);
         Destroy(go, aoeHitDuration);
