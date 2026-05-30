@@ -235,17 +235,18 @@ public class Tower : MonoBehaviour
     {
         Vector2 dir   = ((Vector2)target.transform.position - (Vector2)transform.position).normalized;
         float   angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
-        transform.rotation = Quaternion.Euler(0f, 0f, angle);
 
-        if (_animator != null)
+        if (_hasDirectionParams)
         {
-            if (_hasDirectionParams)
-            {
-                _animator.SetFloat(DirectionXParam, dir.x);
-                _animator.SetFloat(DirectionYParam, dir.y);
-            }
-            _animator.SetTrigger(AttackTrigger);
+            _animator.SetFloat(DirectionXParam, dir.x);
+            _animator.SetFloat(DirectionYParam, dir.y);
         }
+        else
+        {
+            transform.rotation = Quaternion.Euler(0f, 0f, angle);
+        }
+
+        _animator?.SetTrigger(AttackTrigger);
         SkillDispatcher.Execute(this, target);
         TryDropCube();
     }
