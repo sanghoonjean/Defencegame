@@ -16,9 +16,6 @@ public static class SkillDispatcher
             case SkillType.Fireball:
                 LaunchFireball(tower, target);
                 break;
-            case SkillType.PreciseArrow:
-                LaunchPreciseArrow(tower, target);
-                break;
             case SkillType.FreezingPulse:
                 LaunchFreezingPulse(tower, target);
                 break;
@@ -45,29 +42,6 @@ public static class SkillDispatcher
 
         if (tower.StunChance > 0f && Random.value < Mathf.Clamp01(tower.StunChance / 100f))
             target.ApplyStun(0.5f);
-    }
-
-    private static void LaunchPreciseArrow(Tower tower, Enemy target)
-    {
-        var proj = ObjectPoolSystem.Instance.GetProjectile<PreciseArrowProjectile>();
-        if (proj == null) { DirectAttack(tower, target); return; }
-
-        var   skill = tower.EquippedSkill;
-        float dmg   = tower.AttackDamage + skill.baseDamage;
-
-        proj.BonusCritChance = tower.CritChance;
-        proj.BonusCritDamage = tower.CritDamage;
-        proj.StunChance      = tower.StunChance;
-        proj.SplashRadius    = skill.aoeRadius;
-        proj.AddedFireRatio  = tower.AddedFireRatio;
-        proj.FireCritDamage  = tower.CritDamage;
-        proj.FireBaseDamage  = dmg;
-        proj.DotTickDamage   = tower.AttackDamage * tower.DotDamageRatio;
-        proj.DotDuration     = tower.DotDuration;
-        proj.IgniteChance    = tower.IgniteChance;
-        proj.ChainCount      = tower.ChainCount;
-        proj.PierceCount     = tower.PierceCount;
-        proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
     }
 
     private static void LaunchFreezingPulse(Tower tower, Enemy target)

@@ -2,7 +2,6 @@ using UnityEngine;
 
 public enum SkillType
 {
-    PreciseArrow   = 0,
     Fireball       = 1,
     ParalysisMagic = 2,
     LightningSpear = 3,
