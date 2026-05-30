@@ -43,7 +43,9 @@ public class Tower : MonoBehaviour
     private float    _attackTimer;
     private Animator _animator;
 
-    private static readonly int AttackTrigger = Animator.StringToHash("Attack");
+    private static readonly int AttackTrigger  = Animator.StringToHash("Attack");
+    private static readonly int DirectionXParam = Animator.StringToHash("DirectionX");
+    private static readonly int DirectionYParam = Animator.StringToHash("DirectionY");
 
     private void Awake()
     {
@@ -228,6 +230,9 @@ public class Tower : MonoBehaviour
 
     private void Attack(Enemy target)
     {
+        Vector2 dir = ((Vector2)target.transform.position - (Vector2)transform.position).normalized;
+        _animator?.SetFloat(DirectionXParam, dir.x);
+        _animator?.SetFloat(DirectionYParam, dir.y);
         _animator?.SetTrigger(AttackTrigger);
         SkillDispatcher.Execute(this, target);
         TryDropCube();
