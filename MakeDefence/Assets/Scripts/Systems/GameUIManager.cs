@@ -13,8 +13,6 @@ public class GameUIManager : MonoBehaviour
     [SerializeField] private int   rangeSegments = 64;
 
     [Header("Skill AoE Hit")]
-    [SerializeField] private Color aoeHitColor    = new Color(1f, 0.4f, 0f, 0.9f);
-    [SerializeField] private int   aoeSegments    = 48;
     [SerializeField] private float aoeHitDuration = 0.5f;
 
     [Header("Damage Text")]
@@ -22,14 +20,6 @@ public class GameUIManager : MonoBehaviour
     [SerializeField] private float dmgDuration    = 1.2f;
     [SerializeField] private float dmgXOffset     = -20f;
     [SerializeField] private float dmgYOffset     = 10f;
-
-    private struct AoeCircle
-    {
-        public Vector2 pos;
-        public float   radius;
-        public float   startTime;
-        public float   expireTime;
-    }
 
     private struct DamageText
     {
@@ -43,8 +33,7 @@ public class GameUIManager : MonoBehaviour
     }
 
     private static GameUIManager _instance;
-    private readonly List<AoeCircle>   _aoeCircles   = new();
-    private readonly List<DamageText>  _damageTexts  = new();
+    private readonly List<DamageText> _damageTexts = new();
 
     private Texture2D _bgTex;
     private Texture2D _fillTex;
@@ -71,16 +60,16 @@ public class GameUIManager : MonoBehaviour
         _fireCritStyle = new GUIStyle();
         _dmgStyle.normal.textColor      = Color.black;
         _critStyle.normal.textColor     = Color.red;
-        _fireDmgStyle.normal.textColor  = new Color(1f, 0.45f, 0f);   // 주황
-        _fireCritStyle.normal.textColor = new Color(1f, 0.15f, 0f);   // 진한 주황-빨강
+        _fireDmgStyle.normal.textColor  = new Color(1f, 0.45f, 0f);
+        _fireCritStyle.normal.textColor = new Color(1f, 0.15f, 0f);
         _energyDmgStyle = new GUIStyle();
-        _energyDmgStyle.normal.textColor = new Color(0.4f, 0.8f, 1f); // 하늘색
+        _energyDmgStyle.normal.textColor = new Color(0.4f, 0.8f, 1f);
         _coldDmgStyle = new GUIStyle();
-        _coldDmgStyle.normal.textColor = new Color(0.5f, 0.85f, 1f);       // 연한 아이스 블루
+        _coldDmgStyle.normal.textColor = new Color(0.5f, 0.85f, 1f);
         _lightningDmgStyle = new GUIStyle();
-        _lightningDmgStyle.normal.textColor = new Color(1f, 0.95f, 0.2f);  // 노란색
+        _lightningDmgStyle.normal.textColor = new Color(1f, 0.95f, 0.2f);
         _poisonDmgStyle = new GUIStyle();
-        _poisonDmgStyle.normal.textColor = new Color(0.3f, 0.9f, 0.3f);    // 초록색
+        _poisonDmgStyle.normal.textColor = new Color(0.3f, 0.9f, 0.3f);
 
         var shader = Shader.Find("Hidden/Internal-Colored");
         if (shader == null)
@@ -131,14 +120,6 @@ public class GameUIManager : MonoBehaviour
     public static void ShowAoeHit(Vector2 pos, float radius, GameObject fxPrefab = null)
     {
         if (_instance == null || radius <= 0f) return;
-        float now = Time.time;
-        _instance._aoeCircles.Add(new AoeCircle
-        {
-            pos        = pos,
-            radius     = radius,
-            startTime  = now,
-            expireTime = now + _instance.aoeHitDuration
-        });
         if (fxPrefab != null)
             _instance.SpawnAoeFx(pos, radius, fxPrefab);
     }
@@ -211,10 +192,7 @@ public class GameUIManager : MonoBehaviour
 
         _rangeMat.SetPass(0);
         GL.Begin(GL.LINES);
-
         DrawTowerRange();
-        DrawAoeCircles();
-
         GL.End();
     }
 
@@ -235,30 +213,6 @@ public class GameUIManager : MonoBehaviour
             float a1 = step * (i + 1);
             GL.Vertex3(center.x + Mathf.Cos(a0) * radius, center.y + Mathf.Sin(a0) * radius, center.z);
             GL.Vertex3(center.x + Mathf.Cos(a1) * radius, center.y + Mathf.Sin(a1) * radius, center.z);
-        }
-    }
-
-    private void DrawAoeCircles()
-    {
-        float now  = Time.time;
-        float step = 2f * Mathf.PI / aoeSegments;
-
-        for (int i = _aoeCircles.Count - 1; i >= 0; i--)
-        {
-            var c = _aoeCircles[i];
-            if (now >= c.expireTime) { _aoeCircles.RemoveAt(i); continue; }
-
-            float progress = Mathf.Clamp01((now - c.startTime) / aoeHitDuration);
-            float r        = c.radius * progress;
-            float alpha    = 1f - progress;
-            GL.Color(new Color(aoeHitColor.r, aoeHitColor.g, aoeHitColor.b, aoeHitColor.a * alpha));
-            for (int s = 0; s < aoeSegments; s++)
-            {
-                float a0 = step * s;
-                float a1 = step * (s + 1);
-                GL.Vertex3(c.pos.x + Mathf.Cos(a0) * r, c.pos.y + Mathf.Sin(a0) * r, 0f);
-                GL.Vertex3(c.pos.x + Mathf.Cos(a1) * r, c.pos.y + Mathf.Sin(a1) * r, 0f);
-            }
         }
     }
 
