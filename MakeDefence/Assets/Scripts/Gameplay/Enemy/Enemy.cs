@@ -56,6 +56,8 @@ public class Enemy : MonoBehaviour
         _waypointIndex = 0;
         _playerDamage = data.playerDamage;
 
+        if (_spriteRenderer != null) _spriteRenderer.flipX = false;
+
         if (data.fixedStats)
         {
             CurrentHp = data.baseHp;
