@@ -31,10 +31,12 @@ public class InvenDropHandler : MonoBehaviour, IDropHandler
 
             int slotIdx = sourceSlot.SlotIndex;
             if (slotIdx < 0 || slotIdx >= tower.UnlockedSupportSlots) return;
-            if (tower.SupportOptions[slotIdx] != supportDrag.Option) return;
+
+            var option = supportDrag.Option; // UI 갱신 전 캐싱
+            if (tower.SupportOptions[slotIdx] != option) return;
 
             InventorySystem.Instance.SetSupportOption(slotIdx, null);
-            ShopSystem.Instance?.ReturnSupportOption(supportDrag.Option);
+            ShopSystem.Instance?.ReturnSupportOption(option);
         }
     }
 }
