@@ -127,8 +127,10 @@ public class SupportSlotUI : MonoBehaviour, IPointerClickHandler, IDropHandler
 
         if (iconImage != null)
         {
-            iconImage.gameObject.SetActive(!locked && hasOption);
-            iconImage.sprite = (!locked && hasOption) ? option?.icon : null;
+            bool show = !locked && hasOption;
+            iconImage.gameObject.SetActive(show);
+            if (show) iconImage.color = Color.white; // 드래그 중 color 변경 리셋
+            iconImage.sprite = show ? option?.icon : null;
         }
 
         if (optionNameText != null)
