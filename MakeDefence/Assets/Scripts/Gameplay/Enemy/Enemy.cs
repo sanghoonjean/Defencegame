@@ -22,6 +22,8 @@ public class Enemy : MonoBehaviour
     private int _waypointIndex;
     private float _stunTimer;
 
+    private SpriteRenderer _spriteRenderer;
+
     private float _fireResistance;
     private float _coldResistance;
     private float _lightningResistance;
@@ -31,6 +33,11 @@ public class Enemy : MonoBehaviour
     private Coroutine _burnCoroutine;
     private float     _currentBurnDps;
     private const float DotTickInterval = 0.5f;
+
+    private void Awake()
+    {
+        _spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+    }
 
     private void OnEnable() => ActiveEnemies.Add(this);
 
@@ -48,6 +55,8 @@ public class Enemy : MonoBehaviour
         _waypoints = waypoints;
         _waypointIndex = 0;
         _playerDamage = data.playerDamage;
+
+        if (_spriteRenderer != null) _spriteRenderer.flipX = false;
 
         if (data.fixedStats)
         {
@@ -146,8 +155,16 @@ public class Enemy : MonoBehaviour
         if (_waypoints == null || _waypointIndex >= _waypoints.Length) return;
 
         Vector2 target = _waypoints[_waypointIndex];
-        Vector2 next = Vector2.MoveTowards(transform.position, target, _speed * Time.deltaTime);
+        Vector2 current = transform.position;
+        Vector2 next = Vector2.MoveTowards(current, target, _speed * Time.deltaTime);
         transform.position = new Vector3(next.x, next.y, -1f);
+
+        if (_spriteRenderer != null)
+        {
+            float dx = target.x - current.x;
+            if (Mathf.Abs(dx) > 0.001f)
+                _spriteRenderer.flipX = dx < 0f;
+        }
 
         if (Vector2.Distance(transform.position, target) < 0.05f)
         {
