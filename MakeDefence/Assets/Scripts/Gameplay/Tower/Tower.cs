@@ -8,7 +8,7 @@ public class Tower : MonoBehaviour
 
     // 기본 스탯 (tech-debt: 수치 미확정 — Inspector에서 조정)
     [SerializeField] private float baseAttackDamage   = 20f;
-    [SerializeField] private float baseAttackCooldown = 1f;
+    [SerializeField] private float baseAttackSpeed = 1f;
     [SerializeField] private float baseAttackRange    = 5f;
 
     public Vector2Int TileCoord { get; private set; }
@@ -142,7 +142,7 @@ public class Tower : MonoBehaviour
         }
 
         AttackDamage   = baseAttackDamage   * (1f + dmgPct   / 100f);
-        AttackCooldown = baseAttackCooldown * (1f - spdPct   / 100f);
+        AttackCooldown = baseAttackSpeed * (1f - spdPct   / 100f);
         AttackRange    = baseAttackRange    * (1f + rangePct / 100f);
 
         AttackCooldown = Mathf.Max(0.1f, AttackCooldown);
@@ -157,8 +157,7 @@ public class Tower : MonoBehaviour
 
         if (_animator != null)
         {
-            float baseCd = EquippedSkill != null ? EquippedSkill.baseCooldown : baseAttackCooldown;
-            _animator.speed = baseCd / Mathf.Max(0.01f, AttackCooldown);
+            _animator.speed = baseAttackSpeed / Mathf.Max(0.01f, AttackCooldown);
         }
     }
 
