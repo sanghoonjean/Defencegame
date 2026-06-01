@@ -44,7 +44,7 @@ public class Tower : MonoBehaviour
     private Animator _animator;
     private bool     _hasDirectionParams;
 
-    private static readonly int AttackTrigger  = Animator.StringToHash("Attack");
+    private static readonly int AttackBool      = Animator.StringToHash("IsAttacking");
     private static readonly int DirectionXParam = Animator.StringToHash("DirectionX");
     private static readonly int DirectionYParam = Animator.StringToHash("DirectionY");
 
@@ -202,15 +202,17 @@ public class Tower : MonoBehaviour
         if (EquippedSkill == null) return;
 
         _attackTimer += Time.deltaTime;
-        if (_attackTimer < AttackCooldown) return;
 
         var target = FindTarget();
+        _animator?.SetBool(AttackBool, target != null);
+
         if (target == null)
         {
-            Debug.Log($"[Tower] FindTarget null — AttackRange={AttackRange}, ActiveEnemies={Enemy.ActiveEnemies.Count}, Skill={EquippedSkill?.name ?? "없음"}");
             _attackTimer = 0f;
             return;
         }
+
+        if (_attackTimer < AttackCooldown) return;
 
         Attack(target);
         _attackTimer = 0f;
@@ -240,7 +242,6 @@ public class Tower : MonoBehaviour
             _animator.SetFloat(DirectionYParam, dir.y);
         }
 
-        _animator?.SetTrigger(AttackTrigger);
         SkillDispatcher.Execute(this, target);
         TryDropCube();
     }
