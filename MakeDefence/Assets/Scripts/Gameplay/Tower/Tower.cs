@@ -41,6 +41,7 @@ public class Tower : MonoBehaviour
     public int   PierceCount      { get; private set; }
 
     private float    _attackTimer;
+    private float    _attackAnimSpeed = 1f;
     private Animator _animator;
     private bool     _hasDirectionParams;
 
@@ -155,10 +156,7 @@ public class Tower : MonoBehaviour
             AttackRange    = EquippedSkill.baseRange;
         }
 
-        if (_animator != null)
-        {
-            _animator.speed = baseAttackSpeed / Mathf.Max(0.01f, AttackCooldown);
-        }
+        _attackAnimSpeed = baseAttackSpeed / Mathf.Max(0.01f, AttackCooldown);
     }
 
     private void AccumulateSupportOption(SupportOptionData opt)
@@ -204,7 +202,10 @@ public class Tower : MonoBehaviour
         _attackTimer += Time.deltaTime;
 
         var target = FindTarget();
-        _animator?.SetBool(AttackBool, target != null);
+        bool attacking = target != null;
+        _animator?.SetBool(AttackBool, attacking);
+        if (_animator != null)
+            _animator.speed = attacking ? _attackAnimSpeed : 1f;
 
         if (target == null)
         {
