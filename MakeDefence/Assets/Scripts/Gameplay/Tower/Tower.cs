@@ -197,7 +197,15 @@ public class Tower : MonoBehaviour
 
     private void Update()
     {
-        if (EquippedSkill == null) return;
+        if (EquippedSkill == null)
+        {
+            if (_animator != null)
+            {
+                _animator.SetBool(AttackBool, false);
+                _animator.speed = 1f;
+            }
+            return;
+        }
 
         _attackTimer += Time.deltaTime;
 
