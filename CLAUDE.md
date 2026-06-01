@@ -59,6 +59,18 @@ Claude Code는 Plan PR을 임의로 close/merge하지 않는다 (사용자가 �
 - 작업 브랜치: `claude/fix-issue-{number}-{slug}`
 - 항상 해당 브랜치에서 작업 후 push
 
+### 작업 시작 전 필수 체크
+
+작업을 시작하기 전에 반드시 아래 명령으로 브랜치 머지 상태를 확인한다.
+
+```bash
+git fetch origin main
+git log --oneline origin/main..HEAD
+```
+
+- main에 없는 커밋이 있으면 → 해당 커밋에 대한 PR이 머지됐는지 확인 후 진행
+- 미머지 커밋이 있으면 → 먼저 PR을 올리거나 사용자에게 확인 후 새 작업 시작
+
 ## 저장소 정보
 
 - Repository: `sanghoonjean/Defencegame`
