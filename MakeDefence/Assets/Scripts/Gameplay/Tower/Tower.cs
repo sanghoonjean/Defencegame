@@ -8,7 +8,7 @@ public class Tower : MonoBehaviour
 
     // 기본 스탯 (tech-debt: 수치 미확정 — Inspector에서 조정)
     [SerializeField] private float baseAttackDamage   = 20f;
-    [SerializeField] private float baseAttackCooldown = 1f;
+    [SerializeField] private float baseAttackSpeed = 1f;
     [SerializeField] private float baseAttackRange    = 5f;
 
     public Vector2Int TileCoord { get; private set; }
@@ -44,7 +44,7 @@ public class Tower : MonoBehaviour
     private Animator _animator;
     private bool     _hasDirectionParams;
 
-    private static readonly int AttackTrigger  = Animator.StringToHash("Attack");
+    private static readonly int AttackBool      = Animator.StringToHash("IsAttacking");
     private static readonly int DirectionXParam = Animator.StringToHash("DirectionX");
     private static readonly int DirectionYParam = Animator.StringToHash("DirectionY");
 
@@ -142,7 +142,7 @@ public class Tower : MonoBehaviour
         }
 
         AttackDamage   = baseAttackDamage   * (1f + dmgPct   / 100f);
-        AttackCooldown = baseAttackCooldown * (1f - spdPct   / 100f);
+        AttackCooldown = baseAttackSpeed * (1f - spdPct   / 100f);
         AttackRange    = baseAttackRange    * (1f + rangePct / 100f);
 
         AttackCooldown = Mathf.Max(0.1f, AttackCooldown);
@@ -157,8 +157,7 @@ public class Tower : MonoBehaviour
 
         if (_animator != null)
         {
-            float baseCd = EquippedSkill != null ? EquippedSkill.baseCooldown : baseAttackCooldown;
-            _animator.speed = baseCd / Mathf.Max(0.01f, AttackCooldown);
+            _animator.speed = baseAttackSpeed / Mathf.Max(0.01f, AttackCooldown);
         }
     }
 
@@ -203,15 +202,17 @@ public class Tower : MonoBehaviour
         if (EquippedSkill == null) return;
 
         _attackTimer += Time.deltaTime;
-        if (_attackTimer < AttackCooldown) return;
 
         var target = FindTarget();
+        _animator?.SetBool(AttackBool, target != null);
+
         if (target == null)
         {
-            Debug.Log($"[Tower] FindTarget null — AttackRange={AttackRange}, ActiveEnemies={Enemy.ActiveEnemies.Count}, Skill={EquippedSkill?.name ?? "없음"}");
             _attackTimer = 0f;
             return;
         }
+
+        if (_attackTimer < AttackCooldown) return;
 
         Attack(target);
         _attackTimer = 0f;
@@ -241,7 +242,6 @@ public class Tower : MonoBehaviour
             _animator.SetFloat(DirectionYParam, dir.y);
         }
 
-        _animator?.SetTrigger(AttackTrigger);
         SkillDispatcher.Execute(this, target);
         TryDropCube();
     }
