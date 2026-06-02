@@ -17,7 +17,7 @@ public static class SkillDispatcher
                 LaunchFireball(tower, target);
                 break;
             case SkillType.FreezingPulse:
-                LaunchFreezingPulse(tower, target);
+                ExecuteFreezingPulse(tower, target);
                 break;
             case SkillType.LightningArrow:
                 LaunchLightningArrow(tower, target);
@@ -44,31 +44,33 @@ public static class SkillDispatcher
             target.ApplyStun(0.5f);
     }
 
-    private static void LaunchFreezingPulse(Tower tower, Enemy target)
+    private static void ExecuteFreezingPulse(Tower tower, Enemy target)
     {
-        var proj = ObjectPoolSystem.Instance.GetProjectile<FreezingPulseProjectile>();
-        if (proj == null) { DirectAttack(tower, target); return; }
+        var   skill      = tower.EquippedSkill;
+        float baseDmg    = tower.AttackDamage + skill.baseDamage;
+        bool  isCrit     = Random.value < Mathf.Clamp01(tower.CritChance / 100f);
+        float dmg        = isCrit ? baseDmg * (1f + tower.CritDamage / 100f) : baseDmg;
+        float freeze     = skill.stunDuration > 0f ? skill.stunDuration : 0.5f;
+        float stunChance = skill.baseStunChance + tower.StunChance;
+        float radius     = tower.AttackRange;
+        float radiusSq   = radius * radius;
+        Vector2 origin   = tower.transform.position;
+        float dotTick    = tower.AttackDamage * tower.DotDamageRatio;
 
-        var   skill = tower.EquippedSkill;
-        float dmg   = tower.AttackDamage + skill.baseDamage;
+        foreach (var e in Enemy.ActiveEnemies.ToArray())
+        {
+            if (e == null) continue;
+            if (((Vector2)e.transform.position - origin).sqrMagnitude > radiusSq) continue;
 
-        proj.MaxRangeBonus  = 2f;
-        proj.MaxRange       = skill.baseRange;
-        proj.FreezeDuration = skill.stunDuration > 0f ? skill.stunDuration : 0.5f;
-        proj.StunChance     = skill.baseStunChance + tower.StunChance;
-        proj.CritChance     = tower.CritChance;
-        proj.CritDamage     = tower.CritDamage;
-        proj.SplashRadius     = skill.aoeRadius;
-        proj.SplashDamageType = DamageType.Cold;
-        proj.AddedFireRatio   = tower.AddedFireRatio;
-        proj.FireCritDamage   = tower.CritDamage;
-        proj.FireBaseDamage   = dmg;
-        proj.DotTickDamage    = tower.AttackDamage * tower.DotDamageRatio;
-        proj.DotDuration      = tower.DotDuration;
-        proj.IgniteChance     = tower.IgniteChance;
-        proj.ChainCount       = tower.ChainCount;
-        proj.PierceCount      = tower.PierceCount;
-        proj.LaunchFrom(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
+            e.TakeDamage(dmg, tower.ArmorPen / 100f, isCrit, DamageType.Cold);
+            if (stunChance > 0f && Random.value < Mathf.Clamp01(stunChance / 100f))
+                e.ApplyStun(freeze);
+            ApplyFireDamage(tower, e, baseDmg, isCrit);
+            if (dotTick > 0f && tower.DotDuration > 0f && e.CurrentHp > 0f)
+                e.ApplyDot(dotTick, tower.DotDuration);
+        }
+
+        GameUIManager.ShowAoeHit(origin, radius);
     }
 
     private static void LaunchLightningArrow(Tower tower, Enemy target)
