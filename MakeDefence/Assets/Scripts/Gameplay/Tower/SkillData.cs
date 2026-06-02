@@ -31,7 +31,8 @@ public class SkillData : ScriptableObject
     [Header("Support Restrictions")]
     public bool isDoTOnly;             // true → Added Fire Damage 미적용 (CausticArrow)
 
-    [Header("AoE Shape")]
+    // FreezingPulse·LightningArrow 전용 — Fireball·CausticArrow는 항상 원형 스플래시 사용
+    [Header("AoE Shape (FreezingPulse / LightningArrow 전용)")]
     public AoeShape aoeShape = AoeShape.Circle;
     [Tooltip("원뿔: 반각도(도), 기본 45°")]
     public float    aoeAngle = 45f;
