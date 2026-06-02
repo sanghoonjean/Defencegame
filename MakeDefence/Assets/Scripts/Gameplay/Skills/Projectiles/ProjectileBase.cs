@@ -29,7 +29,7 @@ public class ProjectileBase : MonoBehaviour
     public DamageType SplashDamageType { get; set; } = DamageType.Physical;
     public GameObject AoeFxPrefab { get; set; }
     private readonly HashSet<Enemy> _hitEnemies = new();
-    private Vector2 _lastMoveDir;
+    protected Vector2 _lastMoveDir;
 
     public void Launch(Vector2 origin, Enemy target, float damage, float armorPen)
     {

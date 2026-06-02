@@ -30,4 +30,11 @@ public class SkillData : ScriptableObject
 
     [Header("Support Restrictions")]
     public bool isDoTOnly;             // true → Added Fire Damage 미적용 (CausticArrow)
+
+    [Header("AoE Shape")]
+    public AoeShape aoeShape = AoeShape.Circle;
+    [Tooltip("원뿔: 반각도(도), 기본 45°")]
+    public float    aoeAngle = 45f;
+    [Tooltip("직사각형: 폭(월드 단위)")]
+    public float    aoeWidth = 2f;
 }

@@ -30,6 +30,24 @@ public class GameUIManager : MonoBehaviour
         public float   expireTime;
     }
 
+    private struct RectAoe
+    {
+        public Vector2 pos;
+        public Vector2 dir;
+        public float   width;
+        public float   length;
+        public float   expireTime;
+    }
+
+    private struct ConeAoe
+    {
+        public Vector2 pos;
+        public Vector2 dir;
+        public float   halfAngleDeg;
+        public float   radius;
+        public float   expireTime;
+    }
+
     private struct DamageText
     {
         public Vector2    worldPos;
@@ -43,6 +61,8 @@ public class GameUIManager : MonoBehaviour
 
     private static GameUIManager _instance;
     private readonly List<AoeCircle>  _aoeCircles  = new();
+    private readonly List<RectAoe>    _rectAoes    = new();
+    private readonly List<ConeAoe>    _coneAoes    = new();
     private readonly List<DamageText> _damageTexts = new();
 
     private Texture2D _bgTex;
@@ -146,6 +166,32 @@ public class GameUIManager : MonoBehaviour
         }
     }
 
+    public static void ShowRectAoeHit(Vector2 pos, Vector2 dir, float width, float length)
+    {
+        if (_instance == null) return;
+        _instance._rectAoes.Add(new RectAoe
+        {
+            pos        = pos,
+            dir        = dir.normalized,
+            width      = width,
+            length     = length,
+            expireTime = Time.time + _instance.aoeHitDuration
+        });
+    }
+
+    public static void ShowConeAoeHit(Vector2 pos, Vector2 dir, float halfAngleDeg, float radius)
+    {
+        if (_instance == null) return;
+        _instance._coneAoes.Add(new ConeAoe
+        {
+            pos          = pos,
+            dir          = dir.normalized,
+            halfAngleDeg = halfAngleDeg,
+            radius       = radius,
+            expireTime   = Time.time + _instance.aoeHitDuration
+        });
+    }
+
     private void SpawnAoeFx(Vector2 pos, float radius, GameObject fxPrefab)
     {
         var go = Instantiate(fxPrefab, new Vector3(pos.x, pos.y, -1f), Quaternion.identity);
@@ -228,6 +274,8 @@ public class GameUIManager : MonoBehaviour
         GL.Begin(GL.LINES);
         DrawTowerRange();
         DrawAoeCircles();
+        DrawRectAoes();
+        DrawConeAoes();
         GL.End();
     }
 
@@ -266,6 +314,62 @@ public class GameUIManager : MonoBehaviour
             {
                 float a0 = step * s;
                 float a1 = step * (s + 1);
+                GL.Vertex3(c.pos.x + Mathf.Cos(a0) * c.radius, c.pos.y + Mathf.Sin(a0) * c.radius, 0f);
+                GL.Vertex3(c.pos.x + Mathf.Cos(a1) * c.radius, c.pos.y + Mathf.Sin(a1) * c.radius, 0f);
+            }
+        }
+    }
+
+    private void DrawRectAoes()
+    {
+        float now = Time.time;
+        GL.Color(aoeHitColor);
+        for (int i = _rectAoes.Count - 1; i >= 0; i--)
+        {
+            var c = _rectAoes[i];
+            if (now >= c.expireTime) { _rectAoes.RemoveAt(i); continue; }
+
+            Vector2 fwd   = c.dir;
+            Vector2 right = new Vector2(-fwd.y, fwd.x);
+            Vector2 halfW = right * (c.width * 0.5f);
+            Vector2 fwdL  = fwd * c.length;
+
+            Vector2 bl = c.pos - halfW;
+            Vector2 br = c.pos + halfW;
+            Vector2 fl = c.pos + fwdL - halfW;
+            Vector2 fr = c.pos + fwdL + halfW;
+
+            GL.Vertex3(bl.x, bl.y, 0f); GL.Vertex3(br.x, br.y, 0f);
+            GL.Vertex3(br.x, br.y, 0f); GL.Vertex3(fr.x, fr.y, 0f);
+            GL.Vertex3(fr.x, fr.y, 0f); GL.Vertex3(fl.x, fl.y, 0f);
+            GL.Vertex3(fl.x, fl.y, 0f); GL.Vertex3(bl.x, bl.y, 0f);
+        }
+    }
+
+    private void DrawConeAoes()
+    {
+        float now  = Time.time;
+        const int arcSegs = 16;
+        GL.Color(aoeHitColor);
+        for (int i = _coneAoes.Count - 1; i >= 0; i--)
+        {
+            var c = _coneAoes[i];
+            if (now >= c.expireTime) { _coneAoes.RemoveAt(i); continue; }
+
+            Vector2 leftEdge  = AoeUtils.Rotate(c.dir, c.halfAngleDeg) * c.radius;
+            Vector2 rightEdge = AoeUtils.Rotate(c.dir, -c.halfAngleDeg) * c.radius;
+
+            GL.Vertex3(c.pos.x, c.pos.y, 0f);
+            GL.Vertex3(c.pos.x + leftEdge.x, c.pos.y + leftEdge.y, 0f);
+            GL.Vertex3(c.pos.x, c.pos.y, 0f);
+            GL.Vertex3(c.pos.x + rightEdge.x, c.pos.y + rightEdge.y, 0f);
+
+            float baseAngle  = Mathf.Atan2(c.dir.y, c.dir.x) * Mathf.Rad2Deg - c.halfAngleDeg;
+            float step       = (c.halfAngleDeg * 2f) / arcSegs;
+            for (int s = 0; s < arcSegs; s++)
+            {
+                float a0 = (baseAngle + step * s)       * Mathf.Deg2Rad;
+                float a1 = (baseAngle + step * (s + 1)) * Mathf.Deg2Rad;
                 GL.Vertex3(c.pos.x + Mathf.Cos(a0) * c.radius, c.pos.y + Mathf.Sin(a0) * c.radius, 0f);
                 GL.Vertex3(c.pos.x + Mathf.Cos(a1) * c.radius, c.pos.y + Mathf.Sin(a1) * c.radius, 0f);
             }
