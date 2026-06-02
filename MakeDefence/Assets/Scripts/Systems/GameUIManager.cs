@@ -150,7 +150,19 @@ public class GameUIManager : MonoBehaviour
     {
         var go = Instantiate(fxPrefab, new Vector3(pos.x, pos.y, -1f), Quaternion.identity);
         float diameter = radius * 2f;
-        go.transform.localScale = new Vector3(diameter, diameter, 1f);
+
+        var sr = go.GetComponent<SpriteRenderer>();
+        if (sr != null && sr.sprite != null)
+        {
+            float nativeWidth = sr.sprite.bounds.size.x;
+            float scale = nativeWidth > 0f ? diameter / nativeWidth : diameter;
+            go.transform.localScale = new Vector3(scale, scale, 1f);
+        }
+        else
+        {
+            go.transform.localScale = new Vector3(diameter, diameter, 1f);
+        }
+
         Destroy(go, aoeHitDuration);
     }
 
