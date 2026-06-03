@@ -52,15 +52,16 @@ public static class SkillDispatcher
         float dmg        = isCrit ? baseDmg * (1f + tower.CritDamage / 100f) : baseDmg;
         float freeze     = skill.stunDuration > 0f ? skill.stunDuration : 0.5f;
         float stunChance = skill.baseStunChance + tower.StunChance;
-        float radius     = tower.AttackRange;
-        float radiusSq   = radius * radius;
+        float   radius   = skill.aoeRadius > 0f ? Mathf.Min(skill.aoeRadius, tower.AttackRange) : tower.AttackRange;
         Vector2 origin   = tower.transform.position;
-        float dotTick    = tower.AttackDamage * tower.DotDamageRatio;
+        Vector2 forward  = ((Vector2)target.transform.position - origin).normalized;
+        float   dotTick  = tower.AttackDamage * tower.DotDamageRatio;
 
         foreach (var e in Enemy.ActiveEnemies.ToArray())
         {
             if (e == null) continue;
-            if (((Vector2)e.transform.position - origin).sqrMagnitude > radiusSq) continue;
+            if (!AoeUtils.IsInAoe(e.transform.position, origin, forward,
+                    skill.aoeShape, radius, skill.aoeWidth, skill.aoeAngle)) continue;
 
             e.TakeDamage(dmg, tower.ArmorPen / 100f, isCrit, DamageType.Cold);
             if (stunChance > 0f && Random.value < Mathf.Clamp01(stunChance / 100f))
@@ -70,7 +71,7 @@ public static class SkillDispatcher
                 e.ApplyDot(dotTick, tower.DotDuration);
         }
 
-        GameUIManager.ShowAoeHit(origin, radius);
+        AoeUtils.ShowAoeHit(origin, forward, skill.aoeShape, radius, skill.aoeWidth, skill.aoeAngle);
     }
 
     private static void LaunchLightningArrow(Tower tower, Enemy target)
@@ -94,6 +95,9 @@ public static class SkillDispatcher
         proj.IgniteChance   = tower.IgniteChance;
         proj.ChainCount     = tower.ChainCount;
         proj.PierceCount    = tower.PierceCount;
+        proj.AoeShape       = skill.aoeShape;
+        proj.AoeAngle       = skill.aoeAngle;
+        proj.AoeWidth       = skill.aoeWidth;
         proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
     }
 
