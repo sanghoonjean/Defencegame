@@ -52,7 +52,7 @@ public static class SkillDispatcher
         float dmg        = isCrit ? baseDmg * (1f + tower.CritDamage / 100f) : baseDmg;
         float freeze     = skill.stunDuration > 0f ? skill.stunDuration : 0.5f;
         float stunChance = skill.baseStunChance + tower.StunChance;
-        float   radius   = skill.aoeRadius > 0f ? skill.aoeRadius : tower.AttackRange;
+        float   radius   = skill.aoeRadius > 0f ? Mathf.Min(skill.aoeRadius, tower.AttackRange) : tower.AttackRange;
         Vector2 origin   = tower.transform.position;
         Vector2 forward  = ((Vector2)target.transform.position - origin).normalized;
         float   dotTick  = tower.AttackDamage * tower.DotDamageRatio;
