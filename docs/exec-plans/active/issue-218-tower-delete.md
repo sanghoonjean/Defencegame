@@ -11,17 +11,21 @@
    ↓  OnTowerSelected 이벤트
 [UnitPanelController] → 패널 표시 (기존)
    └─ [신규] DeleteTowerButton 활성화
-        ↓ onClick
+        ↓ onClick (캡처: SelectedTower)
 [TowerDeleteConfirmPopup.Show(tower)]
+   ↓ _pendingTower = tower  (확정 시점까지 보관)
    ↓ Confirm
-[InventorySystem.DeleteSelectedTower()]
+[InventorySystem.DeleteTower(target)]   ← 명시적 타워 전달
+   ├─ if (target == null || target.Equals(null)) return false
    ├─ CubeSystem.Add(CubeType.Lower, 1)         // 환급
-   ├─ InventorySystem.Deselect()                // 선택 해제 → 패널 자동 숨김
-   └─ Destroy(tower.gameObject)
+   ├─ if (SelectedTower == target) Deselect()   // 캡처된 타워가 현재 선택일 때만 해제
+   └─ Destroy(target.gameObject)
          ↓ Tower.OnDestroy() (기존, 변경 없음)
          ├─ ItemSystem.UnregisterTower(this)
          └─ MapTileSystem.RemoveTower(TileCoord)
 ```
+
+> **설계 결정**: API를 `DeleteSelectedTower()` 대신 `DeleteTower(Tower target)`로 둔다. 팝업 오픈과 확정 사이에 선택이 바뀌어도 캡처된 타워가 삭제되도록 보장한다. `SellConfirmPopup`도 동일한 캡처 패턴 사용([SellConfirmPopup.cs:42-44, 89](MakeDefence/Assets/Scripts/UI/SellConfirmPopup.cs#L42-L89)).
 
 ### 핵심 결정 (이슈의 미정 항목 처리)
 
@@ -35,7 +39,7 @@
 ## 2. 수정 파일
 
 - `MakeDefence/Assets/Scripts/Systems/InventorySystem.cs`
-  - `DeleteSelectedTower()` 메서드 신설 — 환급 + `Deselect()` + `Destroy(gameObject)`
+  - `DeleteTower(Tower target)` 메서드 신설 — 명시적 타워 인자, null 체크, 환급, 캡처된 타워가 `SelectedTower`와 같을 때만 `Deselect()`, `Destroy(target.gameObject)`
 - `MakeDefence/Assets/Scenes/SampleScene.unity` *(Unity Editor 수정)*
   - `UnitPanel` 하위에 **Delete Tower** 버튼 추가
   - `TowerDeleteConfirmPopup` 패널(Canvas 하위) 추가 — 기존 `SellConfirmPopup` 프리팹 구조 참고
@@ -43,8 +47,10 @@
 ## 3. 신규 클래스 / 파일
 
 - `MakeDefence/Assets/Scripts/UI/TowerDeleteConfirmPopup.cs`
-  - 역할: 삭제 확인 모달. `Show(Tower)` → confirm 시 `InventorySystem.Instance.DeleteSelectedTower()` 호출
-  - 패턴: 기존 `SellConfirmPopup` 그대로 본떠 작성 (Awake에서 Instance, panel SetActive(false), 버튼 리스너 등록)
+  - 역할: 삭제 확인 모달
+  - `Show(Tower tower)` 호출 시 **`_pendingTower = tower`로 캡처** → confirm 시 `InventorySystem.Instance.DeleteTower(_pendingTower)` 호출
+  - 캡처 패턴은 기존 `SellConfirmPopup._pendingTower`와 동일 ([SellConfirmPopup.cs:42-44, 89](MakeDefence/Assets/Scripts/UI/SellConfirmPopup.cs#L42-L89))
+  - 패널 닫힐 때(Hide / OnConfirm 종료) `_pendingTower = null` 정리
 - `MakeDefence/Assets/Scripts/UI/DeleteTowerButton.cs`
   - 역할: UnitPanel 내 삭제 버튼의 onClick 핸들러. `InventorySystem.SelectedTower`가 있으면 팝업 호출
   - (단순하면 별도 스크립트 없이 `TowerDeleteConfirmPopup.Show(InventorySystem.Instance.SelectedTower)`를 Inspector OnClick으로 연결해도 됨 → 코드 추가 0으로 가능)
@@ -72,7 +78,8 @@
 
 ## 5. 위험 요소
 
-- **선택된 타워가 외부에서 Destroy되는 경우** — 기존 코드는 `SelectedTower`를 null로 안 만들 수 있음. `DeleteSelectedTower()`에서 Destroy 직전에 명시적 `Deselect()` 호출로 방지. (관련: `Tower.OnDestroy` 자체는 InventorySystem을 건드리지 않음)
+- **선택된 타워가 외부에서 Destroy되는 경우** — 기존 코드는 `SelectedTower`를 null로 안 만들 수 있음. `DeleteTower(target)`에서 Destroy 직전에 `SelectedTower == target`일 때만 `Deselect()` 호출로 방지. (관련: `Tower.OnDestroy` 자체는 InventorySystem을 건드리지 않음)
+- **팝업 오픈 ↔ 확정 사이 선택 변경** — Codex 리뷰 지적사항. 팝업이 월드 입력을 완전 차단하지 못하거나 다른 UI 경로로 `SelectTower` 호출되면 잘못된 타워가 삭제될 수 있음. → `Show(tower)`에서 캡처한 `_pendingTower`를 명시적으로 `DeleteTower(target)`에 전달해 회피. `SelectedTower` 의존 제거
 - **TestRunner.HandleClick에 의존하는 선택 입력** — 현재 타워 선택이 디버그 성격 파일(`TestRunner.cs`)에 들어있음. 본 이슈에서는 변경 범위 밖이지만, 추후 정식 InputManager로 옮길 때 함께 정리 필요. (별도 이슈 권장)
 - **삭제 후 즉시 같은 프레임에 다른 시스템이 타워 참조** — `Enemy`가 타겟팅하는 타워는 없으나, 향후 그런 시스템 추가 시 null 검사 필요.
 - **UI 작업 누락** — `.cs` 변경만으로는 동작하지 않음. SampleScene에 버튼/팝업 패널 추가 필수. 미적용 시 기능 노출 안 됨 (테스트 시 즉시 발견 가능).
