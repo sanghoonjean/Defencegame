@@ -166,9 +166,15 @@ public class GameUIManager : MonoBehaviour
         }
     }
 
-    public static void ShowRectAoeHit(Vector2 pos, Vector2 dir, float width, float length)
+    public static void ShowRectAoeHit(Vector2 pos, Vector2 dir, float width, float length,
+        GameObject fxPrefab = null)
     {
         if (_instance == null) return;
+        if (fxPrefab != null)
+        {
+            _instance.SpawnRectAoeFx(pos, dir.normalized, width, length, fxPrefab);
+            return;
+        }
         _instance._rectAoes.Add(new RectAoe
         {
             pos        = pos,
@@ -179,9 +185,15 @@ public class GameUIManager : MonoBehaviour
         });
     }
 
-    public static void ShowConeAoeHit(Vector2 pos, Vector2 dir, float halfAngleDeg, float radius)
+    public static void ShowConeAoeHit(Vector2 pos, Vector2 dir, float halfAngleDeg, float radius,
+        GameObject fxPrefab = null)
     {
         if (_instance == null) return;
+        if (fxPrefab != null)
+        {
+            _instance.SpawnConeAoeFx(pos, dir.normalized, radius, fxPrefab);
+            return;
+        }
         _instance._coneAoes.Add(new ConeAoe
         {
             pos          = pos,
@@ -197,6 +209,60 @@ public class GameUIManager : MonoBehaviour
         var go = Instantiate(fxPrefab, new Vector3(pos.x, pos.y, -1f), Quaternion.identity);
         float diameter = radius * 2f;
 
+        var sr = go.GetComponent<SpriteRenderer>();
+        if (sr != null && sr.sprite != null)
+        {
+            float nativeWidth = sr.sprite.bounds.size.x;
+            float scale = nativeWidth > 0f ? diameter / nativeWidth : diameter;
+            go.transform.localScale = new Vector3(scale, scale, 1f);
+        }
+        else
+        {
+            go.transform.localScale = new Vector3(diameter, diameter, 1f);
+        }
+
+        Destroy(go, aoeHitDuration);
+    }
+
+    private void SpawnRectAoeFx(Vector2 origin, Vector2 forward, float width, float length,
+        GameObject fxPrefab)
+    {
+        // 사각형 중앙에 배치 (origin → forward × length/2)
+        Vector2 center = origin + forward * (length * 0.5f);
+        float   angle  = Mathf.Atan2(forward.y, forward.x) * Mathf.Rad2Deg;
+
+        var go = Instantiate(fxPrefab,
+            new Vector3(center.x, center.y, -1f),
+            Quaternion.Euler(0f, 0f, angle));
+
+        // 스프라이트 네이티브 크기 보정 (PR #215 패턴 동일)
+        var sr = go.GetComponent<SpriteRenderer>();
+        if (sr != null && sr.sprite != null)
+        {
+            Vector2 native = sr.sprite.bounds.size;
+            float scaleX = native.x > 0f ? length / native.x : length;
+            float scaleY = native.y > 0f ? width  / native.y : width;
+            go.transform.localScale = new Vector3(scaleX, scaleY, 1f);
+        }
+        else
+        {
+            go.transform.localScale = new Vector3(length, width, 1f);
+        }
+
+        Destroy(go, aoeHitDuration);
+    }
+
+    private void SpawnConeAoeFx(Vector2 origin, Vector2 forward, float radius,
+        GameObject fxPrefab)
+    {
+        // 원뿔 꼭짓점은 origin
+        float angle = Mathf.Atan2(forward.y, forward.x) * Mathf.Rad2Deg;
+
+        var go = Instantiate(fxPrefab,
+            new Vector3(origin.x, origin.y, -1f),
+            Quaternion.Euler(0f, 0f, angle));
+
+        float diameter = radius * 2f;
         var sr = go.GetComponent<SpriteRenderer>();
         if (sr != null && sr.sprite != null)
         {

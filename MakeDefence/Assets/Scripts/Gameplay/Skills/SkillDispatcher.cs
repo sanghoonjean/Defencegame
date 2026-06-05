@@ -71,7 +71,8 @@ public static class SkillDispatcher
                 e.ApplyDot(dotTick, tower.DotDuration);
         }
 
-        AoeUtils.ShowAoeHit(origin, forward, skill.aoeShape, radius, skill.aoeWidth, skill.aoeAngle);
+        AoeUtils.ShowAoeHit(origin, forward, skill.aoeShape, radius, skill.aoeWidth, skill.aoeAngle,
+            skill.aoeFxPrefab);
     }
 
     private static void LaunchLightningArrow(Tower tower, Enemy target)
