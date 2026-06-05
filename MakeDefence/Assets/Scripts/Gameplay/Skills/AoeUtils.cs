@@ -40,10 +40,10 @@ public static class AoeUtils
                 GameUIManager.ShowAoeHit(origin, radius, fxPrefab);
                 break;
             case AoeShape.Rectangle:
-                GameUIManager.ShowRectAoeHit(origin, forward, width, radius);
+                GameUIManager.ShowRectAoeHit(origin, forward, width, radius, fxPrefab);
                 break;
             case AoeShape.Cone:
-                GameUIManager.ShowConeAoeHit(origin, forward, halfAngleDeg, radius);
+                GameUIManager.ShowConeAoeHit(origin, forward, halfAngleDeg, radius, fxPrefab);
                 break;
         }
     }

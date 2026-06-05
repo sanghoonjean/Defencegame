@@ -38,4 +38,8 @@ public class SkillData : ScriptableObject
     public float    aoeAngle = 45f;
     [Tooltip("직사각형: 폭(월드 단위)")]
     public float    aoeWidth = 2f;
+
+    [Header("AoE FX")]
+    [Tooltip("AoE 발동 위치에 인스턴스화할 FX 프리팹. null 이면 GameUIManager 의 내부 도형 렌더링 사용")]
+    public GameObject aoeFxPrefab;
 }
