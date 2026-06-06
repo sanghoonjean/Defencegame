@@ -100,7 +100,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   baseAttackDamage: 0
-  baseAttackCooldown: 1
+  baseAttackCooldown: 4
   baseAttackRange: 5
 --- !u!61 &2656914260432286792
 BoxCollider2D:

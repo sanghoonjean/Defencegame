@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Added Fire Damage Support
   m_EditorClassIdentifier: 
   displayName: IncendiaryRound
-  icon: {fileID: 21300000, guid: 83fe21a42540fdc4e9b540846b75472f, type: 3}
+  icon: {fileID: -1060407994, guid: 0f32e7c31e8930a45b13fd1800305804, type: 3}
   optionType: 9
   description: 
   value: 0.3

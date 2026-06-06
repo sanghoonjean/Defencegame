@@ -22,3 +22,9 @@ MonoBehaviour:
   baseStunChance: 5
   stunDuration: 100
   dotDuration: 0
+  isDoTOnly: 0
+  aoeShape: 1
+  aoeAngle: 45
+  aoeWidth: 2
+  aoeFxPrefab: {fileID: 527660993847000632, guid: c5a0e5229d31c5c4fbacde87fe5ecd29,
+    type: 3}

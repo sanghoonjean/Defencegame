@@ -22,3 +22,7 @@ MonoBehaviour:
   baseStunChance: 0
   stunDuration: 1
   dotDuration: 0
+  isDoTOnly: 0
+  aoeShape: 2
+  aoeAngle: 45
+  aoeWidth: 2
