@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 9118968710690954532}
   - component: {fileID: 272293285293893139}
   - component: {fileID: 7656123411341236438}
+  - component: {fileID: -4935676399133678085}
   m_Layer: 0
   m_Name: FireballProjectile
   m_TagString: Untagged
@@ -45,6 +46,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2c8715bb3f156144f83ceec5cbe2119c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _aoeFxPrefab: {fileID: 527660993847000632, guid: 05490f313d13c064da944fcd1ba1b516,
+    type: 3}
 --- !u!212 &7656123411341236438
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -86,14 +89,35 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 10
-  m_Sprite: {fileID: 21300000, guid: 03ffe1048c2ce1b4cab4dae20710c855, type: 3}
-  m_Color: {r: 1, g: 0.27564055, b: 0, a: 1}
+  m_Sprite: {fileID: 0}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
   m_Size: {x: 0.2, y: 0.2}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
-  m_WasSpriteAssigned: 1
+  m_WasSpriteAssigned: 0
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
+--- !u!95 &-4935676399133678085
+Animator:
+  serializedVersion: 5
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6161231276423854446}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: d851d9db83bb29b45b8b4a6fd4426dce, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
