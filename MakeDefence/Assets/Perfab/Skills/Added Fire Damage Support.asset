@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bb2c5388b331df74d8f67deb94fe7ea5, type: 3}
   m_Name: Added Fire Damage Support
   m_EditorClassIdentifier: 
-  displayName: IncendiaryRound
-  icon: {fileID: -1060407994, guid: 0f32e7c31e8930a45b13fd1800305804, type: 3}
+  displayName: Add FIRE Damage
+  icon: {fileID: 1068532107, guid: dbf2a10e0e69a7d43b8f8aea06f522a6, type: 3}
   optionType: 9
   description: 
   value: 0.3

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: CausticArrowSkill
   m_EditorClassIdentifier: 
   displayName: CausticArrow
-  icon: {fileID: 1645504615, guid: da2e257f89a04bf48abaf96eeafe8eed, type: 3}
+  icon: {fileID: 659363590, guid: 27181370ce6306644bf046b332fca129, type: 3}
   skillType: 7
   baseDamage: 100
   baseCooldown: 1
@@ -23,3 +23,7 @@ MonoBehaviour:
   stunDuration: 0
   dotDuration: 5
   isDoTOnly: 1
+  aoeShape: 0
+  aoeAngle: 45
+  aoeWidth: 2
+  aoeFxPrefab: {fileID: 0}
