@@ -77,17 +77,18 @@ ShopSystem
 
 | 파일 | 변경 내용 |
 |---|---|
-| `MakeDefence/Assets/Scripts/Systems/ShopSystem.cs` | `DisplayEntry` 중첩 struct + `_displayOrder` 필드 + `OwnedDisplayOrder` 노출 + `SwapDisplayOrder`, `MoveDisplayOrder` 추가. 기존 `BuySkill`/`BuySupportOption`/`ReturnSkill`/`ReturnSupportOption`/`RemoveOwnedSkill`/`RemoveOwnedSupportOption` 가 `_displayOrder` 동기화. 기존 `SwapOwnedSkills`/`MoveOwnedSkill` 는 호환 유지하되 deprecated 표시 (UI 가 새 API 로 이행) |
+| `MakeDefence/Assets/Scripts/Systems/ShopSystem.cs` | `DisplayEntry` 중첩 struct + `_displayOrder` 필드 + `OwnedDisplayOrder` 노출 + `SwapDisplayOrder`, `MoveDisplayOrder` 추가. **`RemoveByDisplayIndex(int)` 신규 — 인덱스 기반 제거 (중복 보유 데이터 무결성용, Codex P1 대응)**. 기존 `BuySkill`/`BuySupportOption`/`ReturnSkill`/`ReturnSupportOption`/`RemoveOwnedSkill`/`RemoveOwnedSupportOption` 가 `_displayOrder` 동기화. 기존 reference-based remove / `SwapOwnedSkills`/`MoveOwnedSkill` 는 호환 유지하되 deprecated 표시 (UI 가 새 인덱스 API 로 이행) |
 | `MakeDefence/Assets/Scripts/UI/InvenUI.cs` | 통합 그리드로 재작성 — `_displayOrder` 순회, 동적 슬롯 인스턴스화 (LayoutGroup + 슬롯 프리팹), 슬롯 풀링 |
 | `MakeDefence/Assets/Scripts/UI/SupportInvenUI.cs` | **삭제** (UnifiedInvenUI 가 흡수). 컴포넌트가 씬에 남아있을 가능성 대비 Obsolete 빈 클래스로 한 PR 더 두는 것 고려 |
-| `MakeDefence/Assets/Scripts/UI/InvenSlotDragHandler.cs` | `Skill` 단일 필드 → `SkillData Skill` + `SupportOptionData Support` (둘 중 하나만 set), `InventoryItemKind Kind` getter. `OnDrop` 의 인벤 ↔ 인벤 분기를 `SwapDisplayOrder` 호출로 교체 |
+| `MakeDefence/Assets/Scripts/UI/InvenSlotDragHandler.cs` | `Skill` 단일 필드 → `SkillData Skill` + `SupportOptionData Support` (둘 중 하나만 set), `InventoryItemKind Kind` getter, **`int SourceDisplayIndex` 페이로드 추가 (중복 보유 식별용, Codex P1 대응)**. `OnDrop` 의 인벤 ↔ 인벤 분기를 `SwapDisplayOrder` 호출로 교체 |
 | `MakeDefence/Assets/Scripts/UI/SupportOptionDragHandler.cs` | **삭제** — InvenSlotDragHandler 에 흡수. 참조하는 모든 호출자가 InvenSlotDragHandler 로 이행 (아래 두 파일 포함) |
-| `MakeDefence/Assets/Scripts/UI/SkillSlotUI.cs` | `OnDrop` 시 페이로드의 Kind 검사 — Skill 만 허용. Support 페이로드면 거부 |
-| `MakeDefence/Assets/Scripts/UI/SupportSlotUI.cs` | `SupportOptionDragHandler` 의존 제거 → `InvenSlotDragHandler` 사용. `OnDrop` 에서 Kind == Support 만 허용 |
+| `MakeDefence/Assets/Scripts/UI/SkillSlotUI.cs` | `OnDrop` 시 페이로드의 Kind 검사 — Skill 만 허용. Support 페이로드면 거부. **장착 시 `RemoveOwnedSkill(SkillData)` 대신 `RemoveByDisplayIndex(SourceDisplayIndex)` 호출 (중복 보유 무결성)** |
+| `MakeDefence/Assets/Scripts/UI/SupportSlotUI.cs` | `SupportOptionDragHandler` 의존 제거 → `InvenSlotDragHandler` 사용. `OnDrop` 에서 Kind == Support 만 허용. **장착 시 `RemoveOwnedSupportOption(option)` 대신 `RemoveByDisplayIndex(SourceDisplayIndex)` 호출** |
 | `MakeDefence/Assets/Scripts/UI/OwnedSupportSlotUI.cs` | `SupportOptionDragHandler` 추가/사용 부분을 `InvenSlotDragHandler` (Kind = Support) 로 이행. 타워 장착 슬롯에서 인벤으로 드래그 해제 동작 유지 |
 | `MakeDefence/Assets/Scripts/UI/InvenDropHandler.cs` | `GetComponent<SupportOptionDragHandler>()` 분기 → `GetComponent<InvenSlotDragHandler>()` + `Kind == Support` 검사로 이행. 서포트 해제 후 인벤 반환 로직은 유지 |
 | `MakeDefence/Assets/Scripts/UI/DropTargetHighlight.cs` | 드래그 시작 이벤트의 페이로드 Kind 에 따라 호환되는 슬롯만 하이라이트 |
-| `MakeDefence/Assets/Scripts/UI/ShopDropHandler.cs` | `GetComponent<SupportOptionDragHandler>()` → 통합 핸들러 + Kind 검사. SellSkill / SellSupport 분기 유지 |
+| `MakeDefence/Assets/Scripts/UI/ShopDropHandler.cs` | `GetComponent<SupportOptionDragHandler>()` → 통합 핸들러 + Kind 검사. SellSkill / SellSupport 분기 유지. **판매 시 `RemoveOwnedSkill`/`RemoveOwnedSupportOption` 대신 `RemoveByDisplayIndex(SourceDisplayIndex)` 호출** |
+| `MakeDefence/Assets/Scripts/UI/SellConfirmPopup.cs` | 판매 확정 시 `RemoveOwnedSkill`/`RemoveOwnedSupportOption` 대신 `RemoveByDisplayIndex` 사용. ShopDropHandler 에서 SellConfirm 띄울 때 `SourceDisplayIndex` 같이 전달 |
 | `MakeDefence/Assets/Scenes/SampleScene.unity` | **사용자 Editor 작업** — 두 인벤 패널 → 단일 그리드 패널, 슬롯 프리팹 연결, LayoutGroup 설정 |
 
 ## 3. 신규 클래스 / 파일
@@ -119,6 +120,12 @@ ShopSystem
 - [ ] 빈 슬롯으로 이동 (Move)
 - [ ] 재배치 후 ShopSystem.OwnedSkills / OwnedSupports 의 데이터는 변경 없음 (순서 메타만 변경)
 
+### 중복 보유 무결성 (Codex P1)
+- [ ] **같은 스킬 2개 보유** → 1번 위치 / 5번 위치로 재배치 → **5번 사본 판매** → 1번 사본 영향 없음, displayOrder 정확히 5번만 제거
+- [ ] **같은 스킬 2개 보유** → 5번 사본 장착 → InvenSlotDragHandler 의 SourceDisplayIndex 가 5 → RemoveByDisplayIndex(5) → 1번 사본 그대로 남음
+- [ ] **같은 서포트 2개 보유** 동일 시나리오 (판매 / 장착)
+- [ ] 같은 스킬 3개 보유 + 모두 다른 위치 → 중간 사본만 제거 → 나머지 2개와 displayOrder 의 인덱스 정합성 유지
+
 ### 동적 확장 / 축소
 - [ ] 보유 1 → 2 → 3 늘어날 때 그리드 슬롯이 자동 추가
 - [ ] 판매로 줄어들 때 빈 슬롯이 자동 축소 (또는 마지막 한 줄만 보존하는 정책)
@@ -141,8 +148,17 @@ ShopSystem
 
 ### 데이터 정합성
 - **DataIndex 보정 버그 위험**: `RemoveOwnedSkill(skill)` 가 List 중간 항목을 제거하면 그 뒤 `DisplayEntry.DataIndex` 가 모두 -1 되어야 함. 보정 누락 시 다른 항목을 가리키는 댕글링 인덱스 발생
-- 완화: ShopSystem 의 모든 데이터 변경 메서드에서 `_displayOrder` 보정을 강제하는 단일 진입점(`AddOwned(Kind, item)` / `RemoveOwned(Kind, item)`) 도입 검토. 외부 호출 메서드는 wrapper 로 위임
+- 완화: ShopSystem 의 모든 데이터 변경 메서드에서 `_displayOrder` 보정을 강제하는 단일 진입점(`AddOwned(Kind, item)` / `RemoveByDisplayIndex(int)`) 도입. 외부 호출 메서드는 wrapper 로 위임
 - 테스트: 중간 인덱스 제거 시나리오를 명시적으로 검증
+
+### 중복 보유 무결성 (Codex P1)
+- **문제**: 현재 `RemoveOwnedSkill(SkillData)`/`RemoveOwnedSupportOption(SupportOptionData)` 는 `List.Remove` 로 **첫 매치** 제거. 같은 스킬/서포트 중복 보유 + 재배치 후 두 번째 사본을 sell/equip 하면 첫 번째 사본이 제거돼 displayOrder 정합성 손상
+- **호출 지점 5곳**: `InvenUI.cs:87`, `SellConfirmPopup.cs:98,112`, `ShopDropHandler.cs:60,83`, `SkillSlotUI.cs:60`, `SupportSlotUI.cs:96`
+- **해결**:
+  1. 드래그 페이로드 `InvenSlotDragHandler` 에 `int SourceDisplayIndex` 추가 — 드래그 시작 시 슬롯의 displayIndex 캡처
+  2. ShopSystem 에 `RemoveByDisplayIndex(int displayIdx)` 신규 — displayOrder 의 정확한 엔트리 + 해당 데이터 List 항목 제거 + 뒤 항목 DataIndex 보정
+  3. 위 5개 호출 지점 모두 인덱스 API 로 이행 (asset reference 기반 API 는 deprecated 호환 유지)
+- **타워 슬롯 → 인벤 unequip** (`InvenDropHandler` 경로): SourceDisplayIndex = -1 (장착 슬롯 시작이라 인벤 인덱스 없음). 이 경로는 `ReturnSkill`/`ReturnSupportOption` 호출 → `_displayOrder.Add` 로 append 라 인덱스 식별 불필요
 
 ### 호환성
 - 기존 `SwapOwnedSkills(int, int)` / `MoveOwnedSkill(int, int)` 의 인덱스 의미가 \"스킬 List 인덱스\" 에서 변하지 않음 (그대로 유지). 새 \"통합 displayOrder 인덱스\" 와 혼동하지 않도록 메서드명 분리: `SwapDisplayOrder(int, int)` vs `SwapOwnedSkills(int, int)`
