@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: FreezingPulseSkill
   m_EditorClassIdentifier: 
   displayName: FreezingPulse
-  icon: {fileID: -204207426, guid: e0d96e86536de034493aeb413083371e, type: 3}
+  icon: {fileID: 1511137045, guid: 81fab9813c4b1524983127544d250f46, type: 3}
   skillType: 5
   baseDamage: 500
   baseCooldown: 0.2
