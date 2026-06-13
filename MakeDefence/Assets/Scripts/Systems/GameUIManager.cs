@@ -150,7 +150,8 @@ public class GameUIManager : MonoBehaviour
     public static void ShowAoeHit(Vector2 pos, float radius, GameObject fxPrefab = null)
     {
         if (_instance == null || radius <= 0f) return;
-        if (fxPrefab != null)
+        bool useAnim = SettingsSystem.AoeDisplayMode == AoeDisplayMode.Animation;
+        if (useAnim && fxPrefab != null)
         {
             _instance.SpawnAoeFx(pos, radius, fxPrefab);
         }
@@ -170,7 +171,8 @@ public class GameUIManager : MonoBehaviour
         GameObject fxPrefab = null)
     {
         if (_instance == null) return;
-        if (fxPrefab != null)
+        bool useAnim = SettingsSystem.AoeDisplayMode == AoeDisplayMode.Animation;
+        if (useAnim && fxPrefab != null)
         {
             _instance.SpawnRectAoeFx(pos, dir.normalized, width, length, fxPrefab);
             return;
@@ -189,7 +191,8 @@ public class GameUIManager : MonoBehaviour
         GameObject fxPrefab = null)
     {
         if (_instance == null) return;
-        if (fxPrefab != null)
+        bool useAnim = SettingsSystem.AoeDisplayMode == AoeDisplayMode.Animation;
+        if (useAnim && fxPrefab != null)
         {
             _instance.SpawnConeAoeFx(pos, dir.normalized, radius, fxPrefab);
             return;
