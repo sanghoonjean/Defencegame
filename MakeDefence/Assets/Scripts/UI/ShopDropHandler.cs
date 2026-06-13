@@ -7,7 +7,7 @@ public class ShopDropHandler : MonoBehaviour, IDropHandler
     {
         if (eventData.pointerDrag == null) return;
 
-        // 장착 슬롯에서 드랍
+        // 장착 스킬 슬롯에서 드랍 → 장착 스킬 판매
         var skillSlotDrag = eventData.pointerDrag.GetComponent<SkillSlotDragHandler>();
         if (skillSlotDrag != null)
         {
@@ -15,21 +15,21 @@ public class ShopDropHandler : MonoBehaviour, IDropHandler
             return;
         }
 
-        // 인벤토리 슬롯에서 드랍
-        var invenDrag = eventData.pointerDrag.GetComponent<InvenSlotDragHandler>();
-        if (invenDrag != null && invenDrag.Skill != null)
+        // 통합 핸들러: 인벤 스킬 / 인벤 서포트 / 장착 서포트
+        var drag = eventData.pointerDrag.GetComponent<InvenSlotDragHandler>();
+        if (drag == null) return;
+
+        if (drag.Skill != null)
         {
-            SellInventorySkill(invenDrag.Skill);
+            SellInventorySkill(drag.Skill, drag.SourceDisplayIndex);
             return;
         }
 
-        // 서포트 슬롯에서 드랍
-        var supportDrag = eventData.pointerDrag.GetComponent<SupportOptionDragHandler>();
-        if (supportDrag != null && supportDrag.Option != null)
+        if (drag.Support != null)
         {
             var equipSlot = eventData.pointerDrag.GetComponent<SupportSlotUI>();
             int slotIdx   = equipSlot != null ? equipSlot.SlotIndex : -1;
-            SellSupportOption(supportDrag.Option, slotIdx);
+            SellSupportOption(drag.Support, slotIdx, drag.SourceDisplayIndex);
         }
     }
 
@@ -49,39 +49,41 @@ public class ShopDropHandler : MonoBehaviour, IDropHandler
         }
     }
 
-    private void SellInventorySkill(SkillData skill)
+    private void SellInventorySkill(SkillData skill, int sourceDisplayIdx)
     {
         if (SellConfirmPopup.Instance != null)
         {
-            SellConfirmPopup.Instance.ShowInventorySell(skill);
+            SellConfirmPopup.Instance.ShowInventorySell(skill, sourceDisplayIdx);
         }
         else
         {
-            if (ShopSystem.Instance.RemoveOwnedSkill(skill))
-                CubeSystem.Instance?.Add(CubeType.Lower, 1);
+            bool removed = sourceDisplayIdx >= 0
+                ? ShopSystem.Instance.RemoveByDisplayIndex(sourceDisplayIdx)
+                : ShopSystem.Instance.RemoveOwnedSkill(skill);
+            if (removed) CubeSystem.Instance?.Add(CubeType.Lower, 1);
         }
     }
 
-    private void SellSupportOption(SupportOptionData option, int equippedSlotIndex)
+    private void SellSupportOption(SupportOptionData option, int equippedSlotIndex, int sourceDisplayIdx)
     {
         if (SellConfirmPopup.Instance != null)
         {
-            SellConfirmPopup.Instance.ShowSupportSell(option, equippedSlotIndex);
+            SellConfirmPopup.Instance.ShowSupportSell(option, equippedSlotIndex, sourceDisplayIdx);
         }
         else if (equippedSlotIndex >= 0)
         {
-            // 장착 슬롯 출처 fallback
             var tower = InventorySystem.Instance?.SelectedTower;
             if (tower == null) return;
             if (tower.SupportOptions[equippedSlotIndex] != option) return;
             InventorySystem.Instance.SetSupportOption(equippedSlotIndex, null);
             CubeSystem.Instance?.Add(CubeType.Lower, 1);
         }
-        else
+        else if (ShopSystem.Instance != null)
         {
-            // 인벤토리 출처 fallback
-            if (ShopSystem.Instance != null && ShopSystem.Instance.RemoveOwnedSupportOption(option))
-                CubeSystem.Instance?.Add(CubeType.Lower, 1);
+            bool removed = sourceDisplayIdx >= 0
+                ? ShopSystem.Instance.RemoveByDisplayIndex(sourceDisplayIdx)
+                : ShopSystem.Instance.RemoveOwnedSupportOption(option);
+            if (removed) CubeSystem.Instance?.Add(CubeType.Lower, 1);
         }
     }
 }

@@ -1,57 +1,16 @@
 using UnityEngine;
-using UnityEngine.UI;
 
+/// <summary>
+/// DEPRECATED — InvenUI 가 스킬/서포트를 통합 그리드에서 표시 (#220).
+/// 씬에 남아있는 GameObject 가 깨지지 않도록 빈 컴포넌트로 유지. 활성화 시 자동 비활성.
+/// Editor 정리 시 GameObject 와 함께 제거 권장.
+/// </summary>
+[System.Obsolete("Use InvenUI for unified inventory display (#220).")]
 public class SupportInvenUI : MonoBehaviour
 {
-    private struct SlotRef
-    {
-        public Image                    image;
-        public SupportOptionDragHandler drag;
-    }
-
-    private SlotRef[] _slots;
-
-    private void Awake()
-    {
-        var list = new System.Collections.Generic.List<SlotRef>();
-        foreach (Transform slot in transform)
-        {
-            var icon = slot.Find("ICON");
-            if (icon == null) continue;
-            var img = icon.GetComponent<Image>();
-            if (img == null) continue;
-
-            var drag = slot.gameObject.GetComponent<SupportOptionDragHandler>()
-                    ?? slot.gameObject.AddComponent<SupportOptionDragHandler>();
-            drag.Init(img);
-
-            list.Add(new SlotRef { image = img, drag = drag });
-        }
-        _slots = list.ToArray();
-    }
-
     private void OnEnable()
     {
-        ShopSystem.OnInventoryChanged += Refresh;
-        Refresh();
-    }
-
-    private void OnDisable()
-    {
-        ShopSystem.OnInventoryChanged -= Refresh;
-    }
-
-    private void Refresh()
-    {
-        var owned = ShopSystem.Instance?.OwnedSupports;
-        for (int i = 0; i < _slots.Length; i++)
-        {
-            bool hasOption = owned != null && i < owned.Count;
-            var  option    = hasOption ? owned[i] : null;
-
-            _slots[i].image.sprite = hasOption ? option.icon : null;
-            _slots[i].image.color  = hasOption ? Color.white : Color.clear;
-            _slots[i].drag.Option  = option;
-        }
+        Debug.LogWarning("[SupportInvenUI] DEPRECATED — InvenUI 가 통합 그리드를 처리합니다. 이 GameObject 는 비활성화됩니다.");
+        gameObject.SetActive(false);
     }
 }

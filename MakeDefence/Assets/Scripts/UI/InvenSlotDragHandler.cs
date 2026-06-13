@@ -8,8 +8,17 @@ public class InvenSlotDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandl
     public static event Action OnSkillDragStarted;
     public static event Action OnSkillDragEnded;
 
-    public SkillData Skill     { get; set; }
-    public int       SlotIndex { get; set; } = -1;
+    public SkillData         Skill              { get; set; }
+    public SupportOptionData Support            { get; set; }
+
+    // SourceDisplayIndex: 인벤 그리드에서의 슬롯 위치. 인벤 외부 (장착 슬롯 등) 에서 시작한 드래그는 -1
+    public int SourceDisplayIndex { get; set; } = -1;
+    // legacy alias — 기존 호출자 호환
+    public int SlotIndex { get => SourceDisplayIndex; set => SourceDisplayIndex = value; }
+
+    public InventoryItemKind Kind => Skill != null ? InventoryItemKind.Skill : InventoryItemKind.Support;
+    public bool   HasItem => Skill != null || Support != null;
+    public Sprite Icon    => Skill != null ? Skill.icon : Support?.icon;
 
     private Image  _iconImage;
     private Canvas _rootCanvas;
@@ -17,20 +26,20 @@ public class InvenSlotDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandl
 
     public void Init(Image iconImage)
     {
-        _iconImage   = iconImage;
-        _rootCanvas  = GetComponentInParent<Canvas>().rootCanvas;
+        _iconImage  = iconImage;
+        _rootCanvas = GetComponentInParent<Canvas>().rootCanvas;
     }
 
     public void OnBeginDrag(PointerEventData eventData)
     {
-        if (Skill == null) { eventData.pointerDrag = null; return; }
+        if (!HasItem) { eventData.pointerDrag = null; return; }
 
         var go = new GameObject("DragGhost");
         go.transform.SetParent(_rootCanvas.transform, false);
         go.transform.SetAsLastSibling();
 
-        _ghost             = go.AddComponent<Image>();
-        _ghost.sprite      = Skill.icon;
+        _ghost               = go.AddComponent<Image>();
+        _ghost.sprite        = Icon;
         _ghost.raycastTarget = false;
         _ghost.rectTransform.sizeDelta = new Vector2(60f, 60f);
 
@@ -48,7 +57,7 @@ public class InvenSlotDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandl
     {
         if (_ghost != null) { Destroy(_ghost.gameObject); _ghost = null; }
         if (_iconImage != null)
-            _iconImage.color = Skill != null ? Color.white : Color.clear;
+            _iconImage.color = HasItem ? Color.white : Color.clear;
 
         OnSkillDragEnded?.Invoke();
     }
@@ -57,7 +66,7 @@ public class InvenSlotDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandl
     {
         if (eventData.pointerDrag == null) return;
 
-        // 장착 슬롯에서 드랍: 언이퀴 + 인벤토리 반환 (InvenDropHandler와 동일)
+        // 장착 스킬 슬롯에서 드랍: 언이퀴 + 인벤 반환
         if (eventData.pointerDrag.GetComponent<SkillSlotDragHandler>() != null)
         {
             var tower = InventorySystem.Instance?.SelectedTower;
@@ -68,16 +77,14 @@ public class InvenSlotDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandl
             return;
         }
 
-        // 인벤토리 슬롯 간 드랍: 스왑 / 이동
+        // 인벤 슬롯 ↔ 인벤 슬롯 — 자유 재배치 (cross-type swap 포함)
         var source = eventData.pointerDrag.GetComponent<InvenSlotDragHandler>();
         if (source == null || source == this) return;
-        if (SlotIndex < 0 || source.SlotIndex < 0) return;
+        if (source.SourceDisplayIndex < 0) return;        // 장착 슬롯 등 외부 드래그는 별도 경로
+        if (SourceDisplayIndex < 0) return;
         if (ShopSystem.Instance == null) return;
 
-        if (source.Skill != null && Skill == null)
-            ShopSystem.Instance.MoveOwnedSkill(source.SlotIndex, SlotIndex);
-        else if (source.Skill != null && Skill != null)
-            ShopSystem.Instance.SwapOwnedSkills(source.SlotIndex, SlotIndex);
+        ShopSystem.Instance.SwapDisplayOrder(source.SourceDisplayIndex, SourceDisplayIndex);
     }
 
     private void MoveGhost(PointerEventData eventData)
