@@ -159,22 +159,61 @@ public class ShopSystem : MonoBehaviour
         return displayIdx >= 0 && RemoveByDisplayIndex(displayIdx);
     }
 
+    // 옛 시맨틱 보존: 인덱스는 _ownedSkills 의 인덱스. _ownedSkills 를 실제로 재정렬하고
+    // _displayOrder 의 DataIndex 참조도 새 위치를 따르도록 보정.
     public bool SwapOwnedSkills(int indexA, int indexB)
     {
-        int displayA = FindDisplayIndexBySkillDataIndex(indexA);
-        int displayB = FindDisplayIndexBySkillDataIndex(indexB);
-        if (displayA < 0 || displayB < 0) return false;
-        return SwapDisplayOrder(displayA, displayB);
+        if (indexA < 0 || indexB < 0) return false;
+        if (indexA >= _ownedSkills.Count || indexB >= _ownedSkills.Count) return false;
+        if (indexA == indexB) return false;
+
+        (_ownedSkills[indexA], _ownedSkills[indexB]) = (_ownedSkills[indexB], _ownedSkills[indexA]);
+
+        for (int i = 0; i < _displayOrder.Count; i++)
+        {
+            var e = _displayOrder[i];
+            if (e.Kind != InventoryItemKind.Skill) continue;
+            if (e.DataIndex == indexA)      _displayOrder[i] = new DisplayEntry(e.Kind, indexB);
+            else if (e.DataIndex == indexB) _displayOrder[i] = new DisplayEntry(e.Kind, indexA);
+        }
+        OnInventoryChanged?.Invoke();
+        return true;
     }
 
     public bool MoveOwnedSkill(int fromIndex, int toIndex)
     {
-        int displayFrom = FindDisplayIndexBySkillDataIndex(fromIndex);
-        if (displayFrom < 0) return false;
-        // toIndex가 스킬 List 인덱스라는 옛 시맨틱은 통합 displayOrder 에서 모호하므로
-        // 클램프된 displayOrder 인덱스로 해석. 정확한 자유 재배치는 MoveDisplayOrder 사용 권장.
-        int displayTo = Mathf.Clamp(toIndex, 0, _displayOrder.Count);
-        return MoveDisplayOrder(displayFrom, displayTo);
+        if (fromIndex < 0 || fromIndex >= _ownedSkills.Count) return false;
+        if (toIndex < 0) return false;
+        if (fromIndex == toIndex) return false;
+
+        var skill = _ownedSkills[fromIndex];
+        _ownedSkills.RemoveAt(fromIndex);
+        int insertAt = Mathf.Min(toIndex > fromIndex ? toIndex - 1 : toIndex, _ownedSkills.Count);
+        _ownedSkills.Insert(insertAt, skill);
+
+        // DisplayEntry.DataIndex 재매핑:
+        //  - 옛 fromIndex 항목 → insertAt
+        //  - 옛 idx > fromIndex → -1 (remove shift), 그 후 idx >= insertAt → +1 (insert shift)
+        //  - 옛 idx < fromIndex → 변화 없음, 그 후 idx >= insertAt → +1
+        for (int i = 0; i < _displayOrder.Count; i++)
+        {
+            var e = _displayOrder[i];
+            if (e.Kind != InventoryItemKind.Skill) continue;
+            int newIdx;
+            if (e.DataIndex == fromIndex)
+            {
+                newIdx = insertAt;
+            }
+            else
+            {
+                int afterRemove = e.DataIndex > fromIndex ? e.DataIndex - 1 : e.DataIndex;
+                newIdx          = afterRemove >= insertAt ? afterRemove + 1 : afterRemove;
+            }
+            if (newIdx != e.DataIndex)
+                _displayOrder[i] = new DisplayEntry(e.Kind, newIdx);
+        }
+        OnInventoryChanged?.Invoke();
+        return true;
     }
 
     // ---- 내부 ----
@@ -213,13 +252,4 @@ public class ShopSystem : MonoBehaviour
         return -1;
     }
 
-    private int FindDisplayIndexBySkillDataIndex(int dataIndex)
-    {
-        for (int i = 0; i < _displayOrder.Count; i++)
-        {
-            var e = _displayOrder[i];
-            if (e.Kind == InventoryItemKind.Skill && e.DataIndex == dataIndex) return i;
-        }
-        return -1;
-    }
 }

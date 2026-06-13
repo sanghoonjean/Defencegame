@@ -84,7 +84,12 @@ public class InvenSlotDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandl
         if (SourceDisplayIndex < 0) return;
         if (ShopSystem.Instance == null) return;
 
-        ShopSystem.Instance.SwapDisplayOrder(source.SourceDisplayIndex, SourceDisplayIndex);
+        // 빈 슬롯으로 드롭 (target index >= 보유 수): Move 로 동작. 채워진 슬롯은 Swap.
+        int ownedCount = ShopSystem.Instance.OwnedDisplayOrder.Count;
+        if (SourceDisplayIndex >= ownedCount)
+            ShopSystem.Instance.MoveDisplayOrder(source.SourceDisplayIndex, SourceDisplayIndex);
+        else
+            ShopSystem.Instance.SwapDisplayOrder(source.SourceDisplayIndex, SourceDisplayIndex);
     }
 
     private void MoveGhost(PointerEventData eventData)
