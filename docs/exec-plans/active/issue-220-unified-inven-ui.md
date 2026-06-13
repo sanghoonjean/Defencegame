@@ -81,11 +81,13 @@ ShopSystem
 | `MakeDefence/Assets/Scripts/UI/InvenUI.cs` | 통합 그리드로 재작성 — `_displayOrder` 순회, 동적 슬롯 인스턴스화 (LayoutGroup + 슬롯 프리팹), 슬롯 풀링 |
 | `MakeDefence/Assets/Scripts/UI/SupportInvenUI.cs` | **삭제** (UnifiedInvenUI 가 흡수). 컴포넌트가 씬에 남아있을 가능성 대비 Obsolete 빈 클래스로 한 PR 더 두는 것 고려 |
 | `MakeDefence/Assets/Scripts/UI/InvenSlotDragHandler.cs` | `Skill` 단일 필드 → `SkillData Skill` + `SupportOptionData Support` (둘 중 하나만 set), `InventoryItemKind Kind` getter. `OnDrop` 의 인벤 ↔ 인벤 분기를 `SwapDisplayOrder` 호출로 교체 |
-| `MakeDefence/Assets/Scripts/UI/SupportOptionDragHandler.cs` | **삭제** — InvenSlotDragHandler 에 흡수 |
+| `MakeDefence/Assets/Scripts/UI/SupportOptionDragHandler.cs` | **삭제** — InvenSlotDragHandler 에 흡수. 참조하는 모든 호출자가 InvenSlotDragHandler 로 이행 (아래 두 파일 포함) |
 | `MakeDefence/Assets/Scripts/UI/SkillSlotUI.cs` | `OnDrop` 시 페이로드의 Kind 검사 — Skill 만 허용. Support 페이로드면 거부 |
-| `MakeDefence/Assets/Scripts/UI/SupportSlotUI.cs` | 동일 — Support 만 허용, Skill 거부 |
+| `MakeDefence/Assets/Scripts/UI/SupportSlotUI.cs` | `SupportOptionDragHandler` 의존 제거 → `InvenSlotDragHandler` 사용. `OnDrop` 에서 Kind == Support 만 허용 |
+| `MakeDefence/Assets/Scripts/UI/OwnedSupportSlotUI.cs` | `SupportOptionDragHandler` 추가/사용 부분을 `InvenSlotDragHandler` (Kind = Support) 로 이행. 타워 장착 슬롯에서 인벤으로 드래그 해제 동작 유지 |
+| `MakeDefence/Assets/Scripts/UI/InvenDropHandler.cs` | `GetComponent<SupportOptionDragHandler>()` 분기 → `GetComponent<InvenSlotDragHandler>()` + `Kind == Support` 검사로 이행. 서포트 해제 후 인벤 반환 로직은 유지 |
 | `MakeDefence/Assets/Scripts/UI/DropTargetHighlight.cs` | 드래그 시작 이벤트의 페이로드 Kind 에 따라 호환되는 슬롯만 하이라이트 |
-| `MakeDefence/Assets/Scripts/UI/ShopDropHandler.cs` | 페이로드 Kind 분기로 SellSkill / SellSupport 호출 |
+| `MakeDefence/Assets/Scripts/UI/ShopDropHandler.cs` | `GetComponent<SupportOptionDragHandler>()` → 통합 핸들러 + Kind 검사. SellSkill / SellSupport 분기 유지 |
 | `MakeDefence/Assets/Scenes/SampleScene.unity` | **사용자 Editor 작업** — 두 인벤 패널 → 단일 그리드 패널, 슬롯 프리팹 연결, LayoutGroup 설정 |
 
 ## 3. 신규 클래스 / 파일
@@ -130,7 +132,10 @@ ShopSystem
 ### 회귀
 - [ ] 타워 EquippedSkill / SupportSlots 동작 변경 없음
 - [ ] 큐브 환급 로직 변경 없음
-- [ ] OwnedSkillsListUI / OwnedSupportListUI 가 (있다면) 영향 없음
+- [ ] `OwnedSkillsListUI` / `OwnedSupportListUI` 동작 회귀 없음
+- [ ] `OwnedSupportSlotUI` — 통합 드래그 핸들러로 이행 후에도 \"장착된 서포트 → 인벤으로 드래그 해제\" 시나리오 정상
+- [ ] `InvenDropHandler` — \"장착된 스킬/서포트 → 인벤으로 드래그\" 양쪽 모두 정상 동작
+- [ ] 컴파일 에러 없음: `SupportOptionDragHandler` 삭제 후 모든 참조 (`SupportSlotUI`, `OwnedSupportSlotUI`, `InvenDropHandler`, `ShopDropHandler`) 가 통합 핸들러로 이행됨
 
 ## 5. 위험 요소
 
@@ -142,6 +147,17 @@ ShopSystem
 ### 호환성
 - 기존 `SwapOwnedSkills(int, int)` / `MoveOwnedSkill(int, int)` 의 인덱스 의미가 \"스킬 List 인덱스\" 에서 변하지 않음 (그대로 유지). 새 \"통합 displayOrder 인덱스\" 와 혼동하지 않도록 메서드명 분리: `SwapDisplayOrder(int, int)` vs `SwapOwnedSkills(int, int)`
 - 기존 호출자 (InvenSlotDragHandler 가 `SwapOwnedSkills` 호출하던 부분) 는 새 API 로 이행
+
+### SupportOptionDragHandler 삭제 시 전수 마이그레이션 (Codex P2 지적)
+삭제 전 다음 6개 참조 위치를 모두 이행해야 컴파일 가능:
+1. `SupportSlotUI.cs:16, 20-21, 59` — drop 타겟 (타워 서포트 슬롯)
+2. `OwnedSupportSlotUI.cs:9, 14-15` — 장착된 서포트 표시 (UnitPanel)
+3. `InvenDropHandler.cs:23` — 장착 해제 → 인벤 반환
+4. `ShopDropHandler.cs:27` — 판매
+5. `SupportInvenUI.cs:9, 24-25` — 본 PR 에서 삭제
+6. `SupportOptionDragHandler.cs` 자체
+
+모두 `InvenSlotDragHandler` + `Kind == Support` 로 이행. 호환 wrapper 두는 옵션도 있지만, 코드 단순화를 위해 전수 이행 권장
 
 ### 씬 작업
 - SampleScene 의 두 인벤 패널 제거 + 단일 그리드 패널 + 슬롯 프리팹 연결은 **Unity Editor 에서 사용자가 수행**. 코드 PR 머지만으로는 게임 동작 안 됨
