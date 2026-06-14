@@ -19,6 +19,32 @@ public class ShopSystem : MonoBehaviour
     public IReadOnlyList<SupportOptionData> OwnedSupports      => _ownedSupports;
     public IReadOnlyList<DisplayEntry>      OwnedDisplayOrder  => _displayOrder;
 
+    /// <summary>
+    /// 인벤 표시 순서대로 스킬/서포트를 단일 시퀀스로 노출 (#236).
+    /// _displayOrder 의 DataIndex 가 데이터 컬렉션 범위를 벗어나면 해당 항목은 skip.
+    /// 호출자는 IInventoryItem.Kind 로 타입 분기 가능.
+    /// </summary>
+    public IEnumerable<IInventoryItem> OwnedItems
+    {
+        get
+        {
+            for (int i = 0; i < _displayOrder.Count; i++)
+            {
+                var entry = _displayOrder[i];
+                if (entry.Kind == InventoryItemKind.Skill)
+                {
+                    if (entry.DataIndex < 0 || entry.DataIndex >= _ownedSkills.Count) continue;
+                    yield return _ownedSkills[entry.DataIndex];
+                }
+                else
+                {
+                    if (entry.DataIndex < 0 || entry.DataIndex >= _ownedSupports.Count) continue;
+                    yield return _ownedSupports[entry.DataIndex];
+                }
+            }
+        }
+    }
+
     public readonly struct DisplayEntry
     {
         public readonly InventoryItemKind Kind;
