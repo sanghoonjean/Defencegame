@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -99,6 +100,7 @@ public class TowerDeleteConfirmPopup : MonoBehaviour
         var go = es.currentSelectedGameObject;
         if (go == null) return false;
 
-        return go.GetComponent<InputField>() != null;
+        return go.GetComponent<InputField>() != null
+            || go.GetComponent<TMP_InputField>() != null;
     }
 }
