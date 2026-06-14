@@ -12,11 +12,15 @@ public enum SkillType
 }
 
 [CreateAssetMenu(fileName = "SkillData", menuName = "MakeDefence/Skill Data")]
-public class SkillData : ScriptableObject
+public class SkillData : ScriptableObject, IInventoryItem
 {
     [Header("Display")]
     public string displayName;
     public Sprite icon;
+
+    string            IInventoryItem.DisplayName => displayName;
+    Sprite            IInventoryItem.Icon        => icon;
+    InventoryItemKind IInventoryItem.Kind        => InventoryItemKind.Skill;
 
     [Header("Stats")]
     public SkillType skillType;
