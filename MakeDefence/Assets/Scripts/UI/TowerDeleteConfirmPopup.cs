@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 /// <summary>
@@ -62,5 +63,42 @@ public class TowerDeleteConfirmPopup : MonoBehaviour
     {
         _pendingTower = null;
         if (panel != null) panel.SetActive(false);
+    }
+
+    private void Update()
+    {
+        bool isOpen = panel != null && panel.activeSelf;
+
+        if (isOpen)
+        {
+            if (Input.GetKeyDown(KeyCode.Escape))
+            {
+                Hide();
+                return;
+            }
+
+            if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyDown(KeyCode.KeypadEnter))
+            {
+                OnConfirm();
+            }
+            return;
+        }
+
+        if (!Input.GetKeyDown(KeyCode.D)) return;
+        if (IsTextInputFocused()) return;
+        if (InventorySystem.Instance == null || InventorySystem.Instance.SelectedTower == null) return;
+
+        ShowForSelectedTower();
+    }
+
+    private static bool IsTextInputFocused()
+    {
+        var es = EventSystem.current;
+        if (es == null) return false;
+
+        var go = es.currentSelectedGameObject;
+        if (go == null) return false;
+
+        return go.GetComponent<InputField>() != null;
     }
 }
