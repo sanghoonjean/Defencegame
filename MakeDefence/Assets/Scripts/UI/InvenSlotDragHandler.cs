@@ -82,10 +82,31 @@ public class InvenSlotDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandl
             return;
         }
 
-        // 인벤 슬롯 ↔ 인벤 슬롯 — 자유 재배치 (cross-type swap 포함)
         var source = eventData.pointerDrag.GetComponent<InvenSlotDragHandler>();
         if (source == null || source == this) return;
-        if (source.SourceDisplayIndex < 0) return;        // 장착 슬롯 등 외부 드래그는 별도 경로
+
+        // 장착 서포트 슬롯 → 인벤 슬롯 위에 드롭: 해제 + 인벤 반환.
+        // (InvenDropHandler 는 인벤 패널 배경만 받기 때문에 슬롯 위에 떨어진 경우 여기서 처리해야 한다)
+        if (source.SourceDisplayIndex < 0)
+        {
+            var sourceSupportSlot = eventData.pointerDrag.GetComponent<SupportSlotUI>();
+            if (sourceSupportSlot == null || source.Support == null) return;
+
+            var tower = InventorySystem.Instance?.SelectedTower;
+            if (tower == null) return;
+
+            int slotIdx = sourceSupportSlot.SlotIndex;
+            if (slotIdx < 0 || slotIdx >= tower.UnlockedSupportSlots) return;
+
+            var option = source.Support;
+            if (tower.SupportOptions[slotIdx] != option) return;
+
+            InventorySystem.Instance.SetSupportOption(slotIdx, null);
+            ShopSystem.Instance?.ReturnSupportOption(option);
+            return;
+        }
+
+        // 인벤 슬롯 ↔ 인벤 슬롯 — 자유 재배치 (cross-type swap 포함)
         if (ShopSystem.Instance == null) return;
 
         // 빈 슬롯으로 드롭 (target index >= 보유 수): Move 로 동작. 채워진 슬롯은 Swap.
