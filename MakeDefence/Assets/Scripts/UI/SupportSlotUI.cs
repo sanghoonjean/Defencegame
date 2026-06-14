@@ -12,14 +12,15 @@ public class SupportSlotUI : MonoBehaviour, IPointerClickHandler, IDropHandler
 
     public int SlotIndex => slotIndex;
 
-    private bool                  _isLocked = true;
-    private SupportOptionDragHandler _dragHandler;
+    private bool                 _isLocked = true;
+    private InvenSlotDragHandler _dragHandler;
 
     private void Awake()
     {
-        _dragHandler = gameObject.GetComponent<SupportOptionDragHandler>()
-                    ?? gameObject.AddComponent<SupportOptionDragHandler>();
+        _dragHandler = gameObject.GetComponent<InvenSlotDragHandler>()
+                    ?? gameObject.AddComponent<InvenSlotDragHandler>();
         _dragHandler.Init(iconImage);
+        _dragHandler.SourceDisplayIndex = -1; // 장착 슬롯 → 인벤 인덱스 없음
     }
 
     private void OnEnable()
@@ -56,29 +57,28 @@ public class SupportSlotUI : MonoBehaviour, IPointerClickHandler, IDropHandler
     {
         if (_isLocked) return;
 
-        var supportDrag = eventData.pointerDrag?.GetComponent<SupportOptionDragHandler>();
-        if (supportDrag == null || supportDrag.Option == null) return;
+        var drag = eventData.pointerDrag?.GetComponent<InvenSlotDragHandler>();
+        if (drag == null || drag.Support == null) return; // Skill 페이로드는 거부
 
         var tower = InventorySystem.Instance?.SelectedTower;
         if (tower == null) return;
 
         if (slotIndex < 0 || slotIndex >= tower.SupportOptions.Count) return;
 
-        var newOption  = supportDrag.Option;
+        var newOption  = drag.Support;
         var prevOption = slotIndex < tower.UnlockedSupportSlots ? tower.SupportOptions[slotIndex] : null;
 
         // 소스가 장착 슬롯인지 확인
         var sourceSlotUI  = eventData.pointerDrag.GetComponent<SupportSlotUI>();
         int sourceSlotIdx = sourceSlotUI != null ? sourceSlotUI.SlotIndex : -1;
 
-        // 같은 슬롯에 드롭 시 아무 동작 없음
         if (sourceSlotIdx == slotIndex) return;
 
         // 같은 타워의 다른 슬롯에 이미 동일 옵션이 장착돼 있으면 거부
         for (int i = 0; i < tower.UnlockedSupportSlots; i++)
         {
-            if (i == slotIndex) continue;   // 교체 대상 슬롯은 제외
-            if (i == sourceSlotIdx) continue; // 소스 슬롯(스왑 시 비워질 자리)은 제외
+            if (i == slotIndex) continue;
+            if (i == sourceSlotIdx) continue;
             if (tower.SupportOptions[i] == newOption) return;
         }
 
@@ -87,13 +87,17 @@ public class SupportSlotUI : MonoBehaviour, IPointerClickHandler, IDropHandler
 
         if (sourceSlotIdx >= 0)
         {
-            // 장착 슬롯 간 이동: 소스 슬롯에 prevOption을 넣어 스왑
+            // 장착 슬롯 간 swap
             InventorySystem.Instance.SetSupportOption(sourceSlotIdx, prevOption);
         }
         else
         {
-            // 인벤토리에서 드랍: 인벤토리에서 제거 후 밀려난 옵션은 인벤토리로 반환
-            ShopSystem.Instance?.RemoveOwnedSupportOption(newOption);
+            // 인벤 출처: SourceDisplayIndex 기반 제거 (중복 보유 무결성)
+            if (drag.SourceDisplayIndex >= 0)
+                ShopSystem.Instance?.RemoveByDisplayIndex(drag.SourceDisplayIndex);
+            else
+                ShopSystem.Instance?.RemoveOwnedSupportOption(newOption); // fallback
+
             if (prevOption != null)
                 ShopSystem.Instance?.ReturnSupportOption(prevOption);
         }
@@ -117,7 +121,10 @@ public class SupportSlotUI : MonoBehaviour, IPointerClickHandler, IDropHandler
     private void SetState(bool locked, bool hasOption, SupportOptionData option)
     {
         if (_dragHandler != null)
-            _dragHandler.Option = (!locked && hasOption) ? option : null;
+        {
+            _dragHandler.Skill   = null;
+            _dragHandler.Support = (!locked && hasOption) ? option : null;
+        }
 
         if (lockIcon != null)
             lockIcon.gameObject.SetActive(locked);
@@ -129,7 +136,7 @@ public class SupportSlotUI : MonoBehaviour, IPointerClickHandler, IDropHandler
         {
             bool show = !locked && hasOption;
             iconImage.gameObject.SetActive(show);
-            if (show) iconImage.color = Color.white; // 드래그 중 color 변경 리셋
+            if (show) iconImage.color = Color.white;
             iconImage.sprite = show ? option?.icon : null;
         }
 

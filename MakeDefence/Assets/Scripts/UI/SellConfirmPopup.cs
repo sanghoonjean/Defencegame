@@ -13,7 +13,8 @@ public class SellConfirmPopup : MonoBehaviour
     private SkillData          _pendingSkill;
     private Tower              _pendingTower;
     private SupportOptionData  _pendingSupport;
-    private int                _pendingSupportSlotIdx; // -1=인벤토리, >=0=장착 슬롯 인덱스
+    private int                _pendingSupportSlotIdx;     // -1=인벤토리, >=0=장착 슬롯 인덱스
+    private int                _pendingSourceDisplayIdx;   // 인벤 displayOrder 인덱스 (중복 보유 무결성용). -1 이면 fallback
 
     private void Awake()
     {
@@ -26,8 +27,9 @@ public class SellConfirmPopup : MonoBehaviour
 
     public void Show(Tower tower, SkillData skill)
     {
-        _pendingTower = tower;
-        _pendingSkill = skill;
+        _pendingTower            = tower;
+        _pendingSkill            = skill;
+        _pendingSourceDisplayIdx = -1;
 
         if (messageText != null)
             messageText.text = $"'{skill.displayName}'을(를) 판매하시겠습니까?\n하급 큐브 1개를 획득합니다.";
@@ -35,16 +37,15 @@ public class SellConfirmPopup : MonoBehaviour
         panel.SetActive(true);
     }
 
-    // equippedSlotIndex: -1=인벤토리 출처, >=0=장착 슬롯 인덱스
-    public void ShowSupportSell(SupportOptionData option, int equippedSlotIndex = -1)
+    public void ShowSupportSell(SupportOptionData option, int equippedSlotIndex = -1, int sourceDisplayIdx = -1)
     {
-        // 장착 슬롯 출처면 현재 타워를 캡처 (팝업 열린 사이 선택 변경 대비)
-        _pendingTower          = equippedSlotIndex >= 0
-                                 ? InventorySystem.Instance?.SelectedTower
-                                 : null;
-        _pendingSkill          = null;
-        _pendingSupport        = option;
-        _pendingSupportSlotIdx = equippedSlotIndex;
+        _pendingTower            = equippedSlotIndex >= 0
+                                   ? InventorySystem.Instance?.SelectedTower
+                                   : null;
+        _pendingSkill            = null;
+        _pendingSupport          = option;
+        _pendingSupportSlotIdx   = equippedSlotIndex;
+        _pendingSourceDisplayIdx = sourceDisplayIdx;
 
         if (messageText != null)
         {
@@ -57,11 +58,11 @@ public class SellConfirmPopup : MonoBehaviour
         panel.SetActive(true);
     }
 
-    // 인벤토리 슬롯 → 상점 판매용 (장착 슬롯 아님)
-    public void ShowInventorySell(SkillData skill)
+    public void ShowInventorySell(SkillData skill, int sourceDisplayIdx = -1)
     {
-        _pendingTower = null;
-        _pendingSkill = skill;
+        _pendingTower            = null;
+        _pendingSkill            = skill;
+        _pendingSourceDisplayIdx = sourceDisplayIdx;
 
         if (messageText != null)
             messageText.text = $"'{skill.displayName}'을(를) 판매하시겠습니까?\n하급 큐브 1개를 획득합니다.";
@@ -71,21 +72,23 @@ public class SellConfirmPopup : MonoBehaviour
 
     private void OnConfirm()
     {
-        var tower      = _pendingTower;
-        var skill      = _pendingSkill;
-        var support    = _pendingSupport;
-        int supportIdx = _pendingSupportSlotIdx;
-        _pendingTower          = null;
-        _pendingSkill          = null;
-        _pendingSupport        = null;
-        _pendingSupportSlotIdx = -1;
+        var tower         = _pendingTower;
+        var skill         = _pendingSkill;
+        var support       = _pendingSupport;
+        int supportIdx    = _pendingSupportSlotIdx;
+        int sourceDispIdx = _pendingSourceDisplayIdx;
+        _pendingTower            = null;
+        _pendingSkill            = null;
+        _pendingSupport          = null;
+        _pendingSupportSlotIdx   = -1;
+        _pendingSourceDisplayIdx = -1;
         Hide();
 
         if (support != null)
         {
             if (supportIdx >= 0)
             {
-                // 장착 슬롯 출처: 드래그 시점에 캡처한 타워 사용
+                // 장착 슬롯 출처
                 if (tower == null) return;
                 if (tower.SupportOptions[supportIdx] != support) return;
                 tower.SetSupportOption(supportIdx, null);
@@ -93,9 +96,12 @@ public class SellConfirmPopup : MonoBehaviour
             }
             else
             {
-                // 인벤토리 출처
+                // 인벤 출처 — SourceDisplayIndex 우선, 없으면 자산참조 fallback
                 if (ShopSystem.Instance == null) return;
-                if (!ShopSystem.Instance.RemoveOwnedSupportOption(support)) return;
+                bool removed = sourceDispIdx >= 0
+                    ? ShopSystem.Instance.RemoveByDisplayIndex(sourceDispIdx)
+                    : ShopSystem.Instance.RemoveOwnedSupportOption(support);
+                if (!removed) return;
             }
         }
         else if (tower != null)
@@ -107,9 +113,12 @@ public class SellConfirmPopup : MonoBehaviour
         }
         else
         {
-            // 인벤토리 스킬 판매
+            // 인벤 스킬 판매
             if (ShopSystem.Instance == null) return;
-            if (!ShopSystem.Instance.RemoveOwnedSkill(skill)) return;
+            bool removed = sourceDispIdx >= 0
+                ? ShopSystem.Instance.RemoveByDisplayIndex(sourceDispIdx)
+                : ShopSystem.Instance.RemoveOwnedSkill(skill);
+            if (!removed) return;
         }
 
         CubeSystem.Instance?.Add(CubeType.Lower, 1);
@@ -117,9 +126,10 @@ public class SellConfirmPopup : MonoBehaviour
 
     private void Hide()
     {
-        _pendingSkill          = null;
-        _pendingSupport        = null;
-        _pendingSupportSlotIdx = -1;
+        _pendingSkill            = null;
+        _pendingSupport          = null;
+        _pendingSupportSlotIdx   = -1;
+        _pendingSourceDisplayIdx = -1;
         panel.SetActive(false);
     }
 }

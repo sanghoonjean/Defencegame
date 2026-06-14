@@ -56,8 +56,11 @@ public class SkillSlotUI : MonoBehaviour, IDropHandler
         if (tower.EquippedSkill != null)
             ShopSystem.Instance?.ReturnSkill(tower.EquippedSkill);
 
-        // 새 스킬 인벤토리에서 제거 후 장착
-        ShopSystem.Instance?.RemoveOwnedSkill(newSkill);
+        // 새 스킬 인벤토리에서 제거 후 장착 — SourceDisplayIndex 기반 (중복 보유 무결성)
+        if (drag.SourceDisplayIndex >= 0)
+            ShopSystem.Instance?.RemoveByDisplayIndex(drag.SourceDisplayIndex);
+        else
+            ShopSystem.Instance?.RemoveOwnedSkill(newSkill); // fallback (인벤 외부 출처)
         InventorySystem.Instance.EquipSkill(newSkill);
     }
 

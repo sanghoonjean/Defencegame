@@ -46,7 +46,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 2c8715bb3f156144f83ceec5cbe2119c, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _aoeFxPrefab: {fileID: 527660993847000632, guid: 05490f313d13c064da944fcd1ba1b516,
+  _aoeFxPrefab: {fileID: 4384615487099157750, guid: a629f75df5389ae49b723e65c4c94c50,
     type: 3}
 --- !u!212 &7656123411341236438
 SpriteRenderer:
@@ -94,7 +94,7 @@ SpriteRenderer:
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
-  m_Size: {x: 0.2, y: 0.2}
+  m_Size: {x: 0.64, y: 0.64}
   m_AdaptiveModeThreshold: 0.5
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 0
@@ -110,7 +110,7 @@ Animator:
   m_GameObject: {fileID: 6161231276423854446}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: d851d9db83bb29b45b8b4a6fd4426dce, type: 2}
+  m_Controller: {fileID: 9100000, guid: 34fcf9680859495438a6efb17c27c02a, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0

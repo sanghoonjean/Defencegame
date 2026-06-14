@@ -7,7 +7,7 @@ public class InvenDropHandler : MonoBehaviour, IDropHandler
     {
         if (eventData.pointerDrag == null) return;
 
-        // 스킬 장착 슬롯 → 인벤토리: 스킬 해제
+        // 스킬 장착 슬롯 → 인벤: 스킬 해제 + 인벤 반환
         if (eventData.pointerDrag.GetComponent<SkillSlotDragHandler>() != null)
         {
             var tower = InventorySystem.Instance?.SelectedTower;
@@ -19,24 +19,24 @@ public class InvenDropHandler : MonoBehaviour, IDropHandler
             return;
         }
 
-        // 서포트 장착 슬롯 → 인벤토리: 서포트 해제 후 인벤토리로 반환
-        var supportDrag = eventData.pointerDrag.GetComponent<SupportOptionDragHandler>();
-        if (supportDrag != null && supportDrag.Option != null)
-        {
-            var sourceSlot = eventData.pointerDrag.GetComponent<SupportSlotUI>();
-            if (sourceSlot == null) return; // 인벤토리 → 인벤토리는 무시
+        // 서포트 장착 슬롯 → 인벤: 해제 후 인벤 반환
+        var drag = eventData.pointerDrag.GetComponent<InvenSlotDragHandler>();
+        if (drag == null || drag.Support == null) return; // Skill 페이로드는 SkillSlotDragHandler 경로
 
-            var tower = InventorySystem.Instance?.SelectedTower;
-            if (tower == null) return;
+        // 인벤 → 인벤 (장착 슬롯 출처 아님) 은 InvenSlotDragHandler 자체의 swap 으로 처리됨 — 여기는 무시
+        var sourceSlot = eventData.pointerDrag.GetComponent<SupportSlotUI>();
+        if (sourceSlot == null) return;
 
-            int slotIdx = sourceSlot.SlotIndex;
-            if (slotIdx < 0 || slotIdx >= tower.UnlockedSupportSlots) return;
+        var tower2 = InventorySystem.Instance?.SelectedTower;
+        if (tower2 == null) return;
 
-            var option = supportDrag.Option; // UI 갱신 전 캐싱
-            if (tower.SupportOptions[slotIdx] != option) return;
+        int slotIdx = sourceSlot.SlotIndex;
+        if (slotIdx < 0 || slotIdx >= tower2.UnlockedSupportSlots) return;
 
-            InventorySystem.Instance.SetSupportOption(slotIdx, null);
-            ShopSystem.Instance?.ReturnSupportOption(option);
-        }
+        var option = drag.Support;
+        if (tower2.SupportOptions[slotIdx] != option) return;
+
+        InventorySystem.Instance.SetSupportOption(slotIdx, null);
+        ShopSystem.Instance?.ReturnSupportOption(option);
     }
 }
