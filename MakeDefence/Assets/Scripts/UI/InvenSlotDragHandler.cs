@@ -66,6 +66,11 @@ public class InvenSlotDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandl
     {
         if (eventData.pointerDrag == null) return;
 
+        // 이 핸들러는 SupportSlotUI / OwnedSupportSlotUI 등 다른 슬롯에도 부착되지만,
+        // IDropHandler 동작은 인벤 슬롯에서만 의미가 있다. SourceDisplayIndex < 0 은 인벤 외부 슬롯의 표시이므로
+        // 여기서 드롭 처리를 그대로 두면 장착 메인 스킬을 서포트 슬롯에 떨어뜨릴 때 의도치 않은 unequip 이 발생한다.
+        if (SourceDisplayIndex < 0) return;
+
         // 장착 스킬 슬롯에서 드랍: 언이퀴 + 인벤 반환
         if (eventData.pointerDrag.GetComponent<SkillSlotDragHandler>() != null)
         {
@@ -81,7 +86,6 @@ public class InvenSlotDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandl
         var source = eventData.pointerDrag.GetComponent<InvenSlotDragHandler>();
         if (source == null || source == this) return;
         if (source.SourceDisplayIndex < 0) return;        // 장착 슬롯 등 외부 드래그는 별도 경로
-        if (SourceDisplayIndex < 0) return;
         if (ShopSystem.Instance == null) return;
 
         // 빈 슬롯으로 드롭 (target index >= 보유 수): Move 로 동작. 채워진 슬롯은 Swap.
