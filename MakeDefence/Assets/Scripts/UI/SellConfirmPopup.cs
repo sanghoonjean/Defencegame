@@ -10,6 +10,8 @@ public class SellConfirmPopup : MonoBehaviour
     [SerializeField] private Button     confirmButton;
     [SerializeField] private Button     cancelButton;
 
+    public bool IsOpen => panel != null && panel.activeSelf;
+
     private SkillData          _pendingSkill;
     private Tower              _pendingTower;
     private SupportOptionData  _pendingSupport;

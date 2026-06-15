@@ -10,6 +10,8 @@ public class SupportUnlockPopup : MonoBehaviour
     [SerializeField] private Button     confirmButton;
     [SerializeField] private Button     cancelButton;
 
+    public bool IsOpen => panel != null && panel.activeSelf;
+
     private Tower _pendingTower;
 
     private void Awake()
