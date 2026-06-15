@@ -20,6 +20,7 @@ public class TowerDeleteConfirmPopup : MonoBehaviour
     [SerializeField] private Button     cancelButton;
 
     private Tower _pendingTower;
+    private int   _openedFrame = -1;
 
     private void Awake()
     {
@@ -35,11 +36,18 @@ public class TowerDeleteConfirmPopup : MonoBehaviour
         if (tower == null) return;
 
         _pendingTower = tower;
+        _openedFrame  = Time.frameCount;
 
         if (messageText != null)
             messageText.text = "타워를 삭제하시겠습니까?\n하급 큐브 1개를 획득합니다.";
 
         if (panel != null) panel.SetActive(true);
+
+        // 같은 프레임의 Submit(=Enter) 이 onClick 으로 팝업을 연 직후
+        // Update 의 Enter 처리로 즉시 확정되는 것을 막기 위해 selected 해제.
+        // _openedFrame 가드와 함께 두 단으로 방어.
+        if (EventSystem.current != null)
+            EventSystem.current.SetSelectedGameObject(null);
     }
 
     /// <summary>현재 InventorySystem.SelectedTower 를 대상으로 팝업을 띄운다.</summary>
@@ -72,6 +80,9 @@ public class TowerDeleteConfirmPopup : MonoBehaviour
 
         if (isOpen)
         {
+            // 팝업을 연 같은 프레임의 키 입력이 그대로 확정/취소로 흘러가지 않도록.
+            if (Time.frameCount == _openedFrame) return;
+
             if (Input.GetKeyDown(KeyCode.Escape))
             {
                 Hide();
