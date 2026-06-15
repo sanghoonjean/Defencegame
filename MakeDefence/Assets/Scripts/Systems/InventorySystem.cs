@@ -28,7 +28,59 @@ public class InventorySystem : MonoBehaviour
     }
 
     /// <summary>
-    /// 명시적으로 지정한 타워를 삭제하고 배치 비용(하급 큐브 1개)을 환급한다.
+    /// 타워 삭제 시 환급/회수 카운트.
+    /// LowerCubes = 배치비(1) + 아이템 슬롯당 1.
+    /// </summary>
+    public readonly struct DeleteRefundSummary
+    {
+        public readonly bool SkillReturned;
+        public readonly int  SupportReturned;
+        public readonly int  ItemsSold;
+        public readonly int  LowerCubes;
+
+        public DeleteRefundSummary(bool skillReturned, int supportReturned, int itemsSold)
+        {
+            SkillReturned   = skillReturned;
+            SupportReturned = supportReturned;
+            ItemsSold       = itemsSold;
+            LowerCubes      = itemsSold + 1;
+        }
+    }
+
+    /// <summary>
+    /// 삭제 시 회수/판매될 항목을 미리 카운트한다. (팝업 메시지 구성용)
+    /// </summary>
+    public static DeleteRefundSummary BuildDeleteSummary(Tower target)
+    {
+        if (target == null) return new DeleteRefundSummary(false, 0, 0);
+
+        bool skill = target.EquippedSkill != null;
+
+        int supportCount = 0;
+        int unlocked = target.UnlockedSupportSlots;
+        for (int i = 0; i < unlocked; i++)
+        {
+            if (target.SupportOptions[i] != null) supportCount++;
+        }
+
+        int items = 0;
+        if (ItemSystem.Instance != null)
+        {
+            int unlockedItemSlots = ItemSystem.Instance.GetUnlockedSlotCount(target);
+            for (int i = 0; i < unlockedItemSlots; i++)
+            {
+                if (ItemSystem.Instance.GetItem(target, i) != null) items++;
+            }
+        }
+
+        return new DeleteRefundSummary(skill, supportCount, items);
+    }
+
+    /// <summary>
+    /// 명시적으로 지정한 타워를 삭제하고 장착물을 회수/판매한다.
+    /// - 스킬 / 보조 옵션 → ShopSystem 인벤토리 복귀
+    /// - 아이템 슬롯 → 슬롯당 Lower 1개 자동 판매
+    /// - 배치 비용 → Lower 1개 환급
     /// 팝업 오픈 시점에 캡처한 타워를 그대로 전달받으므로,
     /// 그 사이 SelectedTower 가 다른 타워로 바뀌어도 안전하다.
     /// </summary>
@@ -37,12 +89,29 @@ public class InventorySystem : MonoBehaviour
         // Unity 의 == 오버로드가 Destroy 예약된 객체도 null 로 판별
         if (target == null) return false;
 
+        var summary = BuildDeleteSummary(target);
+
+        // 스킬 인벤 복귀
+        if (summary.SkillReturned && ShopSystem.Instance != null)
+            ShopSystem.Instance.ReturnSkill(target.EquippedSkill);
+
+        // 보조 옵션 인벤 복귀 (UnlockedSupportSlots 범위까지만)
+        if (ShopSystem.Instance != null)
+        {
+            int unlocked = target.UnlockedSupportSlots;
+            for (int i = 0; i < unlocked; i++)
+            {
+                var opt = target.SupportOptions[i];
+                if (opt != null) ShopSystem.Instance.ReturnSupportOption(opt);
+            }
+        }
+
         // 캡처된 타워가 현재 선택과 동일할 때만 선택 해제
         if (SelectedTower == target)
             Deselect();
 
-        // 배치 비용 전액 환급 (TowerPlacer 에서 Lower 1개 소비)
-        CubeSystem.Instance?.Add(CubeType.Lower, 1);
+        // 아이템 자동 판매 + 배치비 환급 (Lower = ItemsSold + 1)
+        CubeSystem.Instance?.Add(CubeType.Lower, summary.LowerCubes);
 
         // Tower.OnDestroy() 가 ItemSystem/MapTileSystem 정리를 자동 수행
         UnityEngine.Object.Destroy(target.gameObject);
