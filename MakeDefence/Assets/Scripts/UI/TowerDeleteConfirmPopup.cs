@@ -87,9 +87,17 @@ public class TowerDeleteConfirmPopup : MonoBehaviour
 
         if (!Input.GetKeyDown(KeyCode.D)) return;
         if (IsTextInputFocused()) return;
+        if (IsAnotherModalOpen()) return;
         if (InventorySystem.Instance == null || InventorySystem.Instance.SelectedTower == null) return;
 
         ShowForSelectedTower();
+    }
+
+    private static bool IsAnotherModalOpen()
+    {
+        if (SellConfirmPopup.Instance    != null && SellConfirmPopup.Instance.IsOpen)    return true;
+        if (SupportUnlockPopup.Instance  != null && SupportUnlockPopup.Instance.IsOpen)  return true;
+        return false;
     }
 
     private static bool IsTextInputFocused()
