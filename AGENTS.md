@@ -149,10 +149,12 @@ Assets/
 
 ## 7. Claude Code 작업 규칙 (Unity 특화)
 
-- `.meta` 파일 절대 수정 금지
-- `.unity` 씬 파일, `.prefab` 파일 직접 편집 금지
-- `ScriptableObject` 인스턴스 생성은 에디터에서 사용자가 직접 수행 (Claude는 클래스 작성만)
-- 컴파일 검증은 사용자가 Unity 에디터에서 수행
+- `.meta` / `.unity` 씬 / `.prefab` 파일 — **UnityMCP 를 통한 편집 허용**, 직접 YAML 편집은 비권장
+  - GameObject 추가/컴포넌트 부착/프리팹 수정은 UnityMCP 도구(`manage_gameobject`, `manage_prefabs`, `manage_components` 등) 사용
+  - meta GUID 생성은 Unity 에 위임 (스크립트 작성 후 `refresh_unity` 로 자동 생성)
+  - UnityMCP 미가용 시에만 사용자에게 위임
+- `ScriptableObject` 인스턴스 생성도 UnityMCP (`manage_scriptable_object`) 우선, 미가용 시 사용자 위임
+- 컴파일 검증: UnityMCP `refresh_unity` + `read_console` 로 Claude 가 1차 검증, 최종 확인은 사용자
 - 신규 패키지 추가 필요 시 코드 작성 전 사용자에게 먼저 확인
 
 ---
