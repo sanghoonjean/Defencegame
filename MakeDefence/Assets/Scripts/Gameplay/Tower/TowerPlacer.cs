@@ -1,22 +1,20 @@
 using UnityEngine;
-using UnityEngine.EventSystems;
 
 public class TowerPlacer : MonoBehaviour
 {
+    public static TowerPlacer Instance { get; private set; }
+
     [SerializeField] private Tower towerPrefab;
 
-    private void Update()
+    private void Awake() { Instance = this; }
+
+    public bool TryPlace(Vector2Int coord)
     {
-        if (!Input.GetMouseButtonDown(0)) return;
-        if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
-
-        Vector3 worldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        var coord = new Vector2Int(Mathf.FloorToInt(worldPos.x), Mathf.FloorToInt(worldPos.y));
-
-        if (!MapTileSystem.Instance.CanPlaceTower(coord)) return;
-        if (!CubeSystem.Instance.TryConsume(CubeType.Lower, 1)) return;
+        if (!MapTileSystem.Instance.CanPlaceTower(coord)) return false;
+        if (!CubeSystem.Instance.TryConsume(CubeType.Lower, 1)) return false;
 
         PlaceTower(coord);
+        return true;
     }
 
     private void PlaceTower(Vector2Int coord)

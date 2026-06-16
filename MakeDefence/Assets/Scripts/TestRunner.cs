@@ -1,13 +1,10 @@
 using UnityEngine;
-using UnityEngine.EventSystems;
 
 // 개발 테스트용 — 빌드 전 삭제
 public class TestRunner : MonoBehaviour
 {
     private void Update()
     {
-        HandleClick();
-
         // Space: 웨이브 시작
         if (Input.GetKeyDown(KeyCode.Space))
         {
@@ -55,29 +52,6 @@ public class TestRunner : MonoBehaviour
             if (PlayerSystem.Instance != null) PlayerSystem.Instance.ResetHp();
             GameStateSystem.ResetToPlaying();
         }
-    }
-
-    private void HandleClick()
-    {
-        if (!Input.GetMouseButtonDown(0)) return;
-
-        bool overUI = EventSystem.current != null && EventSystem.current.IsPointerOverGameObject();
-        if (overUI) return;
-
-        Vector3 worldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        var hit = Physics2D.OverlapPoint(new Vector2(worldPos.x, worldPos.y));
-        if (hit != null)
-        {
-            var tower = hit.GetComponent<Tower>();
-            if (tower != null && InventorySystem.Instance != null)
-            {
-                InventorySystem.Instance.SelectTower(tower);
-                Debug.Log($"[TestRunner] 타워 선택: {tower.TileCoord}");
-                return;
-            }
-        }
-
-        InventorySystem.Instance?.Deselect();
     }
 
     private void OnGUI()
