@@ -18,8 +18,10 @@
    │   ├─ GameStateSystem.OnStateChanged -= HandleStateChanged
    │   └─ Time.timeScale = 1f  ← 도메인 reload 안전
    └─ private void HandleStateChanged(GameState state)
-       └─ if (state != GameState.Playing) Set(1f)
-          — Defeat / Victory / WaveResult 진입 시 자동 1x 복귀
+       └─ Set(1f)   ← 분기 없이 무조건 1x 복귀
+          — Defeat / Victory / WaveResult 진입 + ResetToPlaying() 의
+            Playing 진입(R 키 리셋) 모두 자동 커버
+          — Cycle() 로 사용자가 변경한 2x/3x 는 상태 전이가 아니라 유지
 
 [InputManager.Update]  ← 기존 좌클릭 + F 키 추가
    └─ if (Input.GetKeyDown(KeyCode.F))
@@ -27,9 +29,10 @@
 
 [GameStateSystem]  ← 수정 없음
    — 기존 OnStateChanged 이벤트로 충분. GameSpeedSystem 이 구독해서
-     SetState(Defeat) / SetState(Victory) / SetState(WaveResult) 전이
-     모두 자동 1x 복귀.
-     ResetToPlaying() → Playing 전이는 Playing 이라 무동작 (이미 1x).
+     모든 상태 전이(Defeat/Victory/WaveResult/Playing) 에서 1x 복귀.
+     ResetToPlaying() 은 SetState 의 같은 상태 가드를 우회하고
+     OnStateChanged(Playing) 을 항상 발행하므로, R 키 리셋 시점에
+     배속이 그대로 남는 경로(Codex P2 추가 지적)도 함께 해결.
 
 [GameSpeedHudButton]  ← 신규 UI
    ├─ MonoBehaviour, [SerializeField] TMP_Text label  (또는 Text)
@@ -45,7 +48,7 @@
 | UI 가속 부작용 | **사실상 없음** | `MakeDefence/Assets/Scripts/UI/` 폴더에 `Animator` / `Coroutine` / `CanvasGroup` 일절 사용 X — 인벤/상점/팝업은 단순 SetActive 토글이라 timeScale 영향 X. |
 | 시스템 위치 | **`Systems/GameSpeedSystem.cs` 단일 MonoBehaviour** | 다른 시스템(`InventorySystem`/`ShopSystem`/`CubeSystem`) 과 동일 싱글톤 패턴 |
 | 입력 진입점 | **`InputManager` 에 `F` 키 추가** | #224 에서 통합된 입력 진입점에 키도 모으는 게 자연스러움. TestRunner 디버그 키와 별개. |
-| 리셋 훅 | **`GameStateSystem.OnStateChanged` 구독** | `WaveSystem.HandlePlayerDied()` 는 `SetState(Defeat)` 만 호출하고 `ResetToPlaying()` 을 거치지 않으므로, `ResetToPlaying` 에 hook 을 걸면 게임오버 즉시 1x 복귀가 안 됨 (Codex P2 지적). `OnStateChanged` 구독 → Playing 이외 상태 진입 시 `Set(1f)` 로 처리하면 Defeat / Victory / WaveResult 모두 자동 커버. `GameStateSystem.cs` 코드 변경 불필요. |
+| 리셋 훅 | **`GameStateSystem.OnStateChanged` 구독, 분기 없이 `Set(1f)`** | (1) `WaveSystem.HandlePlayerDied()` 는 `SetState(Defeat)` 만 호출하고 `ResetToPlaying()` 을 거치지 않음. (2) `TestRunner` 의 R 키는 게임이 이미 Playing 일 때도 `ResetToPlaying()` 을 호출해 `OnStateChanged(Playing)` 을 다시 발행. 두 경로 모두 1x 복귀 요구사항 — `state != Playing` 분기를 두면 (2) 가 새고, hook 을 `ResetToPlaying` 에만 걸면 (1) 이 새므로 **모든 상태 전이에서 무조건 `Set(1f)`** 이 가장 단순/안전. Cycle() 로 사용자가 변경한 2x/3x 는 상태 전이가 아니라 유지됨. `GameStateSystem.cs` 코드 변경 불필요. |
 | HUD 진입점 | **Canvas 위 Button 1개 + 라벨 1개** | 기존 HUD 가 `GameUIManager` 의 OnGUI(체력바/데미지텍스트)만이라, 정식 Canvas 버튼은 신규 UI 컴포넌트. UnityMCP `manage_gameobject` + `manage_components` 로 씬에 추가 (AGENTS.md §7 완화 후) |
 | 배속 단계 | **1 / 2 / 3 고정** | 이슈 명시. 추후 확장 시 `[SerializeField] float[] steps` 로 대체 가능하지만 본 이슈에선 코드 상수. |
 | 일시정지 분리 | **본 이슈 외** | 일시정지는 별도 시스템에서 `Time.timeScale = 0` 또는 `IsPaused` 플래그. 본 이슈는 1/2/3 만. |
@@ -84,10 +87,11 @@
    - [ ] 2x/3x 상태에서 인벤/상점/팝업 토글 즉시 반응 (지연/가속 없음)
    - [ ] `OnGUI` 데미지 텍스트는 게임 시뮬레이션에 묶이므로 비례 가속되는 게 정상 (확인만)
 5. **상태 전환 시 복귀**
-   - [ ] 2x/3x 상태에서 `R` 키 → `ResetToPlaying` → Playing 전이 (이미 1x 라 무동작), 라벨 그대로
-   - [ ] 2x/3x 상태에서 **플레이어 사망(Defeat 진입)** → 즉시 1x 복귀 + 라벨 갱신 (Codex P2 시나리오)
+   - [ ] 2x/3x 상태에서 **Playing 중 `R` 키** → `ResetToPlaying()` → `OnStateChanged(Playing)` → 1x 복귀 + 라벨 갱신 (Codex P2 추가 시나리오)
+   - [ ] 2x/3x 상태에서 **플레이어 사망(Defeat 진입)** → 즉시 1x 복귀 + 라벨 갱신 (Codex P2 초기 시나리오)
    - [ ] 2x/3x 상태에서 **웨이브 클리어(WaveResult 진입)** → 즉시 1x 복귀
    - [ ] 1x 복귀 후 다시 클릭/F 키 → 2x → 3x 정상 순환
+   - [ ] Cycle() 로 2x/3x 설정 후 상태 전이가 없는 동안엔 값 유지 (예: 1x → Cycle → 2x → 대기 → 여전히 2x)
 6. **회귀 X**
    - [ ] InputManager 좌클릭 (#224) 정상
    - [ ] TestRunner Space/A/C/R 정상
