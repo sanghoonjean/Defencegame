@@ -35,10 +35,7 @@ public class InputManager : MonoBehaviour
         }
 
         var coord = new Vector2Int(Mathf.FloorToInt(worldPos.x), Mathf.FloorToInt(worldPos.y));
-        bool placed = TowerPlacer.Instance != null && TowerPlacer.Instance.TryPlace(coord);
-        if (!placed)
-        {
-            InventorySystem.Instance?.Deselect();
-        }
+        TowerPlacer.Instance?.TryPlace(coord);
+        InventorySystem.Instance?.Deselect();
     }
 }
