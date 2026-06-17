@@ -14,6 +14,11 @@ public class InputManager : MonoBehaviour
     private void Update()
     {
         HandleClick();
+
+        if (Input.GetKeyDown(KeyCode.F))
+        {
+            GameSpeedSystem.Instance?.Cycle();
+        }
     }
 
     private void HandleClick()
