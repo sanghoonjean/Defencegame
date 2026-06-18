@@ -80,9 +80,12 @@ public class CameraControlSystem : MonoBehaviour
             _dragging = true;
             _dragOriginWorld = ScreenToWorld(Input.mousePosition);
         }
-        if (Input.GetMouseButtonUp(1))
+        // GetMouseButtonUp 프레임을 놓쳐도 (윈도우 포커스 전환, 커서가 게임 뷰 이탈 등)
+        // 다음 프레임에 RMB 상태로 즉시 드래그 해제
+        if (!Input.GetMouseButton(1))
         {
             _dragging = false;
+            return;
         }
         if (!_dragging) return;
 
