@@ -10887,7 +10887,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   zoomMin: 3
-  zoomMax: 12
+  zoomMax: 9
   zoomStep: 1
   zoomToCursor: 1
   panMinWorld: {x: -50, y: -50}
