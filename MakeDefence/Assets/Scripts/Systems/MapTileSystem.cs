@@ -51,6 +51,50 @@ public class MapTileSystem : MonoBehaviour
     public Vector2 GetSpawnPoint() => spawnPoint;
     public Vector2 GetBasePoint() => basePoint;
 
+    /// <summary>
+    /// buildable + path 두 Tilemap 의 셀 바운드를 합쳐 월드 Bounds 로 반환.
+    /// 두 Tilemap 모두 null 이거나 빈 경우 hasValue=false.
+    /// </summary>
+    public bool TryGetMapWorldBounds(out Bounds worldBounds)
+    {
+        worldBounds = default;
+        bool any = false;
+
+        BoundsInt cellBounds = default;
+        if (buildableTilemap != null)
+        {
+            buildableTilemap.CompressBounds();
+            var b = buildableTilemap.cellBounds;
+            if (b.size.x > 0 && b.size.y > 0)
+            {
+                cellBounds = b;
+                any = true;
+            }
+        }
+        if (pathTilemap != null)
+        {
+            pathTilemap.CompressBounds();
+            var b = pathTilemap.cellBounds;
+            if (b.size.x > 0 && b.size.y > 0)
+            {
+                if (!any) { cellBounds = b; any = true; }
+                else
+                {
+                    var min = Vector3Int.Min(cellBounds.min, b.min);
+                    var max = Vector3Int.Max(cellBounds.max, b.max);
+                    cellBounds = new BoundsInt(min, max - min);
+                }
+            }
+        }
+        if (!any) return false;
+
+        var tm = buildableTilemap != null ? buildableTilemap : pathTilemap;
+        Vector3 worldMin = tm.CellToWorld(cellBounds.min);
+        Vector3 worldMax = tm.CellToWorld(cellBounds.max);
+        worldBounds = new Bounds((worldMin + worldMax) * 0.5f, worldMax - worldMin);
+        return true;
+    }
+
     public Vector2[] GetFullPath()
     {
         var full = new Vector2[waypoints.Length + 2];
