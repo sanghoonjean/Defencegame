@@ -1,6 +1,6 @@
 # Issue #256 — [FEAT] 일시 정지 기능
 
-> 게임 시뮬레이션 전체를 잠시 멈춘다. `Time.timeScale` 의 소유권을 **"일시정지 아님 → `GameSpeedSystem.Current`, 일시정지 → 0"** 으로 통합. HUD 버튼 + `P` 단축키. `GameSpeedSystem.Set` 에 한 줄 가드를 추가해 일시정지 중 배속 변경이 게임을 깨우지 않게 한다. 상태 전이(게임오버/리셋/웨이브 클리어) 시 자동 해제.
+> 게임 시뮬레이션 전체를 잠시 멈춘다. `Time.timeScale` 의 소유권을 **"일시정지 아님 → `GameSpeedSystem.Current`, 일시정지 → 0"** 으로 통합. HUD 버튼 + `P` 단축키. `GameSpeedSystem.Set` 에 한 줄 가드를 추가해 일시정지 중 배속 변경이 게임을 깨우지 않게 한다. **활성 웨이브 중에만 진입 허용** (비활성 시 토글 차단 — 스폰 코루틴 stall 방지). 상태 전이(게임오버/리셋/웨이브 클리어) 시 자동 해제.
 
 ## 1. 시스템 구조
 
@@ -9,11 +9,15 @@
    ├─ public static PauseSystem Instance
    ├─ public bool IsPaused { get; }
    ├─ public event Action<bool> OnPauseChanged
-   ├─ public void Toggle()
+   ├─ public void Toggle() => Set(!IsPaused)
    ├─ public void Set(bool paused)
-   │   ├─ paused == true  → IsPaused = true;  Time.timeScale = 0
+   │   ├─ paused == true  →
+   │   │     if (WaveSystem.Instance == null || !WaveSystem.Instance.IsWaveActive) return;
+   │   │     IsPaused = true;  Time.timeScale = 0
    │   └─ paused == false → IsPaused = false; Time.timeScale = GameSpeedSystem.Current
    │       — 양쪽 끝에서 OnPauseChanged?.Invoke(paused)
+   │       — 진입 게이트는 paused=true 에만 적용. 해제(paused=false) 는 게이트 없음 →
+   │         HandleStateChanged 의 자동 해제는 어떤 상태에서든 동작.
    ├─ private void Awake()
    │   ├─ Instance = this; IsPaused = false
    │   └─ GameStateSystem.OnStateChanged += HandleStateChanged
@@ -115,6 +119,7 @@
 | 단축키 | **`P`** | `Space` 는 `TestRunner.cs:9` 에서 "웨이브 시작" 디버그 키로 이미 점유 — 충돌 회피 위해 `P` 선택. TestRunner 는 "빌드 전 삭제" 임시 도구이지만 현재 활성, 본 이슈 범위 밖이라 손대지 않음. `P` = Pause 의 일반 관례. 좌클릭/`F` 와 충돌 없음. |
 | 배속 복원 방식 | **`_resumeSpeed` 필드 제거. `GameSpeedSystem.Current` 가 단일 진실** | 일시정지 중 `F` / 배속 버튼이 `Current` 만 갱신 (timeScale 가드) → 해제 시 `timeScale = Current` 면 자연스럽게 사용자가 마지막으로 선택한 배속으로 재개. 별도 스냅샷 불필요. |
 | 일시정지 중 배속 입력 처리 | **무시 X, `Current`/HUD 라벨만 갱신** | **Codex P2 (PR #257, acfd7817)**: 일시정지 중 `F` 가 `Time.timeScale` 을 덮어쓰면 `IsPaused=true` 인데 시뮬레이션이 재개되어 상태 모순. 본 플랜은 `GameSpeedSystem.Set` 에 가드 추가 — `Current` 와 `OnSpeedChanged` 는 갱신해 HUD 배속 라벨이 일시정지 중에도 반응(미리보기), `timeScale` 만 미터치. |
+| 일시정지 진입 게이트 | **`WaveSystem.IsWaveActive == true` 일 때만 허용** | **Codex P2 (PR #257, 810f510b)**: `WaveSystem.StartWave()` 가 `SetState` 를 호출하지 않으므로 `OnStateChanged` 가 발화되지 않음. 또 `SpawnEnemies()` 는 scaled `WaitForSeconds` 사용 ([WaveSystem.cs:133](MakeDefence/Assets/Scripts/Systems/WaveSystem.cs:133)) — WaveResult/Defeat 화면에서 일시정지 후 디버그 `Space` 로 StartWave 호출 시 `timeScale=0` 으로 스폰 코루틴 영구 stall. 비활성 시점엔 시뮬레이션이 멈출 것도 없으므로 의미가 없고 위험만 — 진입을 차단. 해제는 항상 허용. |
 | 상태 전이 시 해제 훅 | **`HandleStateChanged → if (IsPaused) Set(false)`** | `Set(false)` 가 `timeScale = Current` 를 쓰지만, 같은 이벤트의 `GameSpeedSystem.HandleStateChanged` 가 `Current` 를 1f 로 되돌리므로 호출 순서와 무관하게 최종 `timeScale = 1` (위 "상태 전이 시 timeScale 순서 검증" 참조). 별도 분리 분기 불필요. |
 | HUD 진입점 | **Canvas 위 Button 1개 + 라벨 1개** | #249 배속 버튼과 동일 패턴. Canvas 하위에 옆에 나란히 배치. |
 | 일시정지 중 상호작용 | **인벤/상점/매도/배치 모두 가능** | `timeScale = 0` 이어도 UI Button onClick 및 좌클릭 배치(`InputManager`) 는 `Update` 기반으로 동작. 의도된 동작 — 일시정지 중 정비/배치 검토가 본 기능의 목적 중 하나. |
@@ -136,8 +141,8 @@
 
 - `MakeDefence/Assets/Scripts/Systems/PauseSystem.cs`
   - 싱글톤 + `IsPaused` + `Toggle()` / `Set(bool)` + `OnPauseChanged` 이벤트
-  - `Set(true)`: `IsPaused=true; Time.timeScale=0; OnPauseChanged(true)`
-  - `Set(false)`: `IsPaused=false; Time.timeScale = GameSpeedSystem.Current ?? 1f; OnPauseChanged(false)`
+  - `Set(true)`: `WaveSystem.IsWaveActive == false 면 early return`; 통과 시 `IsPaused=true; Time.timeScale=0; OnPauseChanged(true)`
+  - `Set(false)`: `IsPaused=false; Time.timeScale = GameSpeedSystem.Current ?? 1f; OnPauseChanged(false)` — 게이트 없음
   - `HandleStateChanged`: `if (IsPaused) Set(false)` — 상태 전이 자동 해제
   - `OnDestroy` / `OnApplicationQuit` 에서 `Time.timeScale = 1f` 안전 복원
 - `MakeDefence/Assets/Scripts/UI/PauseHudButton.cs`
@@ -173,7 +178,13 @@
    - [ ] **3x → `P` 일시정지 → `R` 리셋 → 1x 재개** (호출 순서와 무관하게 최종 timeScale=1)
    - [ ] 1x → `P` 일시정지 → `R` 리셋 → 1x
    - [ ] (이론상) 일시정지 중 게임오버/웨이브 클리어 도달 — 시뮬레이션이 멈춰 있어 직접 트리거 어려우나, `TestRunner` 등으로 강제 호출 시 자동 해제 + 1x 확인
-8. **회귀 X**
+8. **진입 게이트 (Codex P2 #3 검증)**
+   - [ ] 초기 화면 (state=Playing, IsWaveActive=false) 에서 `P` / 버튼 → **무반응** (라벨 ▶ 유지)
+   - [ ] Space 로 웨이브 시작 → IsWaveActive=true → `P` → 정상 일시정지
+   - [ ] 일시정지 중 R 리셋 → 자동 해제 → IsWaveActive=false → `P` 다시 무반응 (회귀 게이트)
+   - [ ] WaveResult 화면(웨이브 클리어 후) 에서 `P` → 무반응
+   - [ ] Defeat 화면(플레이어 사망) 에서 `P` → 무반응
+9. **회귀 X**
    - [ ] `F` 배속 순환 (#249) — 평시(일시정지 아님) 동작 변화 없음
    - [ ] 좌클릭 배치 / 타워 선택 (#224) 정상
    - [ ] TestRunner Space/A/C/R 정상 (`Space` 충돌은 `P` 선택으로 회피)
@@ -186,6 +197,7 @@
 - **`Time.timeScale = 0` 글로벌 부작용**
   - 도메인 reload / 에디터 정지 시 `timeScale = 0` 이 남으면 다음 Play 시 멈춘 상태로 시작 → `OnDestroy` / `OnApplicationQuit` 에서 1f 복귀
   - `WaitForSecondsRealtime` / `Time.unscaledDeltaTime` 사용처 없음(#249 플랜 검증 결과) → 멈춰야 할 게 안 멈추는 케이스 없음
+- **비활성 시점 일시정지 시 스폰 코루틴 stall** — `WaveSystem.StartWave()` 는 `SetState` 미호출이라 `OnStateChanged` 가 발화되지 않음. `SpawnEnemies` 는 scaled `WaitForSeconds` 사용 ([WaveSystem.cs:133](MakeDefence/Assets/Scripts/Systems/WaveSystem.cs:133)) → WaveResult/Defeat/사전 셋업에서 일시정지 후 디버그 Space 로 StartWave 호출 시 스폰이 영구 멈춤 (Codex P2 #3, PR #257). 본 플랜은 `Set(true)` 에 `IsWaveActive` 게이트로 진입 자체를 차단해 회피.
 - **`GameSpeedSystem.Set` 가드 누락 시 회귀** — `GameSpeedSystem.Set` 의 일시정지 가드 한 줄(`if (Pause...) timeScale=...`) 이 빠지면 일시정지 중 `F` 가 시뮬레이션을 깨움 (Codex P2 #2, PR #257). 본 플랜의 핵심 수정이므로 코드 리뷰 / 테스트 시 6번 체크리스트 필수.
 - **상태 전이 자동 해제 시 구독 순서 무관** — `PauseSystem` 과 `GameSpeedSystem` 둘 다 `GameStateSystem.OnStateChanged` 를 구독. `GameSpeedSystem.Set` 이 일시정지 가드를 갖기 때문에:
   - GameSpeedSystem 먼저 발화 → `Current=1, timeScale 미터치(0 유지)` → PauseSystem 발화 → `timeScale = Current = 1` ✅
