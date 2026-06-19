@@ -14,7 +14,7 @@
    │   ├─ paused == true  →
    │   │     if (WaveSystem.Instance == null || !WaveSystem.Instance.IsWaveActive) return;
    │   │     IsPaused = true;  Time.timeScale = 0
-   │   └─ paused == false → IsPaused = false; Time.timeScale = GameSpeedSystem.Current
+   │   └─ paused == false → IsPaused = false; Time.timeScale = GameSpeedSystem.Instance?.Current ?? 1f
    │       — 양쪽 끝에서 OnPauseChanged?.Invoke(paused)
    │       — 진입 게이트는 paused=true 에만 적용. 해제(paused=false) 는 게이트 없음 →
    │         HandleStateChanged 의 자동 해제는 어떤 상태에서든 동작.
@@ -27,7 +27,7 @@
    └─ private void HandleStateChanged(GameState state)
        └─ if (IsPaused) Set(false)
           — 게임오버 / 웨이브 클리어 / 리셋(Playing 재진입) 모두 자동 해제
-          — Set(false) 가 Time.timeScale = GameSpeedSystem.Current 를 쓰지만,
+          — Set(false) 가 Time.timeScale = GameSpeedSystem.Instance?.Current ?? 1f 를 쓰지만,
             같은 이벤트의 GameSpeedSystem.HandleStateChanged 가 Current 를 1f 로
             되돌리므로 호출 순서와 무관하게 최종 timeScale = 1 보장 (아래 GameSpeedSystem 항)
 
@@ -142,7 +142,7 @@
 - `MakeDefence/Assets/Scripts/Systems/PauseSystem.cs`
   - 싱글톤 + `IsPaused` + `Toggle()` / `Set(bool)` + `OnPauseChanged` 이벤트
   - `Set(true)`: `WaveSystem.IsWaveActive == false 면 early return`; 통과 시 `IsPaused=true; Time.timeScale=0; OnPauseChanged(true)`
-  - `Set(false)`: `IsPaused=false; Time.timeScale = GameSpeedSystem.Current ?? 1f; OnPauseChanged(false)` — 게이트 없음
+  - `Set(false)`: `IsPaused=false; Time.timeScale = GameSpeedSystem.Instance?.Current ?? 1f; OnPauseChanged(false)` — 게이트 없음. `Instance` 가 null 인 극단 케이스(테스트/디버그) 도 1f 폴백으로 안전.
   - `HandleStateChanged`: `if (IsPaused) Set(false)` — 상태 전이 자동 해제
   - `OnDestroy` / `OnApplicationQuit` 에서 `Time.timeScale = 1f` 안전 복원
 - `MakeDefence/Assets/Scripts/UI/PauseHudButton.cs`
@@ -203,6 +203,6 @@
   - GameSpeedSystem 먼저 발화 → `Current=1, timeScale 미터치(0 유지)` → PauseSystem 발화 → `timeScale = Current = 1` ✅
   - PauseSystem 먼저 발화 → `timeScale = Current = 3 (아직 옛 값)` → GameSpeedSystem 발화 → `Current=1`, 이제 `IsPaused=false` 라 `timeScale = 1` ✅
   - 두 경우 모두 같은 프레임 내 최종 `timeScale = 1` — 초기 Codex P2 #1 지적 해소.
-- **순서 의존 (진입)** — 일시정지 진입 시 `GameSpeedSystem.Current` 는 평시에 갱신된 상태(`Awake` 에서 `Set(1f)`) 이므로 `null/0` 케이스는 `Set(false)` 에서 `?? 1f` 폴백으로 방어.
+- **순서 의존 (진입) / `Instance` 접근** — `GameSpeedSystem.Current` 는 **인스턴스 프로퍼티** (`float`, non-nullable) 이므로 반드시 `GameSpeedSystem.Instance?.Current ?? 1f` 로 접근. 정적 접근 (`GameSpeedSystem.Current`) 이나 non-nullable 값에 `??` 적용은 컴파일 에러 (Codex P2 #4, PR #257). `Instance` 가 null 인 극단 케이스 (테스트 / 도메인 reload 직후) 도 `?? 1f` 폴백으로 방어.
 - **UI Button 의존성** — Canvas/EventSystem 이 씬에 이미 있어야 함 (#224 작업으로 확인)
 - **자동 테스트 한계** — `Time.timeScale` 외부 검증 어려움. 컴파일 + Play 모드 진입 + 콘솔 에러 0 까지 자동, 정지/복원 동작은 사용자 수동.
