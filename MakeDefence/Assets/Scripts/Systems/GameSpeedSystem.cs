@@ -45,8 +45,9 @@ public class GameSpeedSystem : MonoBehaviour
 
     public void Set(float speed)
     {
-        Current        = speed;
-        Time.timeScale = speed;
+        Current = speed;
+        if (PauseSystem.Instance == null || !PauseSystem.Instance.IsPaused)
+            Time.timeScale = speed;
         OnSpeedChanged?.Invoke(speed);
     }
 

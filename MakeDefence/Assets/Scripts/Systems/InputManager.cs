@@ -19,6 +19,11 @@ public class InputManager : MonoBehaviour
         {
             GameSpeedSystem.Instance?.Cycle();
         }
+
+        if (Input.GetKeyDown(KeyCode.P))
+        {
+            PauseSystem.Instance?.Toggle();
+        }
     }
 
     private void HandleClick()
