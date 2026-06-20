@@ -1,6 +1,6 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
---- !u!1 &3873342571600905529
+--- !u!1 &2878688944365993992
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -8,24 +8,23 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 5036701900212730850}
-  - component: {fileID: 7187944947655861972}
-  - component: {fileID: 6680322428003601477}
-  - component: {fileID: 1216200304591915729}
+  - component: {fileID: 124577311548054799}
+  - component: {fileID: 2263666792894971089}
+  - component: {fileID: 4433395892413983177}
   m_Layer: 0
-  m_Name: MagmaProjectile
+  m_Name: MagmaAOE
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &5036701900212730850
+--- !u!4 &124577311548054799
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3873342571600905529}
+  m_GameObject: {fileID: 2878688944365993992}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -34,13 +33,13 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!212 &7187944947655861972
+--- !u!212 &2263666792894971089
 SpriteRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3873342571600905529}
+  m_GameObject: {fileID: 2878688944365993992}
   m_Enabled: 1
   m_CastShadows: 0
   m_ReceiveShadows: 0
@@ -86,31 +85,17 @@ SpriteRenderer:
   m_WasSpriteAssigned: 0
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!114 &6680322428003601477
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3873342571600905529}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7f4ab09bccdd82e4b89f65cf4dc950db, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  _aoeFxPrefab: {fileID: 2878688944365993992, guid: 1ab527967536f5d41a847d2c8718cb51,
-    type: 3}
---- !u!95 &1216200304591915729
+--- !u!95 &4433395892413983177
 Animator:
   serializedVersion: 5
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3873342571600905529}
+  m_GameObject: {fileID: 2878688944365993992}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: 34fcf9680859495438a6efb17c27c02a, type: 2}
+  m_Controller: {fileID: 9100000, guid: ac3d0454d3ba36d409f1aa5b51d96a07, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
