@@ -43,7 +43,8 @@ public static class SkillDispatcher
         target.TakeDamage(dmg, tower.ArmorPen / 100f, isCrit);
         if (applyFire) ApplyFireDamage(tower, target, tower.AttackDamage, isCrit);
 
-        if (tower.StunChance > 0f && Random.value < Mathf.Clamp01(tower.StunChance / 100f))
+        if (target.CurrentHp > 0f && tower.StunChance > 0f &&
+            Random.value < Mathf.Clamp01(tower.StunChance / 100f))
             target.ApplyStun(0.5f);
     }
 
@@ -67,7 +68,8 @@ public static class SkillDispatcher
                     skill.aoeShape, radius, skill.aoeWidth, skill.aoeAngle)) continue;
 
             e.TakeDamage(dmg, tower.ArmorPen / 100f, isCrit, DamageType.Cold);
-            if (stunChance > 0f && Random.value < Mathf.Clamp01(stunChance / 100f))
+            if (e.CurrentHp > 0f && stunChance > 0f &&
+                Random.value < Mathf.Clamp01(stunChance / 100f))
                 e.ApplyStun(freeze);
             ApplyFireDamage(tower, e, baseDmg, isCrit);
             if (dotTick > 0f && tower.DotDuration > 0f && e.CurrentHp > 0f)

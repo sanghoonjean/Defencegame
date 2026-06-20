@@ -13,7 +13,8 @@ public class FireballProjectile : ProjectileBase
         _hitIsCrit  = IsCrit;
         target.TakeDamage(_damage, _armorPen, IsCrit, DamageType.Fire);
         TryIgnite(target, _damage);
-        if (StunChance > 0f && Random.value < Mathf.Clamp01(StunChance / 100f))
+        if (target.CurrentHp > 0f && StunChance > 0f &&
+            Random.value < Mathf.Clamp01(StunChance / 100f))
             target.ApplyStun(0.5f);
         ApplyFireOnHit(target, IsCrit);
         ApplyDotOnHit(target);
