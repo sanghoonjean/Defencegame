@@ -9,6 +9,7 @@ public enum SkillType
     FreezingPulse  = 5,
     LightningArrow = 6,
     CausticArrow   = 7,
+    MoltenStrike   = 8,
 }
 
 [CreateAssetMenu(fileName = "SkillData", menuName = "MakeDefence/Skill Data")]
@@ -46,4 +47,13 @@ public class SkillData : ScriptableObject, IInventoryItem
     [Header("AoE FX")]
     [Tooltip("AoE 발동 위치에 인스턴스화할 FX 프리팹. null 이면 GameUIManager 의 내부 도형 렌더링 사용")]
     public GameObject aoeFxPrefab;
+
+    [Header("Molten Strike 전용")]
+    public int   projectileCount        = 4;
+    public float explosionRadius        = 9f;
+    public float projectileRadius       = 2f;
+    [Tooltip("물리 피해의 X 비율을 화염으로 전환 (0~1)")]
+    public float physToFireRatio        = 0.6f;
+    [Tooltip("투사체 명중/상태이상 피해 less 비율 (0~1) — 0.6 → ×0.4")]
+    public float projectileLessHitRatio = 0.6f;
 }
