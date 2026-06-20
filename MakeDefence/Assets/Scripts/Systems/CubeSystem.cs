@@ -75,7 +75,7 @@ public class CubeSystem : MonoBehaviour
             Add(RollDrop(), 1);
     }
 
-    private CubeType RollDrop()
+    internal CubeType RollDrop()
     {
         int total = lowerWeight + upperWeight + topTierWeight + deleteWeight + cloneWeight;
         int roll  = UnityEngine.Random.Range(0, total);

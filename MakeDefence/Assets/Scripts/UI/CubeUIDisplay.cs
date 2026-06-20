@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -8,6 +9,10 @@ public class CubeUIDisplay : MonoBehaviour
     [SerializeField] private Text topTierText;
     [SerializeField] private Text deleteText;
     [SerializeField] private Text cloneText;
+
+    [Header("Punch Tween")]
+    [SerializeField] private float punchDuration  = 0.15f;
+    [SerializeField] private float punchAmplitude = 0.3f;
 
     private void OnEnable()
     {
@@ -39,6 +44,66 @@ public class CubeUIDisplay : MonoBehaviour
             var t = GetText(type);
             if (t != null) t.text = CubeSystem.Instance.GetCount(type).ToString();
         }
+    }
+
+    /// <summary>
+    /// 큐브 타입별 카운터 Text 의 화면 위치를 카메라 평면 월드 좌표로 변환.
+    /// DroppedCubeSystem 의 수확 이동 타겟으로 사용.
+    /// </summary>
+    public Vector3 GetCounterWorldPoint(CubeType type, Camera cam)
+    {
+        if (cam == null) return transform.position;
+        var t = GetText(type);
+        if (t == null) return transform.position;
+
+        var rt = t.rectTransform;
+        var canvas = rt.GetComponentInParent<Canvas>();
+        if (canvas == null) return rt.position;
+
+        Vector3 screenPos;
+        if (canvas.renderMode == RenderMode.WorldSpace)
+        {
+            return rt.position;
+        }
+        else if (canvas.renderMode == RenderMode.ScreenSpaceOverlay)
+        {
+            screenPos = RectTransformUtility.WorldToScreenPoint(null, rt.position);
+        }
+        else // ScreenSpaceCamera
+        {
+            Camera canvasCam = canvas.worldCamera != null ? canvas.worldCamera : cam;
+            screenPos = RectTransformUtility.WorldToScreenPoint(canvasCam, rt.position);
+        }
+
+        float z = Mathf.Abs(cam.transform.position.z);
+        Vector3 world = cam.ScreenToWorldPoint(new Vector3(screenPos.x, screenPos.y, z));
+        world.z = 0f;
+        return world;
+    }
+
+    /// <summary>
+    /// 큐브 카운터에 punch 애니메이션 (scale 1 → 1.3 → 1).
+    /// </summary>
+    public void PlayPunch(CubeType type)
+    {
+        var t = GetText(type);
+        if (t == null) return;
+        StartCoroutine(PunchRoutine(t.transform));
+    }
+
+    private IEnumerator PunchRoutine(Transform target)
+    {
+        Vector3 origScale = target.localScale;
+        float t = 0f;
+        while (t < punchDuration)
+        {
+            t += Time.deltaTime;
+            float k = Mathf.Clamp01(t / punchDuration);
+            float scale = 1f + Mathf.Sin(k * Mathf.PI) * punchAmplitude;
+            target.localScale = origScale * scale;
+            yield return null;
+        }
+        target.localScale = origScale;
     }
 
     private Text GetText(CubeType type) => type switch
