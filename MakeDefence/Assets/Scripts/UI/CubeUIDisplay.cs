@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -81,29 +82,42 @@ public class CubeUIDisplay : MonoBehaviour
         return world;
     }
 
+    // 진행 중인 punch 추적 + 원본 스케일 캐싱 (다수 punch 겹침 대비)
+    private readonly Dictionary<CubeType, Coroutine> _activePunches = new();
+    private readonly Dictionary<CubeType, Vector3>   _baseScales    = new();
+
     /// <summary>
     /// 큐브 카운터에 punch 애니메이션 (scale 1 → 1.3 → 1).
+    /// 기존 punch 진행 중이면 중단 후 재시작, 원본 스케일은 최초 1회만 캐싱.
     /// </summary>
     public void PlayPunch(CubeType type)
     {
         var t = GetText(type);
         if (t == null) return;
-        StartCoroutine(PunchRoutine(t.transform));
+
+        if (!_baseScales.ContainsKey(type))
+            _baseScales[type] = t.transform.localScale;
+
+        if (_activePunches.TryGetValue(type, out var existing) && existing != null)
+            StopCoroutine(existing);
+
+        _activePunches[type] = StartCoroutine(PunchRoutine(type, t.transform));
     }
 
-    private IEnumerator PunchRoutine(Transform target)
+    private IEnumerator PunchRoutine(CubeType type, Transform target)
     {
-        Vector3 origScale = target.localScale;
+        Vector3 baseScale = _baseScales[type];
         float t = 0f;
         while (t < punchDuration)
         {
             t += Time.deltaTime;
             float k = Mathf.Clamp01(t / punchDuration);
             float scale = 1f + Mathf.Sin(k * Mathf.PI) * punchAmplitude;
-            target.localScale = origScale * scale;
+            target.localScale = baseScale * scale;
             yield return null;
         }
-        target.localScale = origScale;
+        target.localScale = baseScale;
+        _activePunches[type] = null;
     }
 
     private Text GetText(CubeType type) => type switch

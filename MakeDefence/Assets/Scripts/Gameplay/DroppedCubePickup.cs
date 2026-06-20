@@ -30,14 +30,15 @@ public class DroppedCubePickup : MonoBehaviour
 
     public CubeType Type { get; private set; }
 
-    private Vector3 _basePos;
-    private float   _spawnTime;
-    private bool    _movementLocked;
-    private Color   _bodyBaseColor;
-    private Color   _beamBaseColor;
-    private Color   _labelBorderBaseColor;
-    private Color   _labelBgBaseColor;
-    private Color   _labelTextBaseColor;
+    private Vector3   _basePos;
+    private float     _spawnTime;
+    private bool      _movementLocked;
+    private Coroutine _spawnCoroutine;
+    private Color     _bodyBaseColor;
+    private Color     _beamBaseColor;
+    private Color     _labelBorderBaseColor;
+    private Color     _labelBgBaseColor;
+    private Color     _labelTextBaseColor;
 
     public void Initialize(CubeType type, Vector2 worldPos)
     {
@@ -68,7 +69,7 @@ public class DroppedCubePickup : MonoBehaviour
         _basePos = new Vector3(worldPos.x, worldPos.y, transform.position.z);
         transform.position = _basePos;
         _spawnTime = Time.time;
-        StartCoroutine(SpawnEffect());
+        _spawnCoroutine = StartCoroutine(SpawnEffect());
     }
 
     private IEnumerator SpawnEffect()
@@ -89,6 +90,7 @@ public class DroppedCubePickup : MonoBehaviour
         }
         transform.localScale = Vector3.one;
         transform.position   = _basePos;
+        _spawnCoroutine = null;
     }
 
     private void Update()
@@ -117,6 +119,8 @@ public class DroppedCubePickup : MonoBehaviour
     {
         if (_movementLocked) return;
         _movementLocked = true;
+        StopSpawnIfRunning();
+        transform.localScale = Vector3.one;
         StartCoroutine(CollectRoutine(targetWorldPos, duration, onArrived));
     }
 
@@ -147,7 +151,15 @@ public class DroppedCubePickup : MonoBehaviour
     {
         if (_movementLocked) return;
         _movementLocked = true;
+        StopSpawnIfRunning();
         StartCoroutine(DiscardRoutine(fadeDuration));
+    }
+
+    private void StopSpawnIfRunning()
+    {
+        if (_spawnCoroutine == null) return;
+        StopCoroutine(_spawnCoroutine);
+        _spawnCoroutine = null;
     }
 
     private IEnumerator DiscardRoutine(float duration)
