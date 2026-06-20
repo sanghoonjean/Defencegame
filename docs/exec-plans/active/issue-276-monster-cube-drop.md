@@ -84,6 +84,8 @@ WaveSystem.OnWaveEnded(cleared)
 ### `MakeDefence/Assets/Scripts/Systems/DroppedCubeSystem.cs` (신규)
 
 ```
+[DefaultExecutionOrder(-100)]  // WaveSystem 보다 OnEnable 우선
+public class DroppedCubeSystem : MonoBehaviour
 - public static DroppedCubeSystem Instance
 - public static event Action OnPendingChanged
 - public IReadOnlyDictionary<CubeType, int> PendingCounts
@@ -94,19 +96,27 @@ WaveSystem.OnWaveEnded(cleared)
 - [SerializeField] float collectArcDuration = 0.5f
 - [SerializeField] float discardFadeDuration = 0.3f
 
-- 이벤트 구독: Enemy.OnEnemyDied, WaveSystem.OnWaveEnded
+- 이벤트 구독 (OnEnable):
+   Enemy.OnEnemyDied += HandleEnemyDied      ← ExecutionOrder 로 WaveSystem 보다 먼저 등록 보장
+   WaveSystem.OnWaveStarted += HandleWaveStarted
+   WaveSystem.OnWaveEnded   += HandleWaveEnded
 - 활성 픽업 리스트 (HashSet<DroppedCubePickup>) + Pending Dictionary
+- bool _dropsBlocked  // 실패 후 잔여 처치 차단 전용 (cleared=true 에서는 미사용)
 
 - HandleEnemyDied(Enemy enemy)
-   1) **가드**: WaveSystem.Instance == null || !WaveSystem.Instance.IsWaveActive 면 return
-      (#2 — 실패 후 잔여 적이 죽을 때 픽업 생성 차단)
+   1) **가드**: if (_dropsBlocked) return
+      (#2 — 실패 후 잔여 적이 죽을 때 픽업 생성 차단,
+       #4 — 마지막 적/보스 드랍은 cleared=true 경로에서 차단되지 않음)
    2) Grade → (chance, count) 결정 + Random 롤
    3) count 회: CubeSystem.RollDrop() → SpawnPickup(type, pos)
    4) Pending++ → OnPendingChanged
 
+- HandleWaveStarted(int stage)
+   - _dropsBlocked = false  (다음 웨이브 시작 시 가드 해제)
+
 - HandleWaveEnded(bool cleared)
-   - cleared == true → CollectAll() (아래)
-   - cleared == false → DiscardAll() (아래)
+   - cleared == true → CollectAll() (아래) — _dropsBlocked 건드리지 않음
+   - cleared == false → _dropsBlocked = true; DiscardAll() (아래)
 
 - CollectAll() — **데이터를 먼저 격리** (#3 — auto-wave 충돌 방지)
    1) 현재 _activePickups / _pendingCounts 를 로컬 변수로 swap, 멤버는 새 빈 컬렉션
@@ -248,10 +258,12 @@ CubeType → 시각 스타일 매핑을 한 곳에서 관리. 향후 인벤/숍 
 16. 씬 재시작 / 게임 종료 시 픽업 잔존 0
 
 #### 엣지 케이스 (Codex 리뷰 반영)
-17. **실패 후 잔여 적 처치 (Guard #2)**: 베이스 파괴 후 살아있는 적을 타워가 마저 죽임 → 신규 픽업 생성 안 됨, 다음 시도에 잔존 0
+17. **실패 후 잔여 적 처치 (Guard #2)**: 베이스 파괴 후 살아있는 적을 타워가 마저 죽임 → `_dropsBlocked=true` 라 신규 픽업 생성 안 됨, 다음 시도에 잔존 0
 18. **Auto-wave 충돌 (Isolation #3)**: 자동 웨이브 ON 상태에서 다수 픽업 보유 → 클리어 → 즉시 다음 웨이브 시작 → 이전 픽업의 시각 효과가 진행되는 와중에 새 적 처치 → 새 픽업이 **새 리스트/Pending 에만 쌓이고**, 이전 픽업 효과는 자기 트윈 끝까지 진행 후 destroy. PendingDropDisplay 카운트가 새 픽업만 반영
 19. **Auto-wave 클리어 데이터 반영**: 클리어 즉시 `CubeSystem` 카운트가 증가 (시각 효과 종료를 기다리지 않음)
 20. **씬 owner 누락 회귀 방지 (#1)**: `DroppedCubeSystem` 컴포넌트 미부착 상태로 Play → Editor 로그에 명확한 에러/경고 출력 (예: `Debug.LogError` 가드)
+21. **마지막 적/보스 드랍 보존 (Order #4)**: 마지막 적 처치 시 `ExecutionOrder=-100` 으로 `DroppedCubeSystem.HandleEnemyDied` 가 `WaveSystem.HandleEnemyRemoved` 보다 먼저 실행됨 → 픽업이 먼저 생성·등록된 후 `EndWave` → `CollectAll` 흐름에서 마지막 픽업까지 함께 수확
+22. **LastBoss 처치 시 드랍 3개 모두 수확**: LastBoss 단독 처치(웨이브 마무리와 동시) 케이스에서도 3개 픽업이 모두 생성된 후 수확됨
 
 ## 5. 위험 요소
 
@@ -267,5 +279,6 @@ CubeType → 시각 스타일 매핑을 한 곳에서 관리. 향후 인벤/숍 
 - **테스트 자동화 부재**: 수동 Play 모드 검증에 의존.
 - **메모리 (Unity 에셋 편집은 UnityMCP)**: 프리팹/씬/Sorting Layer 변경은 모두 UnityMCP 도구로.
 - **씬 owner 누락 (Codex #1)**: 스크립트만으로는 작동하지 않음. SampleScene 의 부트 GameObject 에 `DroppedCubeSystem` + `PendingDropDisplay` 컴포넌트 부착 단계가 필수 (구현 PR 본문에도 명시).
-- **실패 후 잔여 처치 (Codex #2)**: `WaveSystem.StopWave` 가 스폰만 멈추므로 `HandleEnemyDied` 첫 줄에 `IsWaveActive` 가드 필수. 누락 시 다음 시도에 픽업 잔존 가능.
+- **실패 후 잔여 처치 (Codex #2)**: `WaveSystem.StopWave` 가 스폰만 멈추므로 `_dropsBlocked` 전용 flag 로 가드. 실패 시 true, 새 웨이브 시작(`OnWaveStarted`) 시 false. 누락 시 다음 시도에 픽업 잔존 가능.
 - **Auto-wave 데이터 오염 (Codex #3)**: `CollectAll`/`DiscardAll` 진입 시 `_activePickups` / `_pendingCounts` 를 즉시 로컬 swap. 시각 효과는 로컬 픽업에서 self-contained 로 진행, 새 웨이브는 새 멤버 컬렉션 사용 → WaveSystem 미변경으로도 격리 보장.
+- **마지막 적/보스 드랍 누락 (Codex #4)**: `Enemy.OnEnemyDied` 구독 순서가 `WaveSystem` 보다 뒤이면 마지막 처치 시 `EndWave → CollectAll → swap` 이 먼저 끝나 드랍이 사라짐. **`[DefaultExecutionOrder(-100)]`** 로 `DroppedCubeSystem.OnEnable` 을 `WaveSystem` 보다 먼저 보장. 또한 가드를 `IsWaveActive` 가 아닌 `_dropsBlocked`(실패 전용) 로 분리해 cleared=true 경로에서 마지막 픽업이 가드에 걸리지 않음.
