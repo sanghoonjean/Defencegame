@@ -2,18 +2,19 @@ using UnityEngine;
 
 public static class SkillDispatcher
 {
-    public static void Execute(Tower tower, Enemy target)
+    // 반환값: 실제로 공격이 수행됐는지. false 면 호출자가 사후 처리 (큐브 드롭 등) 도 skip.
+    public static bool Execute(Tower tower, Enemy target)
     {
         var skill = tower.EquippedSkill;
         if (skill == null)
         {
             DirectAttack(tower, target);
-            return;
+            return true;
         }
 
         // Brutality Support — Physical 외 모든 데미지 타입 스킬 발사 차단
         if (tower.IsBrutalityActive && skill.damageNature != SkillDamageNature.Physical)
-            return;
+            return false;
 
         switch (skill.skillType)
         {
@@ -36,6 +37,7 @@ public static class SkillDispatcher
                 DirectAttack(tower, target, applyFire: !skill.isDoTOnly);
                 break;
         }
+        return true;
     }
 
     private static void DirectAttack(Tower tower, Enemy target, bool applyFire = true)

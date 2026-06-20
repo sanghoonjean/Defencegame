@@ -271,8 +271,9 @@ public class Tower : MonoBehaviour
             _animator.SetFloat(DirectionYParam, dir.y);
         }
 
-        SkillDispatcher.Execute(this, target);
-        TryDropCube();
+        // Brutality 가 비호환 스킬을 차단한 경우 큐브 드롭도 막음 (실제 공격이 일어나지 않음)
+        if (SkillDispatcher.Execute(this, target))
+            TryDropCube();
     }
 
     private bool HasAnimatorParam(string paramName)
