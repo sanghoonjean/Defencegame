@@ -54,12 +54,12 @@ MonoBehaviour:
   labelBorder: {fileID: 2593382845186501269}
   labelBg: {fileID: 3508074773867449178}
   labelText: {fileID: 6072659655598604834}
-  bobAmplitude: 0.08
+  bobAmplitude: 0
   bobFrequency: 1.5
   pulseAmplitude: 0.15
   pulseFrequency: 2
   spawnEffectDuration: 0.25
-  spawnBounceHeight: 0.4
+  spawnBounceHeight: 0
   collectArcApexHeight: 1.5
 --- !u!1 &1409943648470721277
 GameObject:
