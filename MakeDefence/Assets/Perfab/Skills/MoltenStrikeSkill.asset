@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 698c3616f73151643b5b028c7846f5f0, type: 3}
-  m_Name: FireballSkill
+  m_Name: MoltenStrikeSkill
   m_EditorClassIdentifier: 
-  displayName: Fireball
-  icon: {fileID: -373119962, guid: 81fab9813c4b1524983127544d250f46, type: 3}
-  skillType: 1
-  baseDamage: 100
+  displayName: Molten Strike
+  icon: {fileID: 1594028804, guid: 27181370ce6306644bf046b332fca129, type: 3}
+  skillType: 8
+  baseDamage: 120
   baseCooldown: 0.5
   baseRange: 3
   aoeRadius: 1
@@ -27,8 +27,8 @@ MonoBehaviour:
   aoeAngle: 45
   aoeWidth: 2
   aoeFxPrefab: {fileID: 0}
-  projectileCount: 4
-  explosionRadius: 9
-  projectileRadius: 2
+  projectileCount: 3
+  explosionRadius: 1
+  projectileRadius: 1
   physToFireRatio: 0.6
   projectileLessHitRatio: 0.6
