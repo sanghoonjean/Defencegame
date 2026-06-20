@@ -106,17 +106,36 @@ WaveSystem.OnWaveEnded(cleared)
 
 ```
 - CubeType Type
-- SpriteRenderer body (단색 사각형, sortingLayer="Pickups")
-- TextMesh label (라벨)
-- SpriteRenderer beam (Additive 머티리얼, 위로 길쭉, sortingLayer="Pickups", 등급에 따라 굵기/알파 차등)
+- SpriteRenderer body     (단색 사각형, sortingLayer="Pickups", order=10)
+- SpriteRenderer beam     (Additive 위로 길쭉, sortingLayer="Pickups", order=9, 등급별 굵기/알파)
+- SpriteRenderer labelBg  (어두운 톤 박스, sortingLayer="Pickups", order=11)
+- TextMesh       labelText (큐브 이름, sortingLayer="Pickups", order=12, 등급별 색)
 
 - Initialize(CubeType, Vector2 worldPos)
+   → CubeStyleTable.Get(type) 로 색/굵기 룩업
+   → body/beam/labelBg/labelText 색 일괄 세팅
 - PlaySpawnEffect() — scale 0→1.2→1 + y bounce, 0.25s
-- Update() — 부유 (sin wave y bob) + 알파 펄스
+- Update() — 부유 (sin wave y bob) + 알파 펄스 (Body+Beam 만, Label 은 가독성 위해 고정)
 - StartCollect(Vector3 targetWorldPos, float duration, Action onArrived) — 호 보간 후 콜백
 - StartDiscard(float fadeDuration) — alpha 1→0 후 Destroy
 - OnDestroy → DroppedCubeSystem.Unregister(this)
 ```
+
+### `MakeDefence/Assets/Scripts/Gameplay/CubeStyleTable.cs` (신규, 작은 헬퍼)
+
+```
+- public static class CubeStyleTable
+- public readonly struct CubeStyle {
+      Color bodyColor;
+      Color beamColor;       // alpha 포함
+      float beamWidth;
+      Color labelBgColor;    // alpha 포함
+      Color labelTextColor;
+  }
+- public static CubeStyle Get(CubeType type) — switch 로 5개 매핑 반환
+```
+
+CubeType → 시각 스타일 매핑을 한 곳에서 관리. 향후 인벤/숍 UI 에서도 재사용 가능.
 
 ### `MakeDefence/Assets/Scripts/UI/PendingDropDisplay.cs` (신규)
 
@@ -131,21 +150,26 @@ WaveSystem.OnWaveEnded(cleared)
 
 ### `MakeDefence/Assets/Prefabs/DroppedCubePickup.prefab` (신규)
 - 루트: 빈 GameObject + `DroppedCubePickup`
-- 자식 `Body`: `SpriteRenderer` (Sprites/Default 흰 사각형 + scale 0.4 + sortingLayer="Pickups", sortingOrder=10)
-- 자식 `Label`: `TextMesh` (3D Text, 라벨, sortingOrder=11)
-- 자식 `Beam`: `SpriteRenderer` (Sprites/Default 흰 사각형 + Additive 머티리얼, scale x=0.06 y=4.0, pivot bottom, sortingOrder=9)
+- 자식 `Beam`:     `SpriteRenderer` (Sprites/Default + Additive 머티리얼, scale x=0.06 y=4.0, pivot bottom, sortingOrder=9)
+- 자식 `Body`:     `SpriteRenderer` (Sprites/Default 흰 사각형 + scale 0.4, sortingOrder=10)
+- 자식 `LabelBg`:  `SpriteRenderer` (Sprites/Default 흰 사각형 + scale x=0.7 y=0.18, sortingOrder=11)
+- 자식 `LabelText`: `TextMesh` (3D Text, Anchor=MiddleCenter, fontSize 24, characterSize 0.05, sortingOrder=12)
 - UnityMCP `manage_prefabs` 로 생성
 
-### 큐브 타입별 색 + 빛기둥 차등
-| Type     | Body (RGBA hex) | Beam Alpha | Beam Width |
-|----------|-----------------|------------|------------|
-| Lower    | `#A0A0A0` 회색  | 0.25       | 0.06       |
-| Upper    | `#4A8BFF` 파랑  | 0.35       | 0.07       |
-| TopTier  | `#FFC93A` 금색  | 0.55       | 0.10       |
-| Delete   | `#E55050` 빨강  | 0.35       | 0.07       |
-| Clone    | `#B07FFF` 보라  | 0.55       | 0.10       |
+### 큐브 타입(=등급) 별 색 테이블
+
+라벨 색까지 차등화하는 POE 룬 스타일. 배경은 채도 낮춘 어두운 톤(90% 알파), 텍스트는 같은 색의 밝은 톤.
+
+| Type     | Body Color    | Beam Color (a)        | Beam Width | LabelBg Color   | LabelText Color |
+|----------|---------------|------------------------|------------|------------------|------------------|
+| Lower    | `#A0A0A0`     | 회색 a=0.25            | 0.06       | `#3A3A3AE6`      | `#E0E0E0`        |
+| Upper    | `#4A8BFF`     | 파랑 a=0.35            | 0.07       | `#1A3060E6`      | `#7AB3FF`        |
+| TopTier  | `#FFC93A`     | 금색 a=0.55            | 0.10       | `#5C4316E6`      | `#FFD86F`        |
+| Delete   | `#E55050`     | 빨강 a=0.35            | 0.07       | `#5A1E1EE6`      | `#FF8585`        |
+| Clone    | `#B07FFF`     | 보라 a=0.55            | 0.10       | `#3D2A60E6`      | `#D0A9FF`        |
 
 희귀(TopTier/Clone) 일수록 굵고 진한 빛기둥 → 후반 노이즈 속에서도 도드라짐.
+배경 + 글자가 같은 컬러군이라 한눈에 "어떤 등급인지" 식별 가능.
 
 ## 4. 테스트 계획
 
@@ -181,6 +205,7 @@ WaveSystem.OnWaveEnded(cleared)
 
 - **후반 인플레이션**: 다수 적 동시 사망 → 픽업 다수. Normal 8% 보수적 시작.
 - **빛기둥 노이즈**: 다수 픽업의 빛기둥이 동시에 깔리면 시야 방해. 등급별 알파/굵기 차등으로 완화. 그래도 부족하면 상한값 도입(예: 동시 25개 초과 시 가장 오래된 픽업의 빛기둥 알파 감소).
+- **라벨 가독성**: 어두운 배경(90% 알파) + 밝은 색 텍스트라 카메라 거리/줌 변화에도 읽힘. `TextMesh` 의 폰트가 작은 카메라에서 흐릿할 수 있어, 필요 시 TMP(`TextMeshPro`) 로 교체 검토. 1차에는 기본 `TextMesh` + 충분한 `characterSize` 로 시작.
 - **HUD 좌표 변환**: Canvas Render Mode (Overlay/Camera/World) 에 따라 변환 로직 다름. 메인 HUD Canvas Mode 확인 후 `RectTransformUtility.ScreenPointToWorldPointInRectangle` 또는 `Camera.ScreenToWorldPoint` 분기.
 - **씬 전환 시 픽업 누수**: `DontDestroyOnLoad` 미사용 가정. 씬 언로드 시 자동 정리. 단, 같은 씬 재시작 시 `DroppedCubeSystem.Awake` 에서 활성 리스트 초기화 필요.
 - **Sorting Layer 추가**: `ProjectSettings/TagManager.asset` 변경은 UnityMCP `manage_editor` 의 sorting layer 액션으로 처리 (메모리 [[feedback_unity_asset_edits]] — 직접 YAML 편집 금지).
