@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: FireballSkill
   m_EditorClassIdentifier: 
   displayName: Fireball
-  icon: {fileID: 1594028804, guid: 27181370ce6306644bf046b332fca129, type: 3}
+  icon: {fileID: -373119962, guid: 81fab9813c4b1524983127544d250f46, type: 3}
   skillType: 1
   baseDamage: 100
   baseCooldown: 0.5
@@ -27,3 +27,8 @@ MonoBehaviour:
   aoeAngle: 45
   aoeWidth: 2
   aoeFxPrefab: {fileID: 0}
+  projectileCount: 4
+  explosionRadius: 9
+  projectileRadius: 2
+  physToFireRatio: 0.6
+  projectileLessHitRatio: 0.6
