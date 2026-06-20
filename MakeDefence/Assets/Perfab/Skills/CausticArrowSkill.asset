@@ -23,7 +23,13 @@ MonoBehaviour:
   stunDuration: 0
   dotDuration: 5
   isDoTOnly: 1
+  damageNature: 4
   aoeShape: 0
   aoeAngle: 45
   aoeWidth: 2
   aoeFxPrefab: {fileID: 0}
+  projectileCount: 4
+  explosionRadius: 9
+  projectileRadius: 2
+  physToFireRatio: 0.6
+  projectileLessHitRatio: 0.6

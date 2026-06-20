@@ -11,6 +11,10 @@ public static class SkillDispatcher
             return;
         }
 
+        // Brutality Support — Physical 외 모든 데미지 타입 스킬 발사 차단
+        if (tower.IsBrutalityActive && skill.damageNature != SkillDamageNature.Physical)
+            return;
+
         switch (skill.skillType)
         {
             case SkillType.Fireball:
@@ -162,7 +166,8 @@ public static class SkillDispatcher
         float baseDmg  = tower.AttackDamage + skill.baseDamage;
         bool  isCrit   = Random.value < Mathf.Clamp01(tower.CritChance / 100f);
         float dmg      = isCrit ? baseDmg * (1f + tower.CritDamage / 100f) : baseDmg;
-        float fireFrac = Mathf.Clamp01(skill.physToFireRatio);
+        // Brutality 활성 시 Fire 변환 차단 → 전량 Physical
+        float fireFrac = tower.IsBrutalityActive ? 0f : Mathf.Clamp01(skill.physToFireRatio);
         float phys     = dmg * (1f - fireFrac);
         float fire     = dmg * fireFrac;
 

@@ -7,7 +7,9 @@ public enum SupportOptionType
     // 상태이상
     EmpAmplifier, CoolantDevice, CorrosiveRound, IncendiaryRound,
     // 특수
-    ChainCircuit, PiercingRound, EnergyDrain
+    ChainCircuit, PiercingRound, EnergyDrain,
+    // Restriction — Physical 증폭 대신 원소·카오스 차단
+    BrutalitySupport,
 }
 
 [CreateAssetMenu(fileName = "SupportOptionData", menuName = "MakeDefence/Support Option Data")]

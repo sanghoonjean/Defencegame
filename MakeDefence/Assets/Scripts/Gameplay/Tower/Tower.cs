@@ -40,6 +40,10 @@ public class Tower : MonoBehaviour
     public int   ChainCount       { get; private set; }
     public int   PierceCount      { get; private set; }
 
+    // Brutality Support — Physical 증폭 (More 곱연산) + 원소/카오스 차단 플래그
+    public float BrutalityMultiplier { get; private set; } = 1f;
+    public bool  IsBrutalityActive   { get; private set; }
+
     private float    _attackTimer;
     private float    _attackAnimSpeed = 1f;
     private Animator _animator;
@@ -120,6 +124,8 @@ public class Tower : MonoBehaviour
         DotDuration    = 0f;
         ChainCount     = 0;
         PierceCount    = 0;
+        BrutalityMultiplier = 1f;
+        IsBrutalityActive   = false;
 
         // 아이템 옵션 합산
         if (ItemSystem.Instance != null)
@@ -149,6 +155,16 @@ public class Tower : MonoBehaviour
         AttackCooldown = Mathf.Max(0.1f, AttackCooldown);
         AttackRange    = Mathf.Max(0.5f, AttackRange);
 
+        // Brutality Support — Physical More 증폭 + 원소/카오스 보조 옵션 효과 무효화
+        if (IsBrutalityActive)
+        {
+            AttackDamage  *= BrutalityMultiplier;
+            AddedFireRatio = 0f;
+            IgniteChance   = 0f;
+            DotDamageRatio = 0f;
+            DotDuration    = 0f;
+        }
+
         if (EquippedSkill != null)
         {
             float cdMult = 1f - Mathf.Clamp01(SkillCDReduce / 100f);
@@ -173,6 +189,10 @@ public class Tower : MonoBehaviour
                 break;
             case SupportOptionType.PiercingRound:
                 PierceCount += Mathf.Max(1, Mathf.RoundToInt(opt.value * 5));
+                break;
+            case SupportOptionType.BrutalitySupport:
+                BrutalityMultiplier *= 1f + Mathf.Clamp01(opt.value);
+                IsBrutalityActive   = true;
                 break;
         }
     }
