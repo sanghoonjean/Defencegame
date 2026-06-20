@@ -30,7 +30,7 @@ public class LightningArrowProjectile : ProjectileBase
 
             AddHitEnemy(e);
             e.TakeDamage(dmg, _armorPen, isCrit, DamageType.Lightning);
-            if (isCrit)
+            if (isCrit && e.CurrentHp > 0f)
                 e.ApplyStun(ShockDuration);
             ApplyFireOnHit(e, isCrit);
             ApplyDotOnHit(e);

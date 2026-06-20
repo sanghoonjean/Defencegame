@@ -188,7 +188,7 @@ public class ProjectileBase : MonoBehaviour
                 e.TakeDamage(splashDmg, _armorPen, isCrit, SplashDamageType);
                 if (SplashDamageType == DamageType.Fire)
                     TryIgnite(e, splashDmg);
-                if (StunChance > 0f && SplashStunDuration > 0f &&
+                if (e.CurrentHp > 0f && StunChance > 0f && SplashStunDuration > 0f &&
                     Random.value < Mathf.Clamp01(StunChance / 100f))
                     e.ApplyStun(SplashStunDuration);
                 ApplyFireOnHit(e, isCrit);

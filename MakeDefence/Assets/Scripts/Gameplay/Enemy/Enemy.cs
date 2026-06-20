@@ -55,6 +55,7 @@ public class Enemy : MonoBehaviour
         _waypoints = waypoints;
         _waypointIndex = 0;
         _playerDamage = data.playerDamage;
+        _stunTimer = 0f;
 
         if (_spriteRenderer != null) _spriteRenderer.flipX = false;
 
