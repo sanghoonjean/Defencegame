@@ -15,35 +15,54 @@ DroppedCubeSystem.HandleEnemyDied(enemy)
    │ 3) count 회 RollDropType() → DroppedCubePickup 스폰
    ▼
 DroppedCubePickup (씬에 존재)
-   - SpriteRenderer + 라벨 텍스트
-   - 스폰 이펙트 (scale 펀치 + bounce)
+   - Sorting Layer "Pickups" (Enemy/Tower 위)
+   - SpriteRenderer (단색 사각형)
+   - 자식: TextMesh (라벨)
+   - 자식: LightBeamSprite (위로 솟은 반투명 컬럼, Additive)
+   - 부유 + 알파 펄스
    - 카운트 미반영 (아직 안 주움)
+   ↓
+DroppedCubeSystem.PendingCounts[type]++
+   ↓ (OnPendingChanged 이벤트)
+PendingDropDisplay (HUD 상단)
+   - "수확 대기: Lower×3 Upper×1 ..."
 
 
 [웨이브 종료]
 WaveSystem.OnWaveEnded(cleared)
    │
    ├── cleared = true  → DroppedCubeSystem.CollectAll()
-   │       각 픽업 → HUD 도착 트윈 → CubeSystem.Add → 카운터 punch
+   │       각 픽업 → HUD 카운터로 호 이동 → CubeSystem.Add → punch
    │
    └── cleared = false → DroppedCubeSystem.DiscardAll()
            각 픽업 → 페이드 아웃 → Destroy (Add 없음)
+
+   양쪽 모두 종료 후 PendingCounts 리셋 → PendingDropDisplay 0 표시
 ```
+
+### 가시성 설계 (A + B + D)
+
+| 레이어 | 수단 | 효과 |
+|--------|------|------|
+| A | "Pickups" Sorting Layer (Enemy/Tower 위) | 같은 위치에서 깔리지 않음 |
+| B | 픽업 위로 솟은 빛기둥 (Additive 컬럼) | 다른 오브젝트에 본체가 가려져도 컬럼 끝이 화면 상부에 보임 |
+| D | `PendingDropDisplay` HUD 카운터 | 위치 못 봐도 수량은 항상 보임 (안전망) |
 
 ### 책임 분리
 
 | 클래스                 | 역할                                              |
 |------------------------|---------------------------------------------------|
 | `Enemy`                | 변경 없음. `OnEnemyDied` 이벤트만 발행            |
-| `CubeSystem`           | 카운트 보관 + 기존 웨이브-종료 일괄 드랍 그대로 유지 (변경 없음) |
-| `DroppedCubeSystem`    | **신규**. 픽업 생성/관리/수확/폐기                |
-| `DroppedCubePickup`    | **신규**. 씬에 떠 있는 단일 픽업 (스폰/이동/소멸) |
+| `CubeSystem`           | 카운트 보관 + 기존 웨이브-종료 일괄 드랍 그대로 유지 (가시성만 `internal` 노출) |
+| `DroppedCubeSystem`    | **신규**. 픽업 생성/관리/수확/폐기 + Pending 집계 + 이벤트 발행 |
+| `DroppedCubePickup`    | **신규**. 씬 픽업 (스프라이트 + 라벨 + 빛기둥 + 부유) |
 | `CubeUIDisplay`        | 수확 도착 좌표 제공 + 도착 시 punch (메서드 추가) |
+| `PendingDropDisplay`   | **신규**. 수확 대기 카운터 표시 (HUD 상단)        |
 | `WaveSystem`           | 변경 없음. 기존 `OnWaveEnded(bool)` 이벤트 재사용 |
 
 ### 좌표 변환
 
-- 픽업은 월드 공간 (`SpriteRenderer + TextMesh`) 으로 존재.
+- 픽업은 월드 공간 (`SpriteRenderer + TextMesh`).
 - HUD 카운터는 `Canvas` (Screen Space) 의 `Text` 컴포넌트.
 - 수확 시 `CubeUIDisplay.GetCounterWorldPoint(CubeType)` 가 카운터 `RectTransform` → 카메라 평면 월드 좌표를 반환.
 - 픽업이 그 월드 좌표로 호 그리며 이동 후 Destroy.
@@ -51,13 +70,14 @@ WaveSystem.OnWaveEnded(cleared)
 ## 2. 수정 파일
 
 - `MakeDefence/Assets/Scripts/Systems/CubeSystem.cs`
-  - **변경 없음** (기존 웨이브-종료 일괄 드랍 유지)
-  - 단, `RollDrop()` 메서드를 `internal` 또는 `public` 으로 노출해 `DroppedCubeSystem` 이 가중치 재사용 가능하도록 변경
+  - **로직 변경 없음** (기존 웨이브-종료 일괄 드랍 유지)
+  - `RollDrop()` 을 `internal` 로 노출해 `DroppedCubeSystem` 이 가중치 재사용
 - `MakeDefence/Assets/Scripts/UI/CubeUIDisplay.cs`
-  - 큐브 타입별 카운터의 월드 좌표를 반환하는 API 추가
-    - `public Vector3 GetCounterWorldPoint(CubeType, Camera)` — Canvas 좌표를 카메라 평면으로 변환
-  - 카운터 punch 애니메이션 (scale 1 → 1.3 → 1, 0.15s 코루틴)
-    - `public void PlayPunch(CubeType)`
+  - `public Vector3 GetCounterWorldPoint(CubeType, Camera)` — Canvas 좌표 → 카메라 평면 월드
+  - `public void PlayPunch(CubeType)` — 카운터 scale 1 → 1.3 → 1 (0.15s 코루틴)
+- `ProjectSettings/TagManager.asset`
+  - **신규 Sorting Layer "Pickups"** 추가 (Enemy/Tower 보다 상위 순서)
+  - **UnityMCP `manage_editor` 의 `add_sorting_layer` 액션 사용** (직접 YAML 편집 금지)
 
 ## 3. 신규 클래스 / 파일
 
@@ -65,6 +85,9 @@ WaveSystem.OnWaveEnded(cleared)
 
 ```
 - public static DroppedCubeSystem Instance
+- public static event Action OnPendingChanged
+- public IReadOnlyDictionary<CubeType, int> PendingCounts
+
 - [SerializeField] DroppedCubePickup pickupPrefab
 - [SerializeField] Grade별 dropChance/dropCount (10개 필드)
 - [SerializeField] float collectStaggerSec = 0.05f
@@ -72,73 +95,97 @@ WaveSystem.OnWaveEnded(cleared)
 - [SerializeField] float discardFadeDuration = 0.3f
 
 - 이벤트 구독: Enemy.OnEnemyDied, WaveSystem.OnWaveEnded
-- 활성 픽업 리스트 관리 (HashSet<DroppedCubePickup>)
+- 활성 픽업 리스트 (HashSet<DroppedCubePickup>) + Pending Dictionary
 - HandleEnemyDied(Enemy) → 확률 롤 → SpawnPickup(type, pos)
 - HandleWaveEnded(bool cleared) → CollectAll() or DiscardAll()
-- Register / Unregister Pickup (씬 정리용)
+- Register / Unregister Pickup
+- 양쪽 종료 후 Pending 리셋 + OnPendingChanged 발행
 ```
 
 ### `MakeDefence/Assets/Scripts/Gameplay/DroppedCubePickup.cs` (신규)
 
 ```
 - CubeType Type
-- SpriteRenderer (단색 사각형 + tint by type)
-- TextMesh / TextMeshPro (라벨)
+- SpriteRenderer body (단색 사각형, sortingLayer="Pickups")
+- TextMesh label (라벨)
+- SpriteRenderer beam (Additive 머티리얼, 위로 길쭉, sortingLayer="Pickups", 등급에 따라 굵기/알파 차등)
+
 - Initialize(CubeType, Vector2 worldPos)
-- PlaySpawnEffect() — scale 0→1.2→1 + y bounce, 0.25s 코루틴
+- PlaySpawnEffect() — scale 0→1.2→1 + y bounce, 0.25s
+- Update() — 부유 (sin wave y bob) + 알파 펄스
 - StartCollect(Vector3 targetWorldPos, float duration, Action onArrived) — 호 보간 후 콜백
 - StartDiscard(float fadeDuration) — alpha 1→0 후 Destroy
 - OnDestroy → DroppedCubeSystem.Unregister(this)
 ```
 
+### `MakeDefence/Assets/Scripts/UI/PendingDropDisplay.cs` (신규)
+
+```
+- [SerializeField] Text pendingText
+  (또는 큐브 타입별 5개 Text 필드)
+- OnEnable / OnDisable → DroppedCubeSystem.OnPendingChanged 구독
+- Refresh() → PendingCounts 읽어 "Lower×3 Upper×1 ..." 또는
+  타입별 카운터 갱신, 0인 타입은 숨김
+- 카운트 변화 시 미세 punch (선택)
+```
+
 ### `MakeDefence/Assets/Prefabs/DroppedCubePickup.prefab` (신규)
-- 루트: 빈 GameObject + `DroppedCubePickup` 컴포넌트
-- 자식: `SpriteRenderer` (Sprites/Default 흰 사각형 + scale 0.4)
-- 자식: `TextMesh` (3D Text, 라벨)
+- 루트: 빈 GameObject + `DroppedCubePickup`
+- 자식 `Body`: `SpriteRenderer` (Sprites/Default 흰 사각형 + scale 0.4 + sortingLayer="Pickups", sortingOrder=10)
+- 자식 `Label`: `TextMesh` (3D Text, 라벨, sortingOrder=11)
+- 자식 `Beam`: `SpriteRenderer` (Sprites/Default 흰 사각형 + Additive 머티리얼, scale x=0.06 y=4.0, pivot bottom, sortingOrder=9)
 - UnityMCP `manage_prefabs` 로 생성
 
-### 큐브 타입별 색 (1차)
-| Type     | Color (RGBA hex) |
-|----------|------------------|
-| Lower    | `#A0A0A0` 회색   |
-| Upper    | `#4A8BFF` 파랑   |
-| TopTier  | `#FFC93A` 금색   |
-| Delete   | `#E55050` 빨강   |
-| Clone    | `#B07FFF` 보라   |
+### 큐브 타입별 색 + 빛기둥 차등
+| Type     | Body (RGBA hex) | Beam Alpha | Beam Width |
+|----------|-----------------|------------|------------|
+| Lower    | `#A0A0A0` 회색  | 0.25       | 0.06       |
+| Upper    | `#4A8BFF` 파랑  | 0.35       | 0.07       |
+| TopTier  | `#FFC93A` 금색  | 0.55       | 0.10       |
+| Delete   | `#E55050` 빨강  | 0.35       | 0.07       |
+| Clone    | `#B07FFF` 보라  | 0.55       | 0.10       |
+
+희귀(TopTier/Clone) 일수록 굵고 진한 빛기둥 → 후반 노이즈 속에서도 도드라짐.
 
 ## 4. 테스트 계획
 
 ### 수동 검증 (Unity Play)
 
 #### 사망 시 픽업 생성
-1. Normal 적 다수 처치 → ~8% 비율로 픽업이 사망 위치에 등장
-2. Rare 적 처치 → ~40% 비율로 등장
+1. Normal 적 다수 처치 → ~8% 비율로 픽업 등장 + 빛기둥 보임
+2. Rare 적 처치 → ~40% 비율
 3. Unique 적 처치 → 매번 1개
 4. LastBoss 처치 → 매번 3개
 5. 베이스 도달 적 → 픽업 없음 (`PlayerSystem` 데미지만)
-6. 스폰 이펙트(scale punch + bounce) 정상 재생
+6. 스폰 이펙트(scale punch + bounce) + 부유/알파 펄스 정상 재생
+
+#### 가시성 (A+B+D)
+7. 픽업 위에 적/타워가 지나가도 본체 위에 그려짐 (Sorting Layer)
+8. 본체가 일시적으로 가려져도 빛기둥 끝이 화면 상부에 보임
+9. HUD `PendingDropDisplay` 가 픽업 생성/회수와 동기화되어 정확히 표시
 
 #### 웨이브 클리어 수확
-7. 픽업 다수 + 클리어 → 모든 픽업이 HUD 카운터로 이동
-8. 도착 순서대로 카운터 +1 + punch 애니메이션 stagger
-9. 클리어 후 씬에 픽업 잔존 0개
+10. 픽업 다수 + 클리어 → 모두 HUD 카운터로 이동, stagger 적용
+11. 도착 순서대로 `CubeSystem.Add` + `PlayPunch`
+12. 클리어 후 씬 픽업 0개, `PendingDropDisplay` 0 표시
 
 #### 웨이브 실패 폐기
-10. 픽업 다수 + 베이스 파괴 → 모든 픽업 페이드 아웃 후 사라짐
-11. 큐브 카운트 변화 없음 (기존 wave-end 일괄 드랍도 cleared=false 이므로 미발생)
+13. 픽업 다수 + 베이스 파괴 → 모두 페이드 아웃 후 사라짐
+14. 큐브 카운트 변화 없음, `PendingDropDisplay` 0 표시
 
 #### 통합 회귀
-12. 기존 `CubeSystem.HandleWaveEnded` 일괄 드랍이 클리어 시 정상 작동
-13. 씬 재시작 / 게임 종료 시 픽업 GameObject 잔존 없음
+15. 기존 `CubeSystem.HandleWaveEnded` 일괄 드랍이 클리어 시 정상 작동
+16. 씬 재시작 / 게임 종료 시 픽업 잔존 0
 
 ## 5. 위험 요소
 
-- **후반 인플레이션**: 다수 적 동시 사망 → 픽업 다수 → 클리어 시 큐브 폭주. Normal 8% 보수적 시작, 플레이테스트 후 조정.
-- **HUD 좌표 변환 정확도**: Canvas Render Mode(Overlay/Camera/World) 에 따라 변환 로직 다름.
-  - 현 프로젝트의 메인 HUD Canvas Render Mode 확인 후 `RectTransformUtility.ScreenPointToWorldPointInRectangle` 또는 `Camera.ScreenToWorldPoint` 분기 적용.
-- **씬 전환 시 픽업 누수**: `DontDestroyOnLoad` 미사용 가정. 씬 언로드 시 모두 같이 사라지므로 자연 정리됨. 단, 같은 씬에서 게임 재시작 시 `DroppedCubeSystem.Awake` 에서 활성 리스트 정리 필요.
+- **후반 인플레이션**: 다수 적 동시 사망 → 픽업 다수. Normal 8% 보수적 시작.
+- **빛기둥 노이즈**: 다수 픽업의 빛기둥이 동시에 깔리면 시야 방해. 등급별 알파/굵기 차등으로 완화. 그래도 부족하면 상한값 도입(예: 동시 25개 초과 시 가장 오래된 픽업의 빛기둥 알파 감소).
+- **HUD 좌표 변환**: Canvas Render Mode (Overlay/Camera/World) 에 따라 변환 로직 다름. 메인 HUD Canvas Mode 확인 후 `RectTransformUtility.ScreenPointToWorldPointInRectangle` 또는 `Camera.ScreenToWorldPoint` 분기.
+- **씬 전환 시 픽업 누수**: `DontDestroyOnLoad` 미사용 가정. 씬 언로드 시 자동 정리. 단, 같은 씬 재시작 시 `DroppedCubeSystem.Awake` 에서 활성 리스트 초기화 필요.
+- **Sorting Layer 추가**: `ProjectSettings/TagManager.asset` 변경은 UnityMCP `manage_editor` 의 sorting layer 액션으로 처리 (메모리 [[feedback_unity_asset_edits]] — 직접 YAML 편집 금지).
 - **카운터 punch 애니메이션 겹침**: stagger 로 완화 (`collectStaggerSec` 기본 50ms).
-- **픽업 다수 시 시각 노이즈**: 1차에는 픽업끼리 무작위 오프셋(±0.3 유닛) 적용. 향후 자동 정렬 필요할 수 있음.
-- **에셋 부재**: 큐브 타입별 아이콘 스프라이트 없음 → 단색 사각형 + 텍스트로 시작. 후속 이슈에서 아이콘 교체.
+- **`PendingDropDisplay` 위치**: 메인 HUD 의 `CubeUIDisplay` 와 가까운 별도 영역 권장 (수확 흐름이 시각적으로 연결되도록). 정확한 위치는 UnityMCP `manage_ui` 로 배치하며 결정.
+- **에셋 부재**: 큐브 타입별 아이콘 스프라이트 없음 → 1차는 단색 사각형 + 라벨 텍스트. 후속 이슈에서 아이콘 교체.
 - **테스트 자동화 부재**: 수동 Play 모드 검증에 의존.
-- **메모리 (Unity 에셋 편집은 UnityMCP)**: 프리팹/씬 생성·수정은 직접 YAML 편집 대신 `manage_prefabs` / `manage_scene` / `manage_components` 사용.
+- **메모리 (Unity 에셋 편집은 UnityMCP)**: 프리팹/씬/Sorting Layer 변경은 모두 UnityMCP 도구로.
