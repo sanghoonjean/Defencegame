@@ -202,13 +202,16 @@ public static class SkillDispatcher
             float   dist      = Random.Range(MinDist, MaxDist);
             Vector2 landPos   = hitPos + dir * dist;
 
+            // projectileLessHitRatio 는 hit + ailment 모두 less — DoT/ignite 도 동일 감폭
+            float lessRetain = 1f - Mathf.Clamp01(skill.projectileLessHitRatio);
+
             proj.ExplosionRadius     = skill.explosionRadius;
             proj.ProjectileRadius    = skill.projectileRadius;
             proj.BasePhysDamage      = phys;
             proj.BaseFireDamage      = fire;
             proj.ProjectileLessRatio = skill.projectileLessHitRatio;
             proj.IgniteChance        = tower.IgniteChance;
-            proj.DotTickDamage       = tower.AttackDamage * tower.DotDamageRatio;
+            proj.DotTickDamage       = tower.AttackDamage * tower.DotDamageRatio * lessRetain;
             proj.DotDuration         = tower.DotDuration;
             proj.LaunchArc(hitPos, landPos, tower.ArmorPen / 100f);
         }
