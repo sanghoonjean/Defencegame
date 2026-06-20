@@ -208,6 +208,8 @@ public static class SkillDispatcher
             proj.BaseFireDamage      = fire;
             proj.ProjectileLessRatio = skill.projectileLessHitRatio;
             proj.IgniteChance        = tower.IgniteChance;
+            proj.DotTickDamage       = tower.AttackDamage * tower.DotDamageRatio;
+            proj.DotDuration         = tower.DotDuration;
             proj.LaunchArc(hitPos, landPos, tower.ArmorPen / 100f);
         }
     }

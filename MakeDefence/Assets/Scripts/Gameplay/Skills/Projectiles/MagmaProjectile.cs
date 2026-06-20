@@ -71,6 +71,7 @@ public class MagmaProjectile : ProjectileBase
                 e.TakeDamage(fire, 0f, false, DamageType.Fire);
                 TryIgnite(e, fire);
             }
+            ApplyDotOnHit(e);
         }
 
         GameUIManager.ShowAoeHit(center, ExplosionRadius, _aoeFxPrefab);
