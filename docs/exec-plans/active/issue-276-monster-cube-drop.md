@@ -96,10 +96,33 @@ WaveSystem.OnWaveEnded(cleared)
 
 - 이벤트 구독: Enemy.OnEnemyDied, WaveSystem.OnWaveEnded
 - 활성 픽업 리스트 (HashSet<DroppedCubePickup>) + Pending Dictionary
-- HandleEnemyDied(Enemy) → 확률 롤 → SpawnPickup(type, pos)
-- HandleWaveEnded(bool cleared) → CollectAll() or DiscardAll()
-- Register / Unregister Pickup
-- 양쪽 종료 후 Pending 리셋 + OnPendingChanged 발행
+
+- HandleEnemyDied(Enemy enemy)
+   1) **가드**: WaveSystem.Instance == null || !WaveSystem.Instance.IsWaveActive 면 return
+      (#2 — 실패 후 잔여 적이 죽을 때 픽업 생성 차단)
+   2) Grade → (chance, count) 결정 + Random 롤
+   3) count 회: CubeSystem.RollDrop() → SpawnPickup(type, pos)
+   4) Pending++ → OnPendingChanged
+
+- HandleWaveEnded(bool cleared)
+   - cleared == true → CollectAll() (아래)
+   - cleared == false → DiscardAll() (아래)
+
+- CollectAll() — **데이터를 먼저 격리** (#3 — auto-wave 충돌 방지)
+   1) 현재 _activePickups / _pendingCounts 를 로컬 변수로 swap, 멤버는 새 빈 컬렉션
+   2) 즉시 CubeSystem.Add(type, count) 일괄 호출 (데이터 반영 완료)
+   3) OnPendingChanged 발행 (PendingDropDisplay 0 표시)
+   4) 로컬 픽업들에 StartCollect 호출 — 시각 효과만 진행, 활성 리스트 미참조
+   5) 각 픽업 도착 시 CubeUIDisplay.PlayPunch (시각 효과만, Add 는 이미 끝남)
+   6) 다음 웨이브가 즉시 시작되어도 새 픽업은 새 리스트에 누적 → 충돌 없음
+
+- DiscardAll()
+   1) 현재 _activePickups / _pendingCounts swap, 멤버는 새 빈 컬렉션
+   2) OnPendingChanged 발행
+   3) 로컬 픽업들에 StartDiscard 호출 → 페이드 아웃 후 Destroy
+   4) CubeSystem.Add 호출 없음
+
+- Register / Unregister Pickup (씬 정리용)
 ```
 
 ### `MakeDefence/Assets/Scripts/Gameplay/DroppedCubePickup.cs` (신규)
@@ -175,6 +198,25 @@ CubeType → 시각 스타일 매핑을 한 곳에서 관리. 향후 인벤/숍 
 희귀(TopTier/Clone) 일수록 굵고 진한 빛기둥 → 후반 노이즈 속에서도 도드라짐.
 테두리·배경·텍스트가 같은 컬러군 + 명도 차이로 한눈에 등급 식별.
 
+### 씬 / HUD 와이어링 (#1 — DroppedCubeSystem 씬 owner 필수)
+
+스크립트/프리팹만 만들면 작동하지 않으므로 아래 단계 반드시 포함:
+
+1. **`DroppedCubeSystem` 컴포넌트 부착**
+   - 기존 `CubeSystem` 이 붙은 부트 GameObject (SampleScene 의 `Systems` 류) 에 같이 부착
+   - UnityMCP `manage_components` 사용
+2. **`pickupPrefab` 참조 연결**
+   - 위 컴포넌트의 `pickupPrefab` SerializeField 를 `Assets/Prefabs/DroppedCubePickup.prefab` 으로 설정
+   - UnityMCP `manage_components` (component property 설정) 사용
+3. **`PendingDropDisplay` 부착**
+   - 메인 HUD Canvas 의 `CubeUIDisplay` 가 붙은 GameObject 옆 (혹은 신규 자식) 에 부착
+   - 내부 Text 참조도 같이 연결
+4. **Sorting Layer "Pickups" 등록 검증**
+   - 위 wiring 전에 `ProjectSettings/TagManager.asset` 의 sortingLayers 에 "Pickups" 존재 확인
+   - UnityMCP `manage_editor` sorting layer 액션
+
+이 단계가 빠지면 MonoBehaviour 의 `OnEnable` 이 호출되지 않아 `Enemy.OnEnemyDied` 구독이 안 되고 Play 모드에서 픽업이 단 한 개도 만들어지지 않음.
+
 ## 4. 테스트 계획
 
 ### 수동 검증 (Unity Play)
@@ -205,6 +247,12 @@ CubeType → 시각 스타일 매핑을 한 곳에서 관리. 향후 인벤/숍 
 15. 기존 `CubeSystem.HandleWaveEnded` 일괄 드랍이 클리어 시 정상 작동
 16. 씬 재시작 / 게임 종료 시 픽업 잔존 0
 
+#### 엣지 케이스 (Codex 리뷰 반영)
+17. **실패 후 잔여 적 처치 (Guard #2)**: 베이스 파괴 후 살아있는 적을 타워가 마저 죽임 → 신규 픽업 생성 안 됨, 다음 시도에 잔존 0
+18. **Auto-wave 충돌 (Isolation #3)**: 자동 웨이브 ON 상태에서 다수 픽업 보유 → 클리어 → 즉시 다음 웨이브 시작 → 이전 픽업의 시각 효과가 진행되는 와중에 새 적 처치 → 새 픽업이 **새 리스트/Pending 에만 쌓이고**, 이전 픽업 효과는 자기 트윈 끝까지 진행 후 destroy. PendingDropDisplay 카운트가 새 픽업만 반영
+19. **Auto-wave 클리어 데이터 반영**: 클리어 즉시 `CubeSystem` 카운트가 증가 (시각 효과 종료를 기다리지 않음)
+20. **씬 owner 누락 회귀 방지 (#1)**: `DroppedCubeSystem` 컴포넌트 미부착 상태로 Play → Editor 로그에 명확한 에러/경고 출력 (예: `Debug.LogError` 가드)
+
 ## 5. 위험 요소
 
 - **후반 인플레이션**: 다수 적 동시 사망 → 픽업 다수. Normal 8% 보수적 시작.
@@ -218,3 +266,6 @@ CubeType → 시각 스타일 매핑을 한 곳에서 관리. 향후 인벤/숍 
 - **에셋 부재**: 큐브 타입별 아이콘 스프라이트 없음 → 1차는 단색 사각형 + 라벨 텍스트. 후속 이슈에서 아이콘 교체.
 - **테스트 자동화 부재**: 수동 Play 모드 검증에 의존.
 - **메모리 (Unity 에셋 편집은 UnityMCP)**: 프리팹/씬/Sorting Layer 변경은 모두 UnityMCP 도구로.
+- **씬 owner 누락 (Codex #1)**: 스크립트만으로는 작동하지 않음. SampleScene 의 부트 GameObject 에 `DroppedCubeSystem` + `PendingDropDisplay` 컴포넌트 부착 단계가 필수 (구현 PR 본문에도 명시).
+- **실패 후 잔여 처치 (Codex #2)**: `WaveSystem.StopWave` 가 스폰만 멈추므로 `HandleEnemyDied` 첫 줄에 `IsWaveActive` 가드 필수. 누락 시 다음 시도에 픽업 잔존 가능.
+- **Auto-wave 데이터 오염 (Codex #3)**: `CollectAll`/`DiscardAll` 진입 시 `_activePickups` / `_pendingCounts` 를 즉시 로컬 swap. 시각 효과는 로컬 픽업에서 self-contained 로 진행, 새 웨이브는 새 멤버 컬렉션 사용 → WaveSystem 미변경으로도 격리 보장.
