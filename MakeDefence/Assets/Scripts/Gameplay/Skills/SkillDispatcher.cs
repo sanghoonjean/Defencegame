@@ -42,7 +42,7 @@ public static class SkillDispatcher
 
     private static void DirectAttack(Tower tower, Enemy target, bool applyFire = true)
     {
-        float dmg    = tower.AttackDamage;
+        float dmg    = tower.ScalePhysical(tower.AttackDamage);
         bool  isCrit = Random.value < Mathf.Clamp01(tower.CritChance / 100f);
         if (isCrit) dmg *= 1f + tower.CritDamage / 100f;
 
@@ -165,7 +165,8 @@ public static class SkillDispatcher
     private static void ExecuteMoltenStrike(Tower tower, Enemy target)
     {
         var   skill    = tower.EquippedSkill;
-        float baseDmg  = tower.AttackDamage + skill.baseDamage;
+        // Brutality 활성 시 phys 합산값 전체에 More 배율 적용 (tower base + skill base 모두 증폭)
+        float baseDmg  = tower.ScalePhysical(tower.AttackDamage + skill.baseDamage);
         bool  isCrit   = Random.value < Mathf.Clamp01(tower.CritChance / 100f);
         float dmg      = isCrit ? baseDmg * (1f + tower.CritDamage / 100f) : baseDmg;
         // Brutality 활성 시 Fire 변환 차단 → 전량 Physical

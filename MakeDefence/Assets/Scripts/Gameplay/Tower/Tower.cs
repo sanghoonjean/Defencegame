@@ -44,6 +44,10 @@ public class Tower : MonoBehaviour
     public float BrutalityMultiplier { get; private set; } = 1f;
     public bool  IsBrutalityActive   { get; private set; }
 
+    /// Physical 데미지에 Brutality More 배율을 적용. 비활성 시 원본 반환.
+    public float ScalePhysical(float dmg)
+        => IsBrutalityActive ? dmg * BrutalityMultiplier : dmg;
+
     private float    _attackTimer;
     private float    _attackAnimSpeed = 1f;
     private Animator _animator;
@@ -155,10 +159,10 @@ public class Tower : MonoBehaviour
         AttackCooldown = Mathf.Max(0.1f, AttackCooldown);
         AttackRange    = Mathf.Max(0.5f, AttackRange);
 
-        // Brutality Support — Physical More 증폭 + 원소/카오스 보조 옵션 효과 무효화
+        // Brutality Support — 원소/카오스 보조 옵션 효과 무효화
+        // Physical More 증폭은 SkillDispatcher 에서 phys 합산값 (tower base + skill base) 에 적용
         if (IsBrutalityActive)
         {
-            AttackDamage  *= BrutalityMultiplier;
             AddedFireRatio = 0f;
             IgniteChance   = 0f;
             DotDamageRatio = 0f;
