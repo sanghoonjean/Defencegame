@@ -74,6 +74,12 @@ MonoBehaviour:
     borderColor: {r: 0.69, g: 0.498, b: 1, a: 1}
     bgColor: {r: 0.239, g: 0.165, b: 0.376, a: 0.9}
     textColor: {r: 0.816, g: 0.663, b: 1, a: 1}
+  bodyPulse:
+    amplitude: 0.25
+    frequency: 1.5
+  beamPulse:
+    amplitude: 0.2
+    frequency: 2
   spawnEffectDuration: 0.25
   collectArcApexHeight: 1.5
 --- !u!1 &1409943648470721277

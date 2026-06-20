@@ -4,8 +4,8 @@ using UnityEngine;
 
 /// <summary>
 /// 사망 위치에 떠 있는 큐브 픽업 (수확 전 상태).
-/// 라벨 (테두리/배경/텍스트) 색은 인스펙터에서 등급별로 설정.
-/// Body/Beam 의 시각 표현 (색, 펄스 등) 은 별도 Animator 등으로 처리.
+/// 라벨 색은 등급별로 인스펙터에서 설정.
+/// Body/Beam 의 반짝임(알파 펄스)도 인스펙터 PulseStyle 로 조정.
 /// </summary>
 public class DroppedCubePickup : MonoBehaviour
 {
@@ -18,6 +18,17 @@ public class DroppedCubePickup : MonoBehaviour
         public Color borderColor;
         public Color bgColor;     // alpha 포함
         public Color textColor;
+    }
+
+    /// <summary>
+    /// 알파 펄스 (반짝임) 파라미터. amplitude=0 이면 비활성.
+    /// 최종 알파 = base * (1 + sin(2π·f·t) · amplitude), clamp01.
+    /// </summary>
+    [System.Serializable]
+    public struct PulseStyle
+    {
+        [Range(0f, 1f)] public float amplitude;  // 0~1 (0 = 비활성)
+        public float                 frequency;  // Hz
     }
 
     [Header("Renderers")]
@@ -54,6 +65,10 @@ public class DroppedCubePickup : MonoBehaviour
         textColor   = new Color(0.816f, 0.663f, 1.000f, 1f),
     };
 
+    [Header("Pulse (반짝임)")]
+    [SerializeField] private PulseStyle bodyPulse = new() { amplitude = 0.25f, frequency = 1.5f };
+    [SerializeField] private PulseStyle beamPulse = new() { amplitude = 0.20f, frequency = 2.0f };
+
     [Header("Spawn Effect")]
     [SerializeField] private float spawnEffectDuration = 0.25f;
 
@@ -65,6 +80,7 @@ public class DroppedCubePickup : MonoBehaviour
     private Vector3   _basePos;
     private bool      _movementLocked;
     private Coroutine _spawnCoroutine;
+    private float     _pulseStartTime;
     private float     _bodyBaseAlpha;
     private float     _beamBaseAlpha;
     private float     _labelBorderBaseAlpha;
@@ -93,7 +109,24 @@ public class DroppedCubePickup : MonoBehaviour
 
         _basePos = new Vector3(worldPos.x, worldPos.y, transform.position.z);
         transform.position = _basePos;
+        _pulseStartTime = Time.time;
         _spawnCoroutine = StartCoroutine(SpawnEffect());
+    }
+
+    private void Update()
+    {
+        if (_movementLocked) return;
+        float t = Time.time - _pulseStartTime;
+        if (body != null && bodyPulse.amplitude > 0f)
+        {
+            float m = 1f + Mathf.Sin(t * bodyPulse.frequency * Mathf.PI * 2f) * bodyPulse.amplitude;
+            var c = body.color; c.a = Mathf.Clamp01(_bodyBaseAlpha * m); body.color = c;
+        }
+        if (beam != null && beamPulse.amplitude > 0f)
+        {
+            float m = 1f + Mathf.Sin(t * beamPulse.frequency * Mathf.PI * 2f) * beamPulse.amplitude;
+            var c = beam.color; c.a = Mathf.Clamp01(_beamBaseAlpha * m); beam.color = c;
+        }
     }
 
     private LabelStyle GetStyle(CubeType type) => type switch
