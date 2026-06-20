@@ -1,5 +1,13 @@
 # Issue #264 — Molten Strike 공격 스킬 구현
 
+> **📝 정정 (Issue #111 — Brutality Support PR #273)**
+> 본 플랜의 §4 테스트 / §5 위험요소 / §6 참고 에 명시된 `damageNature = Fire`,
+> "Brutality + Molten Strike → 발사 차단" 결정은 **Issue #111 PR #273 에서 PoE 룰을 따라
+> Physical 베이스 + Brutality 호환** 으로 정정됩니다.
+> 이유: Path of Exile 에서 Molten Strike 는 Physical melee skill 이며 Brutality 와 호환됨이
+> 표준이고, 본 게임에서도 Brutality 의 즉시 데미지 경로 확보 차원에서 이 분류가 적절.
+> 동작: Brutality 활성 시 `physToFireRatio = 0` 강제 → fire conversion 차단 → 100% Physical 타격.
+
 ## 1. 시스템 구조
 
 Path of Exile의 **Molten Strike** 메커니즘 — 근접 1차 타격 + 4개 마그마 투사체 분산 발사 + 낙하 지점 폭발의 하이브리드 스킬.

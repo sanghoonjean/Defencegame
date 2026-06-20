@@ -12,6 +12,15 @@ public enum SkillType
     MoltenStrike   = 8,
 }
 
+public enum SkillDamageNature
+{
+    Physical,   // Brutality Support 호환
+    Fire,
+    Cold,
+    Lightning,
+    Chaos,      // Poison / DoT 계열
+}
+
 [CreateAssetMenu(fileName = "SkillData", menuName = "MakeDefence/Skill Data")]
 public class SkillData : ScriptableObject, IInventoryItem
 {
@@ -35,6 +44,10 @@ public class SkillData : ScriptableObject, IInventoryItem
 
     [Header("Support Restrictions")]
     public bool isDoTOnly;             // true → Added Fire Damage 미적용 (CausticArrow)
+
+    [Header("Damage Classification")]
+    [Tooltip("스킬의 베이스 데미지 분류. Brutality Support 는 Physical 만 허용.")]
+    public SkillDamageNature damageNature = SkillDamageNature.Physical;
 
     // FreezingPulse·LightningArrow 전용 — Fireball·CausticArrow는 항상 원형 스플래시 사용
     [Header("AoE Shape (FreezingPulse / LightningArrow 전용)")]

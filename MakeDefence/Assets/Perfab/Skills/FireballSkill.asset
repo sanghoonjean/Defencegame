@@ -23,6 +23,7 @@ MonoBehaviour:
   stunDuration: 0
   dotDuration: 0
   isDoTOnly: 0
+  damageNature: 1
   aoeShape: 0
   aoeAngle: 45
   aoeWidth: 2
