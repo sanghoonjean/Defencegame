@@ -61,6 +61,16 @@ MagmaProjectile : ProjectileBase  // 풀 호환을 위해 상속
 | `MakeDefence/Assets/Scripts/Gameplay/Skills/Projectiles/ProjectileBase.cs` | `Update()` `private` → `protected virtual`, `ReturnToPool()` `private` → `protected` (서브클래스의 자체 비행/풀 반환을 허용). 기존 파생 클래스 동작은 미변경 |
 | `MakeDefence/Assets/Scripts/TestRunner.cs` | `moltenStrikeSkill` 필드, "Molten Strike" 버튼 UI |
 
+### 신규 에셋 (UnityMCP)
+
+| 에셋 | 용도 |
+|------|------|
+| `MakeDefence/Assets/Prefabs/Projectiles/MagmaProjectile.prefab` | `MagmaProjectile` 컴포넌트 + Sprite 가진 풀링용 프리팹. **`ObjectPoolSystem.projectilePrefabs` 배열에 반드시 추가 등록** — `Awake` 가 이 배열만으로 `_projectilePrefabMap` 을 빌드하므로 미등록 시 `GetProjectile<MagmaProjectile>()` 가 `[ObjectPoolSystem] 프리팹 미등록` 로그와 함께 null 반환 |
+| `MakeDefence/Assets/Data/Skills/MoltenStrike.asset` | `SkillData` ScriptableObject. `skillType = MoltenStrike`, baseDamage=120, aoeRadius(근접 거리), explosionRadius=9, projectileRadius=2, projectileCount=4, physToFireRatio=0.6, projectileLessHitRatio=0.6 |
+
+> 두 에셋 모두 [[feedback_unity_asset_edits]] (AGENTS.md §7) 에 따라 UnityMCP 로 생성/편집한다.
+> 코드 측은 `proj == null` 가드로 프리팹 미등록 시 1차 타격만 발생하고 투사체 단계는 안전하게 스킵 (다른 스킬과 동일 패턴).
+
 ---
 
 ## 3. 신규 클래스 / 파일
@@ -141,6 +151,8 @@ public float projectileLessHitRatio = 0.6f;
 - [ ] `IncendiaryRound`(`AddedFireRatio`) 장착 시 추가 화염 합산 확인
 - [ ] `BrutalitySupport`([[issue-111-brutality-support]]) + Molten Strike → 발사 차단 (damageNature = Fire)
 - [ ] 4발/타격 × 다타워 환경에서 풀 고갈 / 프레임 드랍 없음 확인
+- [ ] `MagmaProjectile.prefab` 미등록 상태 → `GetProjectile` null 반환 시 1차 타격만 발생하고 콘솔 에러 1회 로깅, 게임 진행에 차단 없음 확인
+- [ ] `MagmaProjectile.prefab` 등록 후 → 4발 정상 발사 + 폭발 확인 (등록 전후 회귀 차이)
 
 ---
 
@@ -151,8 +163,9 @@ public float projectileLessHitRatio = 0.6f;
 | 낙하 타깃 결정 로직 | 4발 동일 지점 모이면 효과 약화 | 부채꼴 spread(±30°) + 거리 `Random.Range(minDist, maxDist)` |
 | `MagmaProjectile` 풀 호환 | `ObjectPoolSystem.GetProjectile<T>() where T : ProjectileBase` 제약 | `ProjectileBase` 상속 + `_launched`/`Update`/`ReturnToPool` 접근성 완화로 해결 (Codex P2 피드백 반영) |
 | `MagmaProjectile` 풀 압박 | 1 타격당 4발 → 다타워 환경에서 풀 고갈 | `ObjectPoolSystem` 초기 풀 사이즈 점검 / 부족 시 증설 |
-| 피해 표시 가시성 | PHY/FIRE 분리 표시 시 데미지 팝업 중복 | 1차 타격은 합산 단일 팝업, 폭발도 합산 단일 팝업 |
+| 피해 표시 가시성 | `Enemy.TakeDamage` 가 호출마다 `GameUIManager.ShowDamage` 를 호출하므로 PHY/FIRE 분리 호출 시 팝업이 분리 표시됨 | **본 이슈 범위에서는 분리 표시 허용** — 기존 `Fireball` + `IncendiaryRound` 조합도 동일 패턴 (본체 Fire 팝업 + Added Fire 팝업). 단일 합산 팝업이 필요하면 `Enemy.TakeDamageMulti(...)` 같은 별도 API 가 필요하므로 별도 이슈로 분리 |
 | `_aoeFxPrefab` 미연결 | 인스펙터 미연결 시 폭발 시각 없음 | null 가드 + `GameUIManager.ShowAoeHit` fallback |
+| `MagmaProjectile.prefab` 미등록 | `ObjectPoolSystem.projectilePrefabs` 누락 시 `GetProjectile<MagmaProjectile>()` null 반환 | 1) UnityMCP 로 프리팹 생성 후 인스펙터 배열 등록, 2) Dispatcher 의 `proj == null` 가드로 안전 폴백 (1차 타격만 발생) |
 | `BrutalitySupport` 호환 | `damageNature = Fire` 미설정 시 차단 누락 | `SkillData` 에셋에 `damageNature = Fire` 명시 (UnityMCP) |
 | 1차 phys/fire 전환 적용 누락 | Dispatcher는 합산, Projectile은 분할 시 비대칭 발생 | 양쪽 모두 `physToFireRatio` 동일 분할 |
 | ScriptableObject 에셋 (`MoltenStrike.asset`) | AGENTS.md §7 따라 [[feedback_unity_asset_edits]] | UnityMCP 로만 생성/편집, 코드는 enum/필드만 |
