@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: BrutalitySupport
   m_EditorClassIdentifier: 
   displayName: Brutality Support
-  icon: {fileID: 0}
+  icon: {fileID: -277952967, guid: dbf2a10e0e69a7d43b8f8aea06f522a6, type: 3}
   optionType: 13
   description: More 60% Physical Damage. Cannot Deal Elemental or Chaos Damage. Disables
     Added Fire / Ignite / DoT support options.
