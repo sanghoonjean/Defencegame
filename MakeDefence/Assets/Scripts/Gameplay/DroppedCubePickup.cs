@@ -4,10 +4,22 @@ using UnityEngine;
 
 /// <summary>
 /// 사망 위치에 떠 있는 큐브 픽업 (수확 전 상태).
-/// 스폰 이펙트 + 부유/펄스 + 클리어 수확 / 실패 폐기 시각 효과.
+/// 라벨 (테두리/배경/텍스트) 색은 인스펙터에서 등급별로 설정.
+/// Body/Beam 의 시각 표현 (색, 펄스 등) 은 별도 Animator 등으로 처리.
 /// </summary>
 public class DroppedCubePickup : MonoBehaviour
 {
+    /// <summary>
+    /// 등급별 라벨 색 묶음 (Inspector 에서 직접 조정).
+    /// </summary>
+    [System.Serializable]
+    public struct LabelStyle
+    {
+        public Color borderColor;
+        public Color bgColor;     // alpha 포함
+        public Color textColor;
+    }
+
     [Header("Renderers")]
     [SerializeField] private SpriteRenderer body;
     [SerializeField] private SpriteRenderer beam;
@@ -15,15 +27,35 @@ public class DroppedCubePickup : MonoBehaviour
     [SerializeField] private SpriteRenderer labelBg;
     [SerializeField] private TextMesh       labelText;
 
-    [Header("Idle Float")]
-    [SerializeField] private float bobAmplitude   = 0.08f;
-    [SerializeField] private float bobFrequency   = 1.5f;
-    [SerializeField] private float pulseAmplitude = 0.15f;
-    [SerializeField] private float pulseFrequency = 2.0f;
+    [Header("Label Style per Grade")]
+    [SerializeField] private LabelStyle lowerStyle   = new() {
+        borderColor = new Color(0.627f, 0.627f, 0.627f, 1f),
+        bgColor     = new Color(0.227f, 0.227f, 0.227f, 0.9f),
+        textColor   = new Color(0.878f, 0.878f, 0.878f, 1f),
+    };
+    [SerializeField] private LabelStyle upperStyle   = new() {
+        borderColor = new Color(0.290f, 0.545f, 1.000f, 1f),
+        bgColor     = new Color(0.102f, 0.188f, 0.376f, 0.9f),
+        textColor   = new Color(0.478f, 0.702f, 1.000f, 1f),
+    };
+    [SerializeField] private LabelStyle topTierStyle = new() {
+        borderColor = new Color(1.000f, 0.788f, 0.227f, 1f),
+        bgColor     = new Color(0.361f, 0.263f, 0.086f, 0.9f),
+        textColor   = new Color(1.000f, 0.847f, 0.435f, 1f),
+    };
+    [SerializeField] private LabelStyle deleteStyle  = new() {
+        borderColor = new Color(0.898f, 0.314f, 0.314f, 1f),
+        bgColor     = new Color(0.353f, 0.118f, 0.118f, 0.9f),
+        textColor   = new Color(1.000f, 0.522f, 0.522f, 1f),
+    };
+    [SerializeField] private LabelStyle cloneStyle   = new() {
+        borderColor = new Color(0.690f, 0.498f, 1.000f, 1f),
+        bgColor     = new Color(0.239f, 0.165f, 0.376f, 0.9f),
+        textColor   = new Color(0.816f, 0.663f, 1.000f, 1f),
+    };
 
     [Header("Spawn Effect")]
     [SerializeField] private float spawnEffectDuration = 0.25f;
-    [SerializeField] private float spawnBounceHeight   = 0.4f;
 
     [Header("Collect Arc")]
     [SerializeField] private float collectArcApexHeight = 1.5f;
@@ -31,46 +63,48 @@ public class DroppedCubePickup : MonoBehaviour
     public CubeType Type { get; private set; }
 
     private Vector3   _basePos;
-    private float     _spawnTime;
     private bool      _movementLocked;
     private Coroutine _spawnCoroutine;
-    private Color     _bodyBaseColor;
-    private Color     _beamBaseColor;
-    private Color     _labelBorderBaseColor;
-    private Color     _labelBgBaseColor;
-    private Color     _labelTextBaseColor;
+    private float     _bodyBaseAlpha;
+    private float     _beamBaseAlpha;
+    private float     _labelBorderBaseAlpha;
+    private float     _labelBgBaseAlpha;
+    private float     _labelTextBaseAlpha;
 
     public void Initialize(CubeType type, Vector2 worldPos)
     {
         Type = type;
-        var style = CubeStyleTable.Get(type);
-        _bodyBaseColor        = style.BodyColor;
-        _beamBaseColor        = style.BeamColor;
-        _labelBorderBaseColor = style.LabelBorderColor;
-        _labelBgBaseColor     = style.LabelBgColor;
-        _labelTextBaseColor   = style.LabelTextColor;
+        var style = GetStyle(type);
 
-        if (body != null) body.color = _bodyBaseColor;
-        if (beam != null)
-        {
-            beam.color = _beamBaseColor;
-            var s = beam.transform.localScale;
-            s.x = style.BeamWidth;
-            beam.transform.localScale = s;
-        }
-        if (labelBorder != null) labelBorder.color = _labelBorderBaseColor;
-        if (labelBg     != null) labelBg.color     = _labelBgBaseColor;
+        if (labelBorder != null) labelBorder.color = style.borderColor;
+        if (labelBg     != null) labelBg.color     = style.bgColor;
         if (labelText   != null)
         {
-            labelText.text  = style.DisplayName;
-            labelText.color = _labelTextBaseColor;
+            labelText.text  = CubeStyleTable.GetDisplayName(type);
+            labelText.color = style.textColor;
         }
+
+        // collect/discard 페이드에 곱할 기준 알파 캐싱
+        _bodyBaseAlpha        = body        != null ? body.color.a        : 0f;
+        _beamBaseAlpha        = beam        != null ? beam.color.a        : 0f;
+        _labelBorderBaseAlpha = labelBorder != null ? labelBorder.color.a : 0f;
+        _labelBgBaseAlpha     = labelBg     != null ? labelBg.color.a     : 0f;
+        _labelTextBaseAlpha   = labelText   != null ? labelText.color.a   : 0f;
 
         _basePos = new Vector3(worldPos.x, worldPos.y, transform.position.z);
         transform.position = _basePos;
-        _spawnTime = Time.time;
         _spawnCoroutine = StartCoroutine(SpawnEffect());
     }
+
+    private LabelStyle GetStyle(CubeType type) => type switch
+    {
+        CubeType.Lower   => lowerStyle,
+        CubeType.Upper   => upperStyle,
+        CubeType.TopTier => topTierStyle,
+        CubeType.Delete  => deleteStyle,
+        CubeType.Clone   => cloneStyle,
+        _                => lowerStyle,
+    };
 
     private IEnumerator SpawnEffect()
     {
@@ -84,35 +118,10 @@ public class DroppedCubePickup : MonoBehaviour
                 ? Mathf.Lerp(0f, 1.2f, k / 0.6f)
                 : Mathf.Lerp(1.2f, 1.0f, (k - 0.6f) / 0.4f);
             transform.localScale = new Vector3(s, s, 1f);
-            float yo = Mathf.Sin(k * Mathf.PI) * spawnBounceHeight;
-            transform.position = _basePos + Vector3.up * yo;
             yield return null;
         }
         transform.localScale = Vector3.one;
-        transform.position   = _basePos;
         _spawnCoroutine = null;
-    }
-
-    private void Update()
-    {
-        if (_movementLocked) return;
-        float t = Time.time - _spawnTime;
-        float yo = Mathf.Sin(t * bobFrequency * Mathf.PI * 2f) * bobAmplitude;
-        transform.position = _basePos + Vector3.up * yo;
-
-        float pulse = 1f + Mathf.Sin(t * pulseFrequency * Mathf.PI * 2f) * pulseAmplitude;
-        if (body != null)
-        {
-            var c = _bodyBaseColor;
-            c.a = Mathf.Clamp01(_bodyBaseColor.a * pulse);
-            body.color = c;
-        }
-        if (beam != null)
-        {
-            var c = _beamBaseColor;
-            c.a = Mathf.Clamp01(_beamBaseColor.a * pulse);
-            beam.color = c;
-        }
     }
 
     public void StartCollect(Vector3 targetWorldPos, float duration, Action onArrived)
@@ -155,13 +164,6 @@ public class DroppedCubePickup : MonoBehaviour
         StartCoroutine(DiscardRoutine(fadeDuration));
     }
 
-    private void StopSpawnIfRunning()
-    {
-        if (_spawnCoroutine == null) return;
-        StopCoroutine(_spawnCoroutine);
-        _spawnCoroutine = null;
-    }
-
     private IEnumerator DiscardRoutine(float duration)
     {
         float t = 0f;
@@ -175,27 +177,34 @@ public class DroppedCubePickup : MonoBehaviour
         Destroy(gameObject);
     }
 
+    private void StopSpawnIfRunning()
+    {
+        if (_spawnCoroutine == null) return;
+        StopCoroutine(_spawnCoroutine);
+        _spawnCoroutine = null;
+    }
+
     private void SetGroupAlpha(float a)
     {
         if (body != null)
         {
-            var c = body.color; c.a = _bodyBaseColor.a * a; body.color = c;
+            var c = body.color; c.a = _bodyBaseAlpha * a; body.color = c;
         }
         if (beam != null)
         {
-            var c = beam.color; c.a = _beamBaseColor.a * a; beam.color = c;
+            var c = beam.color; c.a = _beamBaseAlpha * a; beam.color = c;
         }
         if (labelBorder != null)
         {
-            var c = labelBorder.color; c.a = _labelBorderBaseColor.a * a; labelBorder.color = c;
+            var c = labelBorder.color; c.a = _labelBorderBaseAlpha * a; labelBorder.color = c;
         }
         if (labelBg != null)
         {
-            var c = labelBg.color; c.a = _labelBgBaseColor.a * a; labelBg.color = c;
+            var c = labelBg.color; c.a = _labelBgBaseAlpha * a; labelBg.color = c;
         }
         if (labelText != null)
         {
-            var c = labelText.color; c.a = _labelTextBaseColor.a * a; labelText.color = c;
+            var c = labelText.color; c.a = _labelTextBaseAlpha * a; labelText.color = c;
         }
     }
 
