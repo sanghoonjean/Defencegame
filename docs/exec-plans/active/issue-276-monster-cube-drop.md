@@ -106,14 +106,15 @@ WaveSystem.OnWaveEnded(cleared)
 
 ```
 - CubeType Type
-- SpriteRenderer body     (단색 사각형, sortingLayer="Pickups", order=10)
-- SpriteRenderer beam     (Additive 위로 길쭉, sortingLayer="Pickups", order=9, 등급별 굵기/알파)
-- SpriteRenderer labelBg  (어두운 톤 박스, sortingLayer="Pickups", order=11)
-- TextMesh       labelText (큐브 이름, sortingLayer="Pickups", order=12, 등급별 색)
+- SpriteRenderer body         (단색 사각형, sortingLayer="Pickups", order=10)
+- SpriteRenderer beam         (Additive 위로 길쭉, sortingLayer="Pickups", order=9, 등급별 굵기/알파)
+- SpriteRenderer labelBorder  (테두리 박스, sortingLayer="Pickups", order=11, 등급별 색)
+- SpriteRenderer labelBg      (어두운 톤 박스, sortingLayer="Pickups", order=12)
+- TextMesh       labelText    (큐브 이름, sortingLayer="Pickups", order=13, 등급별 색)
 
 - Initialize(CubeType, Vector2 worldPos)
    → CubeStyleTable.Get(type) 로 색/굵기 룩업
-   → body/beam/labelBg/labelText 색 일괄 세팅
+   → body/beam/labelBorder/labelBg/labelText 색 일괄 세팅
 - PlaySpawnEffect() — scale 0→1.2→1 + y bounce, 0.25s
 - Update() — 부유 (sin wave y bob) + 알파 펄스 (Body+Beam 만, Label 은 가독성 위해 고정)
 - StartCollect(Vector3 targetWorldPos, float duration, Action onArrived) — 호 보간 후 콜백
@@ -127,10 +128,11 @@ WaveSystem.OnWaveEnded(cleared)
 - public static class CubeStyleTable
 - public readonly struct CubeStyle {
       Color bodyColor;
-      Color beamColor;       // alpha 포함
+      Color beamColor;          // alpha 포함
       float beamWidth;
-      Color labelBgColor;    // alpha 포함
-      Color labelTextColor;
+      Color labelBorderColor;   // 채도 높음 (테두리)
+      Color labelBgColor;       // alpha 포함 (어두운 톤)
+      Color labelTextColor;     // 밝은 톤
   }
 - public static CubeStyle Get(CubeType type) — switch 로 5개 매핑 반환
 ```
@@ -150,26 +152,28 @@ CubeType → 시각 스타일 매핑을 한 곳에서 관리. 향후 인벤/숍 
 
 ### `MakeDefence/Assets/Prefabs/DroppedCubePickup.prefab` (신규)
 - 루트: 빈 GameObject + `DroppedCubePickup`
-- 자식 `Beam`:     `SpriteRenderer` (Sprites/Default + Additive 머티리얼, scale x=0.06 y=4.0, pivot bottom, sortingOrder=9)
-- 자식 `Body`:     `SpriteRenderer` (Sprites/Default 흰 사각형 + scale 0.4, sortingOrder=10)
-- 자식 `LabelBg`:  `SpriteRenderer` (Sprites/Default 흰 사각형 + scale x=0.7 y=0.18, sortingOrder=11)
-- 자식 `LabelText`: `TextMesh` (3D Text, Anchor=MiddleCenter, fontSize 24, characterSize 0.05, sortingOrder=12)
+- 자식 `Beam`:        `SpriteRenderer` (Sprites/Default + Additive 머티리얼, scale x=0.06 y=4.0, pivot bottom, sortingOrder=9)
+- 자식 `Body`:        `SpriteRenderer` (Sprites/Default 흰 사각형 + scale 0.4, sortingOrder=10)
+- 자식 `LabelBorder`: `SpriteRenderer` (Sprites/Default 흰 사각형 + scale x=0.75 y=0.22, sortingOrder=11)
+- 자식 `LabelBg`:     `SpriteRenderer` (Sprites/Default 흰 사각형 + scale x=0.70 y=0.18, sortingOrder=12)
+- 자식 `LabelText`:   `TextMesh` (3D Text, Anchor=MiddleCenter, fontSize 24, characterSize 0.05, sortingOrder=13)
 - UnityMCP `manage_prefabs` 로 생성
+- `LabelBorder` 와 `LabelBg` 의 scale 차이(0.05/0.04) 가 시각적 테두리 두께가 됨
 
 ### 큐브 타입(=등급) 별 색 테이블
 
-라벨 색까지 차등화하는 POE 룬 스타일. 배경은 채도 낮춘 어두운 톤(90% 알파), 텍스트는 같은 색의 밝은 톤.
+라벨에 카드 게임 스타일 3단 톤 적용: **테두리(채도↑) > 텍스트(밝음) > 배경(어두움)**.
 
-| Type     | Body Color    | Beam Color (a)        | Beam Width | LabelBg Color   | LabelText Color |
-|----------|---------------|------------------------|------------|------------------|------------------|
-| Lower    | `#A0A0A0`     | 회색 a=0.25            | 0.06       | `#3A3A3AE6`      | `#E0E0E0`        |
-| Upper    | `#4A8BFF`     | 파랑 a=0.35            | 0.07       | `#1A3060E6`      | `#7AB3FF`        |
-| TopTier  | `#FFC93A`     | 금색 a=0.55            | 0.10       | `#5C4316E6`      | `#FFD86F`        |
-| Delete   | `#E55050`     | 빨강 a=0.35            | 0.07       | `#5A1E1EE6`      | `#FF8585`        |
-| Clone    | `#B07FFF`     | 보라 a=0.55            | 0.10       | `#3D2A60E6`      | `#D0A9FF`        |
+| Type     | Body      | Beam (a)     | Beam Width | LabelBorder | LabelBg      | LabelText |
+|----------|-----------|--------------|------------|--------------|---------------|-----------|
+| Lower    | `#A0A0A0` | 회색 0.25    | 0.06       | `#A0A0A0`    | `#3A3A3AE6`   | `#E0E0E0` |
+| Upper    | `#4A8BFF` | 파랑 0.35    | 0.07       | `#4A8BFF`    | `#1A3060E6`   | `#7AB3FF` |
+| TopTier  | `#FFC93A` | 금색 0.55    | 0.10       | `#FFC93A`    | `#5C4316E6`   | `#FFD86F` |
+| Delete   | `#E55050` | 빨강 0.35    | 0.07       | `#E55050`    | `#5A1E1EE6`   | `#FF8585` |
+| Clone    | `#B07FFF` | 보라 0.55    | 0.10       | `#B07FFF`    | `#3D2A60E6`   | `#D0A9FF` |
 
 희귀(TopTier/Clone) 일수록 굵고 진한 빛기둥 → 후반 노이즈 속에서도 도드라짐.
-배경 + 글자가 같은 컬러군이라 한눈에 "어떤 등급인지" 식별 가능.
+테두리·배경·텍스트가 같은 컬러군 + 명도 차이로 한눈에 등급 식별.
 
 ## 4. 테스트 계획
 
