@@ -174,7 +174,8 @@ public static class SkillDispatcher
         }
         if (target.CurrentHp > 0f)
             ApplyFireDamage(tower, target, baseDmg, isCrit);
-        if (tower.StunChance > 0f && Random.value < Mathf.Clamp01(tower.StunChance / 100f))
+        if (target.CurrentHp > 0f && tower.StunChance > 0f &&
+            Random.value < Mathf.Clamp01(tower.StunChance / 100f))
             target.ApplyStun(0.5f);
 
         // 2차 마그마 투사체 — 부채꼴 spread + 거리 랜덤
