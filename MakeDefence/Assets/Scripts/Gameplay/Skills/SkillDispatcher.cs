@@ -25,6 +25,9 @@ public static class SkillDispatcher
             case SkillType.CausticArrow:
                 LaunchCausticArrow(tower, target);
                 break;
+            case SkillType.MoltenStrike:
+                ExecuteMoltenStrike(tower, target);
+                break;
             default:
                 DirectAttack(tower, target, applyFire: !skill.isDoTOnly);
                 break;
@@ -149,6 +152,80 @@ public static class SkillDispatcher
         proj.ChainCount         = tower.ChainCount;
         proj.PierceCount        = tower.PierceCount;
         proj.Launch(tower.transform.position, target, dmg, tower.ArmorPen / 100f);
+    }
+
+    private static void ExecuteMoltenStrike(Tower tower, Enemy target)
+    {
+        var   skill    = tower.EquippedSkill;
+        float baseDmg  = tower.AttackDamage + skill.baseDamage;
+        bool  isCrit   = Random.value < Mathf.Clamp01(tower.CritChance / 100f);
+        float dmg      = isCrit ? baseDmg * (1f + tower.CritDamage / 100f) : baseDmg;
+        float fireFrac = Mathf.Clamp01(skill.physToFireRatio);
+        float phys     = dmg * (1f - fireFrac);
+        float fire     = dmg * fireFrac;
+
+        // 1차 근접 타격 — PHY + 전환 FIRE + AddedFire
+        if (phys > 0f)
+            target.TakeDamage(phys, tower.ArmorPen / 100f, isCrit, DamageType.Physical);
+        if (fire > 0f && target.CurrentHp > 0f)
+        {
+            target.TakeDamage(fire, 0f, isCrit, DamageType.Fire);
+            TryIgniteStatic(tower, target, fire);
+        }
+        if (target.CurrentHp > 0f)
+            ApplyFireDamage(tower, target, baseDmg, isCrit);
+        if (target.CurrentHp > 0f && tower.StunChance > 0f &&
+            Random.value < Mathf.Clamp01(tower.StunChance / 100f))
+            target.ApplyStun(0.5f);
+
+        // 2차 마그마 투사체 — 부채꼴 spread + 거리 랜덤
+        int count = Mathf.Max(1, skill.projectileCount);
+        if (count <= 0) return;
+
+        Vector2 hitPos  = target.transform.position;
+        Vector2 forward = ((Vector2)target.transform.position - (Vector2)tower.transform.position).normalized;
+        if (forward.sqrMagnitude < 0.0001f) forward = Vector2.right;
+
+        const float SpreadDeg = 60f;          // 부채꼴 총 폭 (±30°)
+        const float MinDist   = 1.5f;
+        const float MaxDist   = 3.5f;
+        float baseAngle = Mathf.Atan2(forward.y, forward.x) * Mathf.Rad2Deg;
+
+        for (int i = 0; i < count; i++)
+        {
+            var proj = ObjectPoolSystem.Instance.GetProjectile<MagmaProjectile>();
+            if (proj == null) return;   // 프리팹 미등록 — 1차 타격만 발생하는 안전 폴백
+
+            float angleOffset = (count == 1) ? 0f
+                : SpreadDeg * ((float)i / (count - 1) - 0.5f);
+            float angleRad    = (baseAngle + angleOffset) * Mathf.Deg2Rad;
+            Vector2 dir       = new Vector2(Mathf.Cos(angleRad), Mathf.Sin(angleRad));
+            float   dist      = Random.Range(MinDist, MaxDist);
+            Vector2 landPos   = hitPos + dir * dist;
+
+            // projectileLessHitRatio 는 hit + ailment 모두 less — DoT/ignite 도 동일 감폭
+            float lessRetain = 1f - Mathf.Clamp01(skill.projectileLessHitRatio);
+
+            proj.ExplosionRadius     = skill.explosionRadius;
+            proj.ProjectileRadius    = skill.projectileRadius;
+            proj.BasePhysDamage      = phys;
+            proj.BaseFireDamage      = fire;
+            proj.ProjectileLessRatio = skill.projectileLessHitRatio;
+            proj.IgniteChance        = tower.IgniteChance;
+            proj.DotTickDamage       = tower.AttackDamage * tower.DotDamageRatio * lessRetain;
+            proj.DotDuration         = tower.DotDuration;
+            proj.LaunchArc(hitPos, landPos, tower.ArmorPen / 100f);
+        }
+    }
+
+    private static void TryIgniteStatic(Tower tower, Enemy target, float fireDmg)
+    {
+        if (tower.IgniteChance <= 0f) return;
+        if (target.CurrentHp <= 0f) return;
+        if (Random.value >= Mathf.Clamp01(tower.IgniteChance / 100f)) return;
+        const float igniteDamageRatio = 0.40f;
+        const float igniteDuration    = 4f;
+        target.ApplyBurning(fireDmg * igniteDamageRatio / igniteDuration, igniteDuration);
     }
 
     // DirectAttack 전용 — 프로젝타일 없이 즉시 타격하므로 여기서 직접 적용

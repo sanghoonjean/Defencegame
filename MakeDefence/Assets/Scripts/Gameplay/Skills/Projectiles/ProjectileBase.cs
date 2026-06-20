@@ -10,7 +10,7 @@ public class ProjectileBase : MonoBehaviour
     protected float _damage;
     protected float _armorPen;
     protected bool  _hitIsCrit;
-    private bool _launched;
+    protected bool _launched;
 
     public float StunChance         { get; set; }
     public float SplashRadius       { get; set; }
@@ -44,7 +44,7 @@ public class ProjectileBase : MonoBehaviour
         transform.rotation = Quaternion.Euler(0f, 0f, angle);
     }
 
-    private void Update()
+    protected virtual void Update()
     {
         if (!_launched) return;
 
@@ -196,7 +196,7 @@ public class ProjectileBase : MonoBehaviour
         }
     }
 
-    private void ReturnToPool()
+    protected void ReturnToPool()
     {
         _launched = false;
         _target   = null;
