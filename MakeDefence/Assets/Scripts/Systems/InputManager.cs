@@ -60,7 +60,11 @@ public class InputManager : MonoBehaviour
             var rift = hit.GetComponent<RiftGenerator>();
             if (rift != null && InventorySystem.Instance != null)
             {
-                InventorySystem.Instance.SelectRift(rift);
+                // 같은 균열을 다시 클릭하면 토글로 닫는다
+                if (InventorySystem.Instance.SelectedRift == rift)
+                    InventorySystem.Instance.Deselect();
+                else
+                    InventorySystem.Instance.SelectRift(rift);
                 return;
             }
         }
