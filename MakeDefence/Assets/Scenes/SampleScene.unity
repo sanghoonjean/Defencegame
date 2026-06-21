@@ -8500,7 +8500,8 @@ MonoBehaviour:
   collectStaggerSec: 0.05
   collectArcDuration: 0.5
   discardFadeDuration: 0.3
-  spawnPositionJitter: 0.3
+  spawnArrangementRadius: 0.5
+  spawnPositionJitter: 0.15
 --- !u!1 &263103155
 GameObject:
   m_ObjectHideFlags: 0
