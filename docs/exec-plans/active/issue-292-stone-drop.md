@@ -42,6 +42,7 @@ DroppedStoneSystem.DiscardAll()  ────── 패배 시 fade out 만 (인
 - **DroppedStoneSystem**: DroppedCubeSystem 과 동일 패턴의 컨트롤러. 등급별 확률/카운트 SerializeField, `_dropsBlocked` 가드, CollectAll/DiscardAll, OnPendingChanged 이벤트.
 - **DroppedStonePickup**: DroppedCubePickup 의 spawn pop / pulse / discard fade 만 차용. **수확 아크 애니메이션은 사용하지 않음** — 클리어 시 그 자리에서 fade out 하고 인벤에 즉시 +1. 수확 도착 좌표 계산 불필요.
 - **수확 시점**: 클리어 → 픽업 fade 시작과 동시에 `DimensionStoneInventory.Add(CreateRandom())` 1회 호출. 도착 좌표 / Camera 의존 제거.
+- **DimensionStoneInventoryView** (신규): 사용자 `Canvas/DimesionStoneInventoryUI` 안의 ScrollRect Content 에 부착. `DimensionStoneInventory.OnInventoryChanged` 구독 → 보유 차원석 1개당 슬롯 1개를 GridLayoutGroup 자식으로 인스턴스. 인벤이 늘면 슬롯도 추가, 줄면 비활성/Destroy. 슬롯 클릭 시 현재 선택된 RiftGenerator 의 슬롯에 장착(기존 RiftStoneSlot 동작 패턴).
 
 ### 데이터 흐름
 ```
@@ -82,11 +83,22 @@ Output
   - 보라 톤 placeholder color
   - Spawn pop (pop-in scale) + alpha pulse 만 사용. **수확 아크 미사용** — 그 자리에서 fade out 후 Destroy.
   - `StartCollectFade(duration)` / `StartDiscardFade(duration)` — 둘 다 같은 alpha fade. 차이는 인벤 추가 여부(시스템 측 책임).
+- `MakeDefence/Assets/Scripts/UI/DimensionStoneInventoryView.cs`
+  - SerializeField: `RectTransform slotContainer` (ScrollRect Content), `DimensionStoneSlot slotPrefab`
+  - OnEnable: DimensionStoneInventory.OnInventoryChanged 구독 + 즉시 Rebuild
+  - 인벤 슬롯 수만큼 자식 slot 인스턴스. 보유 차원석 1개와 1:1 매핑.
+- `MakeDefence/Assets/Scripts/UI/DimensionStoneSlot.cs`
+  - 1칸 슬롯. Image + Button + Bind(DimensionStone)
+  - 클릭 시 `InventorySystem.SelectedRift` 가 있으면 `rift.SetStone(stone)` + `DimensionStoneInventory.Remove(stone)`
 
 ### 신규 Unity 에셋 (UnityMCP)
 - `MakeDefence/Assets/Prefabs/DroppedStonePickup.prefab`
   - 최소 구성 — SpriteRenderer (sprite null, 보라 placeholder color) + DroppedStonePickup 컴포
   - **sprite 는 사용자가 인스펙터에서 직접 잡음**. 본 작업은 placeholder color 만.
+- `MakeDefence/Assets/Prefabs/UI/DimensionStoneSlot.prefab`
+  - RectTransform + CanvasRenderer + Image + Button + DimensionStoneSlot
+  - 보라 placeholder 색. sprite 는 사용자 설정.
+- SampleScene 의 `Canvas/DimesionStoneInventoryUI` 안 ScrollRect Content 에 `DimensionStoneInventoryView` 컴포 부착 + slotContainer/slotPrefab 연결
 
 ### 신규 EditMode 테스트 (AGENTS.md §8)
 - `MakeDefence/Assets/Tests/EditMode/Drop/DroppedStoneSystemTests.cs`
@@ -112,13 +124,15 @@ Output
 3. **DimensionStoneInventoryDropTests**
    - Add 호출 → Count 증가
    - OnInventoryChanged 이벤트 1회 발행
+   - Remove 후 Count 감소 + 이벤트 1회 발행
 
 ### 수동/PlayMode 검증
-- Normal 적 처치 시 차원석 픽업 거의 안 나옴 (0.5%) — 시각 확인
-- Unique 처치 시 픽업 자주 발생
-- 웨이브 클리어 시 수확 애니메이션 → DimesionStoneInventoryUI 카운트 증가
-- 웨이브 실패 시 폐기 fade
-- 균열 클릭 → 수확된 차원석을 슬롯에 장착 가능 (기존 RiftPanelToggle UI)
+- Normal 적 처치 시 차원석 픽업 가끔 등장 (8%) — 시각 확인
+- Unique 처치 시 픽업 항상 발생
+- 웨이브 클리어 시 픽업 fade out + 인벤 카운트 증가
+- 균열 클릭 → DimesionStoneInventoryUI 가 알파 1 로 표시되고 ScrollRect Content 에 슬롯이 늘어나 있음
+- 슬롯 클릭 → 차원석이 RiftGenerator 에 장착, 슬롯 사라짐
+- 웨이브 실패 시 폐기 fade — 인벤 추가 없음
 
 ## 5. 위험 요소
 
