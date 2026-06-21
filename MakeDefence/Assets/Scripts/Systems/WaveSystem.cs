@@ -9,8 +9,10 @@ public class WaveSystem : MonoBehaviour
 
     public static event Action<int> OnWaveStarted;
     public static event Action<bool> OnWaveEnded;  // true = 클리어
+    public static event Action<int> OnRiftRewardGranted;  // 균열 클리어 시 추가 큐브 수
 
     public bool IsWaveActive { get; private set; }
+    public bool IsRiftWaveActive { get; private set; }
     public int CurrentStage { get; private set; } = 1;
     public int UnlockedStage { get; private set; } = 1;
 
@@ -22,9 +24,13 @@ public class WaveSystem : MonoBehaviour
     [SerializeField] private EnemyData rareData;
     [SerializeField] private EnemyData uniqueData;
 
+    // 균열 클리어 시 보너스로 지급할 베이스 큐브 수 (잠정값)
+    [SerializeField] private int riftBaseRewardCubes = 3;
+
     private bool _autoWave;
     private int _aliveCount;
     private Coroutine _spawnCoroutine;
+    private RiftWaveModifiers _currentRiftMods = RiftWaveModifiers.Default;
 
     private void Awake()
     {
@@ -57,6 +63,8 @@ public class WaveSystem : MonoBehaviour
     {
         if (IsWaveActive) { Debug.Log("[WaveSystem] StartWave: already active"); return; }
         IsWaveActive = true;
+        IsRiftWaveActive = false;
+        _currentRiftMods = RiftWaveModifiers.Default;
 
         Debug.Log($"[WaveSystem] StartWave stage={CurrentStage}");
 
@@ -75,10 +83,41 @@ public class WaveSystem : MonoBehaviour
         OnWaveStarted?.Invoke(CurrentStage);
     }
 
+    /// <summary>
+    /// 균열 생성기에서 호출. 차원석 옵션이 적용된 강화 웨이브를 시작한다.
+    /// 일반 웨이브와 동시 활성 금지. 클리어 시에도 _autoWave 미연동(1회성).
+    /// </summary>
+    public bool StartRiftWave(RiftWaveModifiers modifiers)
+    {
+        if (IsWaveActive) { Debug.Log("[WaveSystem] StartRiftWave: already active"); return false; }
+        IsWaveActive = true;
+        IsRiftWaveActive = true;
+        _currentRiftMods = modifiers;
+
+        Debug.Log($"[WaveSystem] StartRiftWave stage={CurrentStage} hp={modifiers.HpMult:F2} extra={modifiers.ExtraCount} reward={modifiers.RewardCubeMult:F2}");
+
+        if (normalData == null) Debug.LogError("[WaveSystem] normalData is NULL");
+        if (magicData == null)  Debug.LogError("[WaveSystem] magicData is NULL");
+        if (rareData == null)   Debug.LogError("[WaveSystem] rareData is NULL");
+        if (uniqueData == null) Debug.LogError("[WaveSystem] uniqueData is NULL");
+
+        PlayerSystem.Instance.ResetHp();
+
+        var spawnList = BuildSpawnList(CurrentStage);
+        for (int i = 0; i < modifiers.ExtraCount; i++)
+            spawnList.Add(EnemyGrade.Normal);
+        _aliveCount = spawnList.Count;
+        _spawnCoroutine = StartCoroutine(SpawnEnemies(spawnList));
+
+        OnWaveStarted?.Invoke(CurrentStage);
+        return true;
+    }
+
     public void StopWave()
     {
         if (_spawnCoroutine != null) StopCoroutine(_spawnCoroutine);
         IsWaveActive = false;
+        IsRiftWaveActive = false;
     }
 
     private List<EnemyGrade> BuildSpawnList(int stage)
@@ -127,7 +166,7 @@ public class WaveSystem : MonoBehaviour
             var data = GetDataForGrade(grade);
             if (data == null) { Debug.LogError($"[WaveSystem] EnemyData null for grade={grade}"); yield break; }
             var enemy = ObjectPoolSystem.Instance.Get();
-            enemy.Initialize(data, CurrentStage, waypoints);
+            enemy.Initialize(data, CurrentStage, waypoints, _currentRiftMods);
             spawnedCount++;
             Debug.Log($"[WaveSystem] Spawned {spawnedCount}/{spawnList.Count} grade={grade}");
             yield return new WaitForSeconds(spawnInterval);
@@ -160,17 +199,25 @@ public class WaveSystem : MonoBehaviour
     private void EndWave()
     {
         if (GameStateSystem.Current != GameState.Playing) return;
+        bool wasRift = IsRiftWaveActive;
+        var riftMods = _currentRiftMods;
         IsWaveActive = false;
+        IsRiftWaveActive = false;
+        _currentRiftMods = RiftWaveModifiers.Default;
 
         bool cleared = PlayerSystem.Instance.CurrentHp > 0;
         if (cleared)
         {
-            if (CurrentStage == UnlockedStage && UnlockedStage < 16)
+            if (!wasRift && CurrentStage == UnlockedStage && UnlockedStage < 16)
                 UnlockedStage++;
+
+            if (wasRift)
+                GrantRiftReward(riftMods);
 
             OnWaveEnded?.Invoke(true);
 
-            if (_autoWave)
+            // 균열 웨이브는 1회성 — autoWave 무관하게 결과 화면 또는 일반 상태 복귀
+            if (!wasRift && _autoWave)
                 StartWave();
             else
                 GameStateSystem.SetState(GameState.WaveResult);
@@ -179,5 +226,15 @@ public class WaveSystem : MonoBehaviour
         {
             OnWaveEnded?.Invoke(false);
         }
+    }
+
+    private void GrantRiftReward(RiftWaveModifiers mods)
+    {
+        if (CubeSystem.Instance == null) return;
+        int reward = RiftRewardCalculator.CalculateCubeReward(riftBaseRewardCubes, mods.RewardCubeMult);
+        if (reward <= 0) return;
+        CubeSystem.Instance.Add(CubeType.Lower, reward);
+        OnRiftRewardGranted?.Invoke(reward);
+        Debug.Log($"[WaveSystem] 균열 보상 Lower 큐브 +{reward} (mult={mods.RewardCubeMult:F2})");
     }
 }

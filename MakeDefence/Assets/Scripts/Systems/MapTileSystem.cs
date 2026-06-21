@@ -16,6 +16,7 @@ public class MapTileSystem : MonoBehaviour
     [SerializeField] private Vector2 basePoint;
 
     private readonly Dictionary<Vector2Int, Tower> _placedTowers = new();
+    private readonly Dictionary<Vector2Int, RiftGenerator> _placedRifts = new();
 
     private void Awake()
     {
@@ -32,7 +33,9 @@ public class MapTileSystem : MonoBehaviour
 
     public bool CanPlaceTower(Vector2Int coord)
     {
-        return GetTileType(coord) == TileType.Buildable && !_placedTowers.ContainsKey(coord);
+        return GetTileType(coord) == TileType.Buildable
+            && !_placedTowers.ContainsKey(coord)
+            && !_placedRifts.ContainsKey(coord);
     }
 
     public bool PlaceTower(Vector2Int coord, Tower tower)
@@ -46,6 +49,28 @@ public class MapTileSystem : MonoBehaviour
     {
         _placedTowers.Remove(coord);
     }
+
+    public bool CanPlaceRift(Vector2Int coord)
+    {
+        return GetTileType(coord) == TileType.Buildable
+            && !_placedTowers.ContainsKey(coord)
+            && !_placedRifts.ContainsKey(coord);
+    }
+
+    public bool PlaceRift(Vector2Int coord, RiftGenerator rift)
+    {
+        if (!CanPlaceRift(coord)) return false;
+        _placedRifts[coord] = rift;
+        return true;
+    }
+
+    public void RemoveRift(Vector2Int coord)
+    {
+        _placedRifts.Remove(coord);
+    }
+
+    public RiftGenerator GetRiftAt(Vector2Int coord)
+        => _placedRifts.TryGetValue(coord, out var r) ? r : null;
 
     public Vector2[] GetWaypoints() => waypoints;
     public Vector2 GetSpawnPoint() => spawnPoint;

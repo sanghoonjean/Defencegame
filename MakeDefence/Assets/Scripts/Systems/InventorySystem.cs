@@ -10,21 +10,43 @@ public class InventorySystem : MonoBehaviour
     public static InventorySystem Instance { get; private set; }
 
     public static event Action<Tower> OnTowerSelected;
+    public static event Action<RiftGenerator> OnRiftSelected;
 
     public Tower SelectedTower { get; private set; }
+    public RiftGenerator SelectedRift { get; private set; }
 
     private void Awake() { Instance = this; }
 
     public void SelectTower(Tower tower)
     {
+        if (SelectedRift != null)
+        {
+            SelectedRift = null;
+            OnRiftSelected?.Invoke(null);
+        }
         SelectedTower = tower;
         OnTowerSelected?.Invoke(tower);
     }
 
+    public void SelectRift(RiftGenerator rift)
+    {
+        if (SelectedTower != null)
+        {
+            SelectedTower = null;
+            OnTowerSelected?.Invoke(null);
+        }
+        SelectedRift = rift;
+        OnRiftSelected?.Invoke(rift);
+    }
+
     public void Deselect()
     {
+        bool changedTower = SelectedTower != null;
+        bool changedRift  = SelectedRift  != null;
         SelectedTower = null;
-        OnTowerSelected?.Invoke(null);
+        SelectedRift  = null;
+        if (changedTower) OnTowerSelected?.Invoke(null);
+        if (changedRift)  OnRiftSelected?.Invoke(null);
     }
 
     /// <summary>

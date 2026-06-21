@@ -52,6 +52,48 @@ public class TestRunner : MonoBehaviour
             if (PlayerSystem.Instance != null) PlayerSystem.Instance.ResetHp();
             GameStateSystem.ResetToPlaying();
         }
+
+        // B: BuildMode 토글 (Tower ↔ Rift)
+        if (Input.GetKeyDown(KeyCode.B))
+        {
+            if (InputManager.Instance == null) return;
+            var next = InputManager.Instance.CurrentBuildMode == BuildMode.Tower
+                ? BuildMode.Rift : BuildMode.Tower;
+            InputManager.Instance.SetBuildMode(next);
+            Debug.Log($"[TestRunner] BuildMode → {next}");
+        }
+
+        // O: 선택된 Rift 에 인벤 첫 차원석 자동 장착 + OpenRift
+        if (Input.GetKeyDown(KeyCode.O))
+        {
+            var rift = InventorySystem.Instance?.SelectedRift;
+            if (rift == null) { Debug.Log("[TestRunner] O: SelectedRift 없음"); return; }
+            if (rift.LoadedStone == null && DimensionStoneInventory.Instance != null && DimensionStoneInventory.Instance.Count > 0)
+            {
+                var stone = DimensionStoneInventory.Instance.Stones[0];
+                DimensionStoneInventory.Instance.Remove(stone);
+                rift.SetStone(stone);
+                Debug.Log("[TestRunner] O: 차원석 자동 장착");
+            }
+            bool opened = rift.OpenRift();
+            Debug.Log($"[TestRunner] O: OpenRift → {opened}");
+        }
+
+        // 1~5: 선택된 Rift 에 큐브 적용
+        TryApplyCubeKey(KeyCode.Alpha1, CubeType.Lower);
+        TryApplyCubeKey(KeyCode.Alpha2, CubeType.Upper);
+        TryApplyCubeKey(KeyCode.Alpha3, CubeType.TopTier);
+        TryApplyCubeKey(KeyCode.Alpha4, CubeType.Delete);
+        TryApplyCubeKey(KeyCode.Alpha5, CubeType.Clone);
+    }
+
+    private void TryApplyCubeKey(KeyCode key, CubeType cube)
+    {
+        if (!Input.GetKeyDown(key)) return;
+        var rift = InventorySystem.Instance?.SelectedRift;
+        if (rift == null) return;
+        bool ok = rift.ApplyCube(cube);
+        Debug.Log($"[TestRunner] {cube} → {ok}");
     }
 
     private void OnGUI()

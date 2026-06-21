@@ -50,29 +50,32 @@ public class Enemy : MonoBehaviour
     }
 
     public void Initialize(EnemyData data, int stage, Vector2[] waypoints)
+        => Initialize(data, stage, waypoints, RiftWaveModifiers.Default);
+
+    public void Initialize(EnemyData data, int stage, Vector2[] waypoints, RiftWaveModifiers riftMods)
     {
         Grade = data.grade;
         _waypoints = waypoints;
         _waypointIndex = 0;
-        _playerDamage = data.playerDamage;
+        _playerDamage = Mathf.Max(1, Mathf.RoundToInt(data.playerDamage * riftMods.DamageMult));
         _stunTimer = 0f;
 
         if (_spriteRenderer != null) _spriteRenderer.flipX = false;
 
         if (data.fixedStats)
         {
-            CurrentHp = data.baseHp;
-            _defense = data.baseDefense;
-            _speed = data.baseSpeed;
+            CurrentHp = data.baseHp     * riftMods.HpMult;
+            _defense  = data.baseDefense * riftMods.DefenseMult;
+            _speed    = data.baseSpeed   * riftMods.SpeedMult;
         }
         else
         {
             float hpMult = 1f + stage * 0.05f;
             float defMult = 1f + stage * 0.05f;
             float speedMult = 1f + stage * 0.02f;
-            CurrentHp = Mathf.Floor(data.baseHp * hpMult);
-            _defense = Mathf.Floor(data.baseDefense * defMult);
-            _speed = data.baseSpeed * speedMult;
+            CurrentHp = Mathf.Floor(data.baseHp * hpMult * riftMods.HpMult);
+            _defense  = Mathf.Floor(data.baseDefense * defMult * riftMods.DefenseMult);
+            _speed    = data.baseSpeed * speedMult * riftMods.SpeedMult;
         }
         MaxHp = CurrentHp;
         _fireResistance      = Mathf.Clamp(data.fireResistance,      -1f, 0.9f);
