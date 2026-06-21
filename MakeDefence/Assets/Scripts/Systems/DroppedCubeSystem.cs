@@ -33,10 +33,11 @@ public class DroppedCubeSystem : MonoBehaviour
     [SerializeField] private int lastBossKillDropCount = 3;
 
     [Header("Effect Tuning")]
-    [SerializeField] private float collectStaggerSec   = 0.05f;
-    [SerializeField] private float collectArcDuration  = 0.5f;
-    [SerializeField] private float discardFadeDuration = 0.3f;
-    [SerializeField] private float spawnPositionJitter = 0.3f;
+    [SerializeField] private float collectStaggerSec    = 0.05f;
+    [SerializeField] private float collectArcDuration   = 0.5f;
+    [SerializeField] private float discardFadeDuration  = 0.3f;
+    [SerializeField] private float spawnArrangementRadius = 0.5f;  // count>1 일 때 원형 배치 반경
+    [SerializeField] private float spawnPositionJitter    = 0.15f; // 배치 후 추가 무작위 흔들림
 
     private readonly HashSet<DroppedCubePickup> _activePickups = new();
     private readonly Dictionary<CubeType, int>  _pendingCounts = new()
@@ -97,10 +98,18 @@ public class DroppedCubeSystem : MonoBehaviour
         if (UnityEngine.Random.value > chance) return;
 
         Vector2 deathPos = enemy.transform.position;
+        // 시작 각도를 무작위화 (다수 사망 시 패턴 겹침 방지)
+        float baseAngle = UnityEngine.Random.value * Mathf.PI * 2f;
         for (int i = 0; i < count; i++)
         {
-            Vector2 jitter = UnityEngine.Random.insideUnitCircle * spawnPositionJitter;
-            SpawnPickup(CubeSystem.Instance.RollDrop(), deathPos + jitter);
+            Vector2 offset = Vector2.zero;
+            if (count > 1)
+            {
+                float angle = baseAngle + (i / (float)count) * Mathf.PI * 2f;
+                offset = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * spawnArrangementRadius;
+            }
+            offset += UnityEngine.Random.insideUnitCircle * spawnPositionJitter;
+            SpawnPickup(CubeSystem.Instance.RollDrop(), deathPos + offset);
         }
     }
 
