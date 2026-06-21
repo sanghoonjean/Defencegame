@@ -24,7 +24,11 @@ public class DimensionStoneSlot : MonoBehaviour
 
     private void OnClick()
     {
-        if (_bound == null) return;
+        // 클릭한 stone 을 local 로 캐싱 — Add/Remove 가 OnInventoryChanged 를 발행하면
+        // DimensionStoneInventoryView.Rebuild 가 같은 슬롯에 다른 stone 을 Bind 할 수 있어
+        // _bound 가 바뀐 채로 SetStone 이 잘못된 stone 을 장착하는 race 회피 (Codex P1).
+        var clicked = _bound;
+        if (clicked == null) return;
         var rift = InventorySystem.Instance?.SelectedRift;
         if (rift == null) return;
         if (DimensionStoneInventory.Instance == null) return;
@@ -35,7 +39,7 @@ public class DimensionStoneSlot : MonoBehaviour
             DimensionStoneInventory.Instance.Add(rift.LoadedStone);
             rift.ClearStone();
         }
-        DimensionStoneInventory.Instance.Remove(_bound);
-        rift.SetStone(_bound);
+        DimensionStoneInventory.Instance.Remove(clicked);
+        rift.SetStone(clicked);
     }
 }
