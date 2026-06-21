@@ -1,10 +1,12 @@
 # Issue #292 — 차원석 드랍 시스템 (적 처치 시 일정 확률)
 
 ## 결정 사항
-- **트리거**: 적 처치 시 일정 확률 드랍 — `DroppedCubeSystem` / `DroppedCubePickup` 패턴 그대로 재사용
-- **수확**: 웨이브 클리어 시 일괄 → `DimensionStoneInventory.Add(DimensionStone.CreateRandom())`. 패배 시 폐기.
-- **잠정 확률**: Normal 0.5% / Magic 2% / Rare 5% / Unique 20% / LastBoss 100% (Inspector 튜닝)
-- **드랍 수**: 등급별 default 1 (LastBoss 2)
+- **트리거 A — 적 처치 시 확률 드랍**: Lower 큐브 (= 기존 `DroppedCubeSystem` 의 등급별 드랍 확률) 와 동일
+  - Normal 8% / Magic 20% / Rare 40% / Unique 100% / LastBoss 100%
+  - 드랍 수: 등급별 default 1 (LastBoss 2)
+- **트리거 B — 웨이브 클리어 시 보장 1개**: 위 확률 드랍과 별개로 클리어 시 무조건 차원석 1개 인벤 추가
+- **수확**: 적 사망으로 생긴 픽업은 웨이브 클리어 시 일괄 → `DimensionStoneInventory.Add(DimensionStone.CreateRandom())`. 패배 시 폐기.
+- **클리어 보장 1개의 시각 처리**: pickup spawn 없이 `OnWaveEnded(true)` 시점에 직접 `Add(CreateRandom())` — 큐브 보너스(`RiftRewardCalculator` 가 부여하는 Lower 보너스) 와 동일한 모델.
 
 ## 1. 시스템 구조
 
@@ -32,7 +34,8 @@
   │ WaveSystem.OnWaveEnded(true)                  │
   ▼                                               │
 DroppedStoneSystem.CollectAll() ────── 각 픽업 → DimensionStoneInventory.Add(CreateRandom())
-DroppedStoneSystem.DiscardAll()  ────── 패배 시 폐기
+                                + GrantClearBonus() — 무조건 1개 추가
+DroppedStoneSystem.DiscardAll()  ────── 패배 시 폐기 (보장 1개도 없음)
 ```
 
 ### 컴포넌트 역할
@@ -99,10 +102,14 @@ Output
 
 ### EditMode 자동 테스트 (필수)
 1. **DroppedStoneSystemTests**
-   - `RollDrop(EnemyGrade.Normal)` → 잠정 (0.005, 1)
-   - 동일 패턴 Magic/Rare/Unique/LastBoss
+   - `GetGradeDrop(EnemyGrade.Normal)` → (0.08, 1)
+   - 동일 패턴 Magic(0.20)/Rare(0.40)/Unique(1.0)/LastBoss(1.0, 2)
    - Inspector 값을 reflection 으로 set 한 후 분기 검증 (또는 ctor injection)
-2. **DimensionStoneInventoryDropTests**
+   - 시드 고정 후 100회 시뮬레이션 분포가 잠정값 ±tolerance 안인지
+2. **클리어 보장 1개**
+   - `GrantClearBonus()` 호출 → DimensionStoneInventory.Count 가 1 증가
+   - 패배 경로(`DiscardAll`)에선 보장 미발급
+3. **DimensionStoneInventoryDropTests**
    - Add 호출 → Count 증가
    - OnInventoryChanged 이벤트 1회 발행
 
