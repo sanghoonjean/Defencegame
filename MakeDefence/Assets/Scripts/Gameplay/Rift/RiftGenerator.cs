@@ -35,43 +35,54 @@ public class RiftGenerator : MonoBehaviour
     }
 
     /// <summary>
-    /// 큐브로 현재 장착된 차원석의 옵션을 조작. ItemSystem.ApplyCube 와 동일 패턴.
+    /// 큐브로 현재 장착된 차원석의 옵션을 조작.
+    /// 큐브 소비 전에 가능 여부를 사전 검증해, 거부된 액션이 큐브를 잃거나
+    /// 차원석을 부분 변경하지 않도록 한다 (#286 PR 코드 리뷰 반영).
     /// </summary>
     public bool ApplyCube(CubeType cube)
     {
         if (LoadedStone == null) return false;
+        if (CubeSystem.Instance == null) return false;
+        if (!CanApply(cube)) return false;
+        if (CubeSystem.Instance.GetCount(cube) <= 0) return false;
 
-        bool success = cube switch
+        if (!CubeSystem.Instance.TryConsume(cube, 1)) return false;
+
+        bool success;
+        switch (cube)
         {
-            CubeType.Lower   => TryConsume(CubeType.Lower,   1, () => { LoadedStone.Reroll(); return true; }),
-            CubeType.Upper   => TryConsume(CubeType.Upper,   1, () => LoadedStone.AddRandomOption()),
-            CubeType.TopTier => TryConsume(CubeType.TopTier, 1, () => LoadedStone.RemoveRandomOption() && LoadedStone.UpgradeRandomOption()),
-            CubeType.Delete  => TryConsume(CubeType.Delete,  1, () => LoadedStone.RemoveRandomOption()),
-            CubeType.Clone   => ApplyClone(),
-            _                => false,
-        };
+            case CubeType.Lower:   LoadedStone.Reroll(); success = true; break;
+            case CubeType.Upper:   success = LoadedStone.AddRandomOption(); break;
+            case CubeType.TopTier: success = LoadedStone.RemoveRandomOption() && LoadedStone.UpgradeRandomOption(); break;
+            case CubeType.Delete:  success = LoadedStone.RemoveRandomOption(); break;
+            case CubeType.Clone:   DimensionStoneInventory.Instance.Add(LoadedStone.Clone()); success = true; break;
+            default:               success = false; break;
+        }
 
         if (success) OnStoneChanged?.Invoke();
         return success;
     }
 
-    private bool TryConsume(CubeType type, int amount, Func<bool> action)
-    {
-        if (CubeSystem.Instance == null) return false;
-        if (!CubeSystem.Instance.TryConsume(type, amount)) return false;
-        return action();
-    }
-
     /// <summary>
-    /// Clone — 현재 차원석을 복제해 인벤토리에 추가.
+    /// 큐브 종류별 적용 가능 여부 사전 검증. 큐브 소비 전에 호출.
+    /// - Lower: Reroll 은 항상 가능
+    /// - Upper: 옵션이 MaxOptions 미만일 때
+    /// - TopTier: Remove + Upgrade 둘 다 성공해야 하므로 ≥3
+    /// - Delete: 최소 1개는 남겨야 하므로 ≥2
+    /// - Clone: 인벤토리 존재
     /// </summary>
-    private bool ApplyClone()
+    private bool CanApply(CubeType cube)
     {
         if (LoadedStone == null) return false;
-        if (CubeSystem.Instance == null || DimensionStoneInventory.Instance == null) return false;
-        if (!CubeSystem.Instance.TryConsume(CubeType.Clone, 1)) return false;
-        DimensionStoneInventory.Instance.Add(LoadedStone.Clone());
-        return true;
+        return cube switch
+        {
+            CubeType.Lower   => true,
+            CubeType.Upper   => LoadedStone.Options.Count < DimensionStone.MaxOptions,
+            CubeType.TopTier => LoadedStone.Options.Count >= 3,
+            CubeType.Delete  => LoadedStone.Options.Count >= 2,
+            CubeType.Clone   => DimensionStoneInventory.Instance != null,
+            _                => false,
+        };
     }
 
     /// <summary>
