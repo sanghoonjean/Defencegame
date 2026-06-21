@@ -67,7 +67,7 @@ public class DimensionStone
 
     public bool UpgradeRandomOption()
     {
-        if (_options.Count <= 1) return false;
+        if (_options.Count == 0) return false;
         int idx = Random.Range(0, _options.Count);
         var old = _options[idx];
         var (_, max) = Ranges[old.Type];

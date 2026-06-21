@@ -53,7 +53,9 @@ public class RiftGenerator : MonoBehaviour
         {
             case CubeType.Lower:   LoadedStone.Reroll(); success = true; break;
             case CubeType.Upper:   success = LoadedStone.AddRandomOption(); break;
-            case CubeType.TopTier: success = LoadedStone.RemoveRandomOption() && LoadedStone.UpgradeRandomOption(); break;
+            // TopTier: AGENTS.md — 옵션 1개를 "상위 옵션으로 교체". 옵션 수는 유지.
+            // in-place 업그레이드로 의미를 살린다 (#286 PR 리뷰 반영).
+            case CubeType.TopTier: success = LoadedStone.UpgradeRandomOption(); break;
             case CubeType.Delete:  success = LoadedStone.RemoveRandomOption(); break;
             case CubeType.Clone:   DimensionStoneInventory.Instance.Add(LoadedStone.Clone()); success = true; break;
             default:               success = false; break;
@@ -78,7 +80,8 @@ public class RiftGenerator : MonoBehaviour
         {
             CubeType.Lower   => true,
             CubeType.Upper   => LoadedStone.Options.Count < DimensionStone.MaxOptions,
-            CubeType.TopTier => LoadedStone.Options.Count >= 3,
+            // TopTier 는 in-place 업그레이드. UpgradeRandomOption 가드(>= 1)와 일치.
+            CubeType.TopTier => LoadedStone.Options.Count >= 1,
             CubeType.Delete  => LoadedStone.Options.Count >= 2,
             CubeType.Clone   => DimensionStoneInventory.Instance != null,
             _                => false,
@@ -93,6 +96,12 @@ public class RiftGenerator : MonoBehaviour
         if (LoadedStone == null) { Debug.Log("[RiftGenerator] 차원석 미장착"); return false; }
         if (WaveSystem.Instance == null) return false;
         if (WaveSystem.Instance.IsWaveActive) { Debug.Log("[RiftGenerator] 웨이브 진행 중 — 균열 개방 불가"); return false; }
+        // WaveResult/Defeat 등 비-Playing 상태에서 개방하면 EndWave 가 조기 return 되어 IsWaveActive 가 stuck.
+        if (GameStateSystem.Current != GameState.Playing)
+        {
+            Debug.Log($"[RiftGenerator] GameState={GameStateSystem.Current} — Playing 아니면 개방 불가");
+            return false;
+        }
 
         var mods = RiftWaveModifiers.FromOptions(LoadedStone.Options);
         bool started = WaveSystem.Instance.StartRiftWave(mods);
