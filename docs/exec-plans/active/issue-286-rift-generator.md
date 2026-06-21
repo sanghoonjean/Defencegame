@@ -145,6 +145,22 @@ SpawnEnemies(list + extraCount) → Enemy.Initialize(data, stage, waypoints, mod
 - `MakeDefence/Assets/Scripts/UI/BuildModeToggleButton.cs` (또는 기존 HUD 에 토글 추가)
   - Tower 배치 / Rift 배치 모드 전환
 
+### 신규 EditMode 테스트 (AGENTS.md §8 — 순수 C# 로직 자동 테스트 필수)
+- `MakeDefence/Assets/Tests/EditMode/MakeDefence.Tests.EditMode.asmdef` (디렉터리/asmdef 신규)
+  - `nunit.framework`, `UnityEngine.TestRunner`, `UnityEditor.TestRunner` 참조
+- `MakeDefence/Assets/Tests/EditMode/Rift/DimensionStoneTests.cs`
+  - `CreateRandom` 후 Options.Count == 1
+  - `AddRandomOption` 을 반복 호출하면 **5회까지 성공, 6번째 호출에서 false** 이고 Options.Count == MaxOptions (== 6)
+  - `RemoveRandomOption` 마지막 1개에서는 false
+  - `UpgradeRandomOption` 값이 1.5배 (Ranges.max clamp)
+  - `Clone` 후 옵션 동일성
+- `MakeDefence/Assets/Tests/EditMode/Rift/RiftWaveModifiersTests.cs`
+  - `Default` 값: HpMult/DefenseMult/SpeedMult/DamageMult == 1f, ExtraCount == 0, RewardCubeMult == 1f
+  - `FromOptions` 가 각 옵션 타입을 의도한 필드에 곱연산/가산으로 누적
+  - 빈 옵션 리스트 → `Default` 와 동일
+- `MakeDefence/Assets/Tests/EditMode/Rift/RiftRewardCalculatorTests.cs`
+  - 보상 큐브 수 = `baseReward * RewardCubeMult` 의 라운딩/Clamp 동작
+
 ### 신규 Unity 에셋 (UnityMCP 로 작성)
 - `MakeDefence/Assets/Prefabs/RiftGenerator.prefab` — RiftGenerator 컴포넌트 + SpriteRenderer + Collider2D 부착
 - `MakeDefence/Assets/Prefabs/UI/RiftGeneratorPanel.prefab` — 패널 UI
@@ -155,30 +171,46 @@ SpawnEnemies(list + extraCount) → Enemy.Initialize(data, stage, waypoints, mod
 
 ## 4. 테스트 계획
 
-### 단위 검증 (PlayMode 테스트 또는 수동)
-1. **DimensionStone 옵션 CRUD**
-   - `CreateRandom` 후 Options.Count == 1
-   - `AddRandomOption` 6회까지 성공, 7번째 false
-   - `RemoveRandomOption` 마지막 1개는 false
-   - `UpgradeRandomOption` 값이 1.5배 (max clamp) 적용
-   - `Clone` 후 옵션 동일
-2. **RiftGeneratorPlacer 설치**
-   - Buildable 타일에 Lower 큐브 충분 → 설치 성공, 큐브 N개 소비, MapTileSystem 등록
+AGENTS.md §8 정책에 따라 **순수 C# 로직은 EditMode 테스트로 자동화**, `MonoBehaviour`/씬/UI 의존 시나리오는 수동 검증으로 분리한다.
+
+### EditMode 자동 테스트 (필수)
+대상은 `MonoBehaviour` 의존이 없는 순수 로직만.
+
+1. **DimensionStone 옵션 CRUD** (`DimensionStoneTests.cs`)
+   - `CreateRandom` 후 `Options.Count == 1`
+   - `AddRandomOption` 반복 호출 — **5회까지 true, 6번째 false** (CreateRandom 으로 이미 1개 존재 + `MaxOptions == 6`)
+   - `AddRandomOption` 종료 후 `Options.Count == 6` 이고 옵션 타입 중복 없음
+   - `RemoveRandomOption` 마지막 1개에서는 false (최소 1개 보장)
+   - `UpgradeRandomOption` 후 선택 옵션 값이 1.5배 (해당 Ranges.max 로 clamp)
+   - `Clone` 후 옵션 리스트 deep copy 동일
+2. **RiftWaveModifiers 변환** (`RiftWaveModifiersTests.cs`)
+   - `Default` — HpMult/DefenseMult/SpeedMult/DamageMult == 1f, ExtraCount == 0, RewardCubeMult == 1f
+   - `FromOptions` — 각 옵션 타입이 의도한 필드에 곱연산(HpMult 등) / 가산(ExtraCount) 으로 누적
+   - 빈 옵션 리스트 → `Default` 와 동일
+3. **보상 계산** (`RiftRewardCalculatorTests.cs`)
+   - 보상 큐브 수 = `baseReward * RewardCubeMult` 라운딩/Clamp 동작 (음수/0 입력 가드 포함)
+
+### 수동/PlayMode 검증 (MonoBehaviour·씬 의존)
+4. **RiftGeneratorPlacer 설치**
+   - Buildable 타일 + Lower 큐브 충분 → 설치 성공, 큐브 N개 소비, MapTileSystem 등록
    - 이미 Tower 또는 다른 Rift 가 있는 타일 → 설치 실패
    - Path / Decoration 타일 → 설치 실패
-   - 큐브 부족 → 설치 실패, 차원석 변경 없음
-3. **RiftGenerator 큐브 적용**
+   - 큐브 부족 → 설치 실패, 차원석/큐브 변경 없음
+5. **RiftGenerator 큐브 적용 (UI 흐름)**
    - Lower → Reroll, Upper → 옵션 추가, TopTier → 삭제+업그레이드, Delete → 삭제, Clone → 복제
-4. **선택 상호 배타**
-   - Rift 선택 시 Tower 선택 해제, 그 반대도
-5. **균열 개방 → 강화 스폰**
-   - HP Boost +30% 옵션 → 적 MaxHp 가 (baseHp * stageMult * 1.3)
-   - MonsterCountBoost +5 → 스폰 적 수가 base + 5
+   - (각 옵션 변경 후 패널 옵션 리스트가 갱신되는지)
+6. **선택 상호 배타**
+   - Rift 선택 시 Tower 선택 해제 및 패널 닫힘, 그 반대도 동일
+7. **균열 개방 → 강화 스폰 (런타임 통합)**
+   - HP Boost +30% 옵션 → 첫 적 MaxHp ≈ `baseHp * stageMult * 1.3` (디버그 로그)
+   - MonsterCountBoost +5 → 스폰 적 수 = base + 5
    - 이미 일반 웨이브 진행 중이면 OpenRift 실패
-6. **보상**
-   - RewardCubeBoost +20% → 웨이브 클리어 후 보너스 큐브 지급
-7. **타워 삭제 패턴 비교 (Rift 도 삭제 가능)**
-   - 본 이슈 범위는 삭제 없음(추후). 단, Scene 종료/씬 전환 시 MapTileSystem 잔존 등록이 없는지 OnDestroy 검증.
+8. **보상 지급**
+   - RewardCubeBoost +20% → 클리어 후 보너스 큐브 지급 (CubeSystem 카운트 증가 확인)
+9. **씬 정리**
+   - Scene 종료/씬 전환 시 RiftGenerator `OnDestroy` 에서 MapTileSystem `_placedRifts` 가 비워지는지
+
+### 수동 검증 체크리스트
 
 ### 수동 검증 체크리스트
 - [ ] SampleScene 에서 Rift 배치 모드 토글이 동작
