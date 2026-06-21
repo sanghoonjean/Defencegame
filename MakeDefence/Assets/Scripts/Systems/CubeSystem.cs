@@ -10,16 +10,12 @@ public class CubeSystem : MonoBehaviour
 
     public static event Action<CubeType, int> OnCubeChanged;
 
-    // 드롭 가중치 (tech-debt: 수치 미확정 — Inspector에서 조정)
+    // 드롭 가중치 (DroppedCubeSystem 의 픽업 큐브 타입 결정에 사용)
     [SerializeField] private int lowerWeight  = 50;
     [SerializeField] private int upperWeight  = 25;
     [SerializeField] private int topTierWeight = 10;
     [SerializeField] private int deleteWeight  = 10;
     [SerializeField] private int cloneWeight   = 5;
-
-    // 웨이브당 드롭 수 범위
-    [SerializeField] private int dropMin = 3;
-    [SerializeField] private int dropMax = 6;
 
     [SerializeField] private int initialLowerCubes = 5;
 
@@ -42,16 +38,6 @@ public class CubeSystem : MonoBehaviour
         }
     }
 
-    private void OnEnable()
-    {
-        WaveSystem.OnWaveEnded += HandleWaveEnded;
-    }
-
-    private void OnDisable()
-    {
-        WaveSystem.OnWaveEnded -= HandleWaveEnded;
-    }
-
     public int GetCount(CubeType type) => _counts[type];
 
     public bool TryConsume(CubeType type, int amount)
@@ -68,13 +54,6 @@ public class CubeSystem : MonoBehaviour
         OnCubeChanged?.Invoke(type, _counts[type]);
     }
 
-    public void DropReward(int stage)
-    {
-        int count = UnityEngine.Random.Range(dropMin, dropMax + 1);
-        for (int i = 0; i < count; i++)
-            Add(RollDrop(), 1);
-    }
-
     internal CubeType RollDrop()
     {
         int total = lowerWeight + upperWeight + topTierWeight + deleteWeight + cloneWeight;
@@ -88,11 +67,5 @@ public class CubeSystem : MonoBehaviour
         roll -= topTierWeight;
         if (roll < deleteWeight)                 return CubeType.Delete;
         return CubeType.Clone;
-    }
-
-    private void HandleWaveEnded(bool cleared)
-    {
-        if (!cleared) return;
-        DropReward(WaveSystem.Instance.CurrentStage);
     }
 }
