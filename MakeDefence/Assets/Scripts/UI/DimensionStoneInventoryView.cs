@@ -55,17 +55,11 @@ public class DimensionStoneInventoryView : MonoBehaviour
             _slots.Add(slot);
         }
 
+        // 빈 슬롯도 visible 로 유지 (InvenUI 패턴) — Bind 가 색/활성으로 채움/빈 표현
         for (int i = 0; i < _slots.Count; i++)
         {
-            if (i < count)
-            {
-                _slots[i].gameObject.SetActive(true);
-                _slots[i].Bind(inv.Stones[i]);
-            }
-            else
-            {
-                _slots[i].gameObject.SetActive(false);
-            }
+            _slots[i].gameObject.SetActive(true);
+            _slots[i].Bind(i < count ? inv.Stones[i] : null);
         }
     }
 }
