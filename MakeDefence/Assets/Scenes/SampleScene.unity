@@ -14142,6 +14142,8 @@ MonoBehaviour:
   riftPrefab: {fileID: 5003431815228374936, guid: 260e80f2317b4f042bfad642e92504aa,
     type: 3}
   placementCostLower: 10
+  autoPlaceOnStart: 1
+  autoPlaceCoord: {x: 3, y: 1}
 --- !u!4 &741511769
 Transform:
   m_ObjectHideFlags: 0
@@ -23321,7 +23323,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 1}
   m_AnchorMax: {x: 0.5, y: 1}
-  m_AnchoredPosition: {x: 0, y: -120}
+  m_AnchoredPosition: {x: -660, y: -158}
   m_SizeDelta: {x: 600, y: 40}
   m_Pivot: {x: 0.5, y: 1}
 --- !u!114 &2035325812
