@@ -52,12 +52,33 @@ MonoBehaviour:
   labelBorder: {fileID: 2593382845186501269}
   labelBg: {fileID: 3508074773867449178}
   labelText: {fileID: 6072659655598604834}
-  bobAmplitude: 0
-  bobFrequency: 1.5
-  pulseAmplitude: 0.15
-  pulseFrequency: 2
+  lowerStyle:
+    borderColor: {r: 0.627, g: 0.627, b: 0.627, a: 1}
+    bgColor: {r: 0.227, g: 0.227, b: 0.227, a: 0.9}
+    textColor: {r: 0.878, g: 0.878, b: 0.878, a: 1}
+  upperStyle:
+    borderColor: {r: 0.29, g: 0.545, b: 1, a: 1}
+    bgColor: {r: 0.102, g: 0.188, b: 0.376, a: 0.9}
+    textColor: {r: 0.478, g: 0.702, b: 1, a: 1}
+  topTierStyle:
+    borderColor: {r: 1, g: 0.788, b: 0.227, a: 1}
+    bgColor: {r: 0.361, g: 0.263, b: 0.086, a: 0.9}
+    textColor: {r: 1, g: 0.847, b: 0.435, a: 1}
+  deleteStyle:
+    borderColor: {r: 0.898, g: 0.314, b: 0.314, a: 1}
+    bgColor: {r: 0.353, g: 0.118, b: 0.118, a: 0.9}
+    textColor: {r: 1, g: 0.522, b: 0.522, a: 1}
+  cloneStyle:
+    borderColor: {r: 0.69, g: 0.498, b: 1, a: 1}
+    bgColor: {r: 0.239, g: 0.165, b: 0.376, a: 0.9}
+    textColor: {r: 0.816, g: 0.663, b: 1, a: 1}
+  bodyPulse:
+    amplitude: 0.25
+    frequency: 1.5
+  beamPulse:
+    amplitude: 0.2
+    frequency: 2
   spawnEffectDuration: 0.25
-  spawnBounceHeight: 0.4
   collectArcApexHeight: 1.5
 --- !u!1 &1409943648470721277
 GameObject:
