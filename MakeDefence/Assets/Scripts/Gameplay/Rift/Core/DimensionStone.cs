@@ -65,10 +65,33 @@ public class DimensionStone
         return true;
     }
 
+    /// <summary>
+    /// 옵션 중 아직 max 에 도달하지 않은 항목 인덱스만 모은다.
+    /// CanUpgrade / UpgradeRandomOption 공통 헬퍼.
+    /// </summary>
+    private List<int> GetUpgradeableIndices()
+    {
+        var result = new List<int>();
+        for (int i = 0; i < _options.Count; i++)
+        {
+            var (_, max) = Ranges[_options[i].Type];
+            if (_options[i].Value < max) result.Add(i);
+        }
+        return result;
+    }
+
+    /// <summary>업그레이드 가능한 옵션이 하나라도 있으면 true.</summary>
+    public bool CanUpgrade() => GetUpgradeableIndices().Count > 0;
+
+    /// <summary>
+    /// 업그레이드 가능한 옵션 중 하나를 골라 1.5배 (max clamp).
+    /// 전부 max 도달이거나 옵션이 없으면 false — 큐브 환불 트리거.
+    /// </summary>
     public bool UpgradeRandomOption()
     {
-        if (_options.Count == 0) return false;
-        int idx = Random.Range(0, _options.Count);
+        var upgradeable = GetUpgradeableIndices();
+        if (upgradeable.Count == 0) return false;
+        int idx = upgradeable[Random.Range(0, upgradeable.Count)];
         var old = _options[idx];
         var (_, max) = Ranges[old.Type];
         float upgraded = Mathf.Min(old.Value * 1.5f, max);

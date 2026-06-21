@@ -71,6 +71,26 @@ public class DimensionStoneTests
     }
 
     [Test]
+    public void CanUpgrade_TrueWhenAnyOptionBelowMax()
+    {
+        var stone = DimensionStone.CreateRandom();
+        // 초기 옵션은 5~30 범위에서 라운딩되므로 거의 항상 max(30) 미만
+        Assert.IsTrue(stone.CanUpgrade(), "초기 옵션은 보통 max 미만");
+    }
+
+    [Test]
+    public void UpgradeRandomOption_AllAtMax_ReturnsFalse()
+    {
+        var stone = DimensionStone.CreateRandom();
+        // 1개 옵션을 반복 업그레이드 → 5*1.5^n 으로 빠르게 max(30) 도달
+        for (int i = 0; i < 20 && stone.CanUpgrade(); i++)
+            Assert.IsTrue(stone.UpgradeRandomOption());
+
+        Assert.IsFalse(stone.CanUpgrade(), "max 도달 후 CanUpgrade false");
+        Assert.IsFalse(stone.UpgradeRandomOption(), "max 도달 후 UpgradeRandomOption false (큐브 환불 트리거)");
+    }
+
+    [Test]
     public void Clone_ProducesEqualOptionsButIndependentList()
     {
         var stone = DimensionStone.CreateRandom();

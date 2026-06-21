@@ -80,8 +80,8 @@ public class RiftGenerator : MonoBehaviour
         {
             CubeType.Lower   => true,
             CubeType.Upper   => LoadedStone.Options.Count < DimensionStone.MaxOptions,
-            // TopTier 는 in-place 업그레이드. UpgradeRandomOption 가드(>= 1)와 일치.
-            CubeType.TopTier => LoadedStone.Options.Count >= 1,
+            // TopTier — upgradeable 옵션이 있어야만. (모두 max 도달이면 큐브 손실 방지)
+            CubeType.TopTier => LoadedStone.CanUpgrade(),
             CubeType.Delete  => LoadedStone.Options.Count >= 2,
             CubeType.Clone   => DimensionStoneInventory.Instance != null,
             _                => false,
