@@ -4,6 +4,15 @@ using UnityEngine;
 
 public class DimensionStoneTests
 {
+    // UnityEngine.Random.Range(min, max) 의 float overload 는 max inclusive 이므로
+    // 라운딩 후 max 값이 나올 수 있어 CanUpgrade 등이 비결정적이 된다.
+    // 매 테스트 전에 시드를 고정해 EditMode 결과를 결정적으로 만든다 (#286 PR 리뷰).
+    [SetUp]
+    public void SetUpSeed()
+    {
+        Random.InitState(42);
+    }
+
     [Test]
     public void CreateRandom_StartsWithOneOption()
     {
