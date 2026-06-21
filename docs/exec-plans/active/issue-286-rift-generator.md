@@ -1,66 +1,118 @@
 # Issue #286 — 균열 생성기 + 차원석 시스템 추가
 
+## 결정 사항
+- **균열 생성기 접근 방식**: 맵 타일에 설치하는 오브젝트 (Tower 와 동일하게 Buildable 타일에 설치)
+- **차원석 옵션 enum**: `ItemOptionType` 과 분리 (`DimensionStoneOptionType` 신규 enum)
+
 ## 1. 시스템 구조
 
-신규 시스템은 기존 웨이브 / 큐브 / 아이템 시스템 위에 얇은 레이어를 얹는 형태로 구성한다.
+신규 시스템은 기존 웨이브 / 큐브 / 타일 / 아이템 / 선택 시스템 위에 얇은 레이어를 얹는 형태로 구성한다.
+`Tower` 와 동일한 배치 플로우(`TowerPlacer` 패턴)를 따른다.
 
 ```
-┌────────────────────────────┐    consume    ┌──────────────────────┐
-│   RiftGenerator (신규)     │ ─────────────▶│  WaveSystem (수정)   │
-│  - DimensionStone 슬롯     │   StoneStats  │  - StartRiftWave()   │
-│  - 큐브로 옵션 조작        │               │  - 옵션 보정 spawn   │
-└──────────────┬─────────────┘               └──────────┬───────────┘
-               │                                        │
-               │ 큐브 소모/획득                         │ 적 스폰 (강화)
-               ▼                                        ▼
-        ┌───────────────┐                       ┌─────────────────┐
-        │  CubeSystem   │                       │  EnemyData 보정 │
-        │  (기존)       │                       │  (런타임 인자)  │
-        └───────────────┘                       └─────────────────┘
+[Buildable 타일 클릭]                ┌────────────────────┐
+        │                            │  InventorySystem    │
+        ▼                            │  - SelectedTower    │
+┌───────────────────┐                │  - SelectedRift     │ (신규 필드)
+│ InputManager      │ ─ 선택 분기 ─▶│                     │
+│  - 배치 모드?     │                └─────────┬───────────┘
+│  - 어떤 placer ?  │                          │
+└────────┬──────────┘                          │
+         │                                     │ OnRiftSelected
+         ▼                                     ▼
+┌────────────────────┐               ┌──────────────────────┐
+│ TowerPlacer        │  vs           │ RiftGeneratorPlacer  │ (신규)
+│ (기존)             │               │ - Lower N 큐브 소비  │
+└────────────────────┘               └──────────┬───────────┘
+                                                │ Instantiate
+                                                ▼
+                              ┌──────────────────────────────┐
+                              │   RiftGenerator (신규 컴포)   │
+                              │  - DimensionStone 슬롯       │
+                              │  - 큐브 적용 API             │
+                              │  - OpenRift()                │
+                              │  - 클릭 → SelectRift()       │
+                              └──────────┬───────────────────┘
+                                         │ consume
+                                         ▼
+                              ┌──────────────────────────────┐
+                              │   WaveSystem 확장            │
+                              │  StartRiftWave(modifiers)    │
+                              └──────────┬───────────────────┘
+                                         │ Enemy.Initialize(..., modifiers)
+                                         ▼
+                              ┌──────────────────────────────┐
+                              │   강화 적 스폰 + 클리어 보상 │
+                              └──────────────────────────────┘
 ```
 
 ### 컴포넌트 역할
-- **DimensionStone**: `ItemData` 와 유사한 옵션 컨테이너. 차원석 전용 옵션 enum 사용.
-- **DimensionStoneInventory**: 보유 차원석 목록을 관리하는 시스템 (단일 인스턴스).
-- **RiftGenerator**: 차원석 슬롯 + 큐브 적용 API + "균열 개방" API. 슬롯의 옵션을 `RiftWaveModifiers` 로 환산해 `WaveSystem` 에 전달.
-- **WaveSystem 확장**: 기존 `StartWave()` 와 별도로 `StartRiftWave(modifiers)` 진입점. 옵션 보정값을 받아 적 HP/방어/속도/수량을 곱연산 적용한 강화 스폰을 수행.
-- **Enemy 확장**: `Initialize()` 가 보정 인자(곱연산 multiplier 4종)를 추가로 받도록 오버로드.
-- **UI**: 균열 생성기 패널(차원석 슬롯, 옵션 표시, 큐브 적용 버튼, 균열 개방 버튼).
+- **RiftGeneratorPlacer**: `TowerPlacer` 와 동일 구조. Buildable 타일에 RiftGenerator 인스턴스를 배치. 설치 비용은 Lower 큐브 N개(잠정 10).
+- **RiftGenerator (MonoBehaviour)**: 타일 위에 존재하는 게임 오브젝트. 차원석 슬롯 + 큐브 적용 API + `OpenRift()` + 클릭 시 선택. `OnDestroy` 시 `MapTileSystem.RemoveTower` 처럼 자기 셀에서 등록 해제.
+- **InventorySystem 확장**: `SelectedRift` 필드 + `OnRiftSelected` 이벤트 추가. Tower 선택과 상호 배타(둘 중 하나만 활성).
+- **InputManager / 선택 분기**: Buildable 타일 클릭 시 (a) 빈 타일 → 현재 배치 모드의 placer 호출 (b) Tower 가 있음 → Tower 선택 (c) RiftGenerator 가 있음 → Rift 선택.
+- **DimensionStone**: `ItemData` 와 유사한 옵션 컨테이너. 차원석 전용 enum 사용.
+- **DimensionStoneInventory**: 보유 차원석 목록을 관리하는 시스템.
+- **RiftWaveModifiers** struct: HP/Defense/Speed/Damage 곱연산 + 추가 스폰 수 + 보상 배율. `DimensionStone.Options` 로부터 변환.
+- **WaveSystem 확장**: `StartRiftWave(modifiers)` 진입점. 일반 `StartWave()` 와 동시 활성 금지.
+- **Enemy 확장**: `Initialize()` 가 modifiers 를 받도록 오버로드.
+- **UI**:
+  - `RiftGeneratorPanel` — Tower 의 UnitPanel 자리에 표시되는 선택 패널(차원석 슬롯, 옵션 표시, 큐브 적용 5종, "균열 개방" 버튼).
+  - `BuildModeToggleButton` (또는 기존 HUD 확장) — Tower 배치 / Rift 배치 모드 전환.
 
 ### 데이터 흐름
 ```
-[플레이어] DimensionStone 1개 슬롯 장착
-   ↓
-RiftGenerator.SetStone(stone)
-   ↓
+[빌드 모드: Rift]
+플레이어가 Buildable 타일 클릭
+  ↓
+InputManager → RiftGeneratorPlacer.TryPlace(coord)
+  ↓
+Lower 큐브 N개 소비 → RiftGenerator prefab Instantiate → MapTileSystem.PlaceTower(coord, this)
+  ↓
+[선택 모드]
+플레이어가 RiftGenerator 타일 클릭
+  ↓
+InventorySystem.SelectRift(rift) → RiftGeneratorPanel 표시
+  ↓
+(선택) 차원석 슬롯에 차원석 장착 / 해제
+  ↓
 (선택) 큐브 적용 → RiftGenerator.ApplyCube(CubeType)
-                  └── CubeSystem 소비 + DimensionStone 옵션 변경
-   ↓
+        └── CubeSystem 소비 + DimensionStone 옵션 변경
+  ↓
 "균열 개방" 클릭 → RiftGenerator.OpenRift()
-   ↓
-modifiers = BuildModifiers(stone.Options)
-   ↓
-WaveSystem.StartRiftWave(modifiers) → ObjectPoolSystem.Get() + Enemy.Initialize(data, stage, waypoints, modifiers)
-   ↓
-웨이브 클리어 시 옵션 보정에 비례한 큐브 보상 지급
+  ↓
+modifiers = RiftWaveModifiers.FromOptions(stone.Options)
+  ↓
+WaveSystem.StartRiftWave(modifiers)
+  ↓
+SpawnEnemies(list + extraCount) → Enemy.Initialize(data, stage, waypoints, modifiers)
+  ↓
+웨이브 클리어 시 baseReward * RewardCubeMult 큐브 지급, 차원석 1개 소모
 ```
 
 ## 2. 수정 파일
 
 - `MakeDefence/Assets/Scripts/Systems/WaveSystem.cs`
-  - `RiftWaveModifiers` 구조체 추가
   - `StartRiftWave(RiftWaveModifiers)` 진입점 추가
-  - `SpawnEnemies()` 가 modifiers 를 받도록 인자 추가 (기존 시그니처는 default modifier 로 호환)
-  - 보상 지급 훅 (`OnWaveEnded` 이전 보너스 큐브 지급)
+  - `SpawnEnemies()` 가 modifiers 를 받도록 인자 추가
+  - 균열 웨이브는 `_autoWave` 미연동(1회성), 클리어 보상 훅
 - `MakeDefence/Assets/Scripts/Gameplay/Enemy/Enemy.cs`
   - `Initialize()` 오버로드: `(EnemyData, int stage, Vector2[] waypoints, RiftWaveModifiers modifiers)`
   - 보정값을 곱연산으로 HP/Defense/Speed/PlayerDamage 에 적용
-- `MakeDefence/Assets/Scripts/Systems/CubeSystem.cs`
-  - 변경 없음 (기존 `TryConsume`/`Add` 그대로 사용)
-- `MakeDefence/Assets/Scripts/Gameplay/Tower/ItemData.cs`
-  - 변경 없음. 차원석은 별도 클래스(`DimensionStone`)로 분리해 옵션 enum 충돌 회피.
+- `MakeDefence/Assets/Scripts/Systems/InventorySystem.cs`
+  - `SelectedRift` 필드 + `SelectRift(rift)` / `DeselectRift()` 메서드
+  - `OnRiftSelected` 이벤트
+  - 기존 `SelectTower` 와 상호 배타 처리
+- `MakeDefence/Assets/Scripts/Systems/InputManager.cs`
+  - Buildable 타일 클릭 분기에 RiftGenerator 처리 추가 (Tower 와 동일 패턴)
+  - 배치 모드(Tower / Rift) 분기
+- `MakeDefence/Assets/Scripts/Systems/MapTileSystem.cs`
+  - `_placedTowers` 와 별도로 `_placedRifts` 추가 (또는 공통 인터페이스 `ITilePlaceable` 도입)
+  - 현 단계는 dictionary 분리 방식으로 가장 작은 변경
+- `MakeDefence/Assets/Scripts/UI/UnitPanelController.cs`
+  - Rift 선택 시 RiftGeneratorPanel 토글 (기존 Tower 패널과 배타)
 - `MakeDefence/Assets/Scenes/SampleScene.unity`
-  - RiftGenerator 게임오브젝트 추가, UI 패널 hook (UnityMCP 로 수행)
+  - RiftGeneratorPlacer 컴포넌트 배치, RiftGeneratorPanel UI 연결 (UnityMCP)
 
 ## 3. 신규 클래스 / 파일
 
@@ -69,7 +121,7 @@ WaveSystem.StartRiftWave(modifiers) → ObjectPoolSystem.Get() + Enemy.Initializ
   - enum: `MonsterHpBoost`, `MonsterDefenseBoost`, `MonsterSpeedBoost`, `MonsterCountBoost`, `RewardCubeBoost`, `EnemyDamageBoost`
 - `MakeDefence/Assets/Scripts/Gameplay/Rift/DimensionStone.cs`
   - `ItemData` 와 유사한 구조 — Options 리스트, `Reroll`/`AddRandomOption`/`RemoveRandomOption`/`UpgradeRandomOption`/`Clone`
-  - 옵션 수치 범위(Ranges) 정적 테이블 보유 (잠정값: HP/Defense/Speed +5~+30%, Count +0~+10마리, Reward +5~+30%, EnemyDamage +5~+25%)
+  - 옵션 수치 범위(Ranges) 정적 테이블 (잠정값: HP/Defense/Speed +5~+30%, Count +0~+10마리, Reward +5~+30%, EnemyDamage +5~+25%)
   - `MaxOptions = 6`
 - `MakeDefence/Assets/Scripts/Gameplay/Rift/RiftWaveModifiers.cs`
   - struct: `HpMult`, `DefenseMult`, `SpeedMult`, `DamageMult`, `ExtraCount`, `RewardCubeMult`
@@ -77,20 +129,29 @@ WaveSystem.StartRiftWave(modifiers) → ObjectPoolSystem.Get() + Enemy.Initializ
   - `FromOptions(IReadOnlyList<DimensionStoneOption>)` 정적 빌더
 - `MakeDefence/Assets/Scripts/Systems/DimensionStoneInventory.cs`
   - 보유 차원석 리스트 + 추가/제거/획득 이벤트
-  - 초기 차원석 1개 지급(인스펙터 토글, 디버그용)
+  - 디버그용 초기 차원석 1개 지급 토글
 - `MakeDefence/Assets/Scripts/Gameplay/Rift/RiftGenerator.cs`
-  - 차원석 1개 슬롯 (장착/해제)
-  - `ApplyCube(CubeType)` — `ItemSystem.ApplyCube` 와 동일 패턴으로 큐브 소비 + 차원석 옵션 변경
-  - `OpenRift()` — 차원석 소모, WaveSystem.StartRiftWave 호출
-  - 이벤트 `OnStoneChanged`, `OnRiftOpened`
+  - MonoBehaviour. `Vector2Int TileCoord` 보유, `Place(coord)` / `OnDestroy()` 에서 MapTileSystem 등록·해제 (Tower 패턴)
+  - 차원석 슬롯 1개 (장착/해제)
+  - `ApplyCube(CubeType)` — ItemSystem.ApplyCube 와 동일 패턴
+  - `OpenRift()` — 차원석 소모 + WaveSystem.StartRiftWave 호출
+  - 클릭 처리 → InventorySystem.SelectRift(this)
+  - 이벤트: `OnStoneChanged`, `OnRiftOpened`
+- `MakeDefence/Assets/Scripts/Gameplay/Rift/RiftGeneratorPlacer.cs`
+  - `TowerPlacer` 와 동일 구조. `TryPlace(Vector2Int coord)` 가 Lower 큐브 N개(잠정 10) 소비 후 RiftGenerator prefab Instantiate
 - `MakeDefence/Assets/Scripts/UI/RiftGeneratorPanel.cs`
-  - 차원석 슬롯 표시, 옵션 리스트 표시, 큐브 적용 버튼 5종 (Lower/Upper/TopTier/Delete/Clone), "균열 개방" 버튼
-  - `DimensionStoneInventory` 와 연동해 보유 차원석 선택 가능
+  - 차원석 슬롯 표시, 옵션 리스트 표시, 큐브 적용 버튼 5종, "균열 개방" 버튼
+  - DimensionStoneInventory 와 연동해 보유 차원석 선택 가능
+- `MakeDefence/Assets/Scripts/UI/BuildModeToggleButton.cs` (또는 기존 HUD 에 토글 추가)
+  - Tower 배치 / Rift 배치 모드 전환
 
 ### 신규 Unity 에셋 (UnityMCP 로 작성)
-- `MakeDefence/Assets/Prefabs/RiftGenerator.prefab` — RiftGenerator 컴포넌트 부착
+- `MakeDefence/Assets/Prefabs/RiftGenerator.prefab` — RiftGenerator 컴포넌트 + SpriteRenderer + Collider2D 부착
 - `MakeDefence/Assets/Prefabs/UI/RiftGeneratorPanel.prefab` — 패널 UI
-- SampleScene 에 RiftGenerator 인스턴스 배치 및 WaveSystem/CubeSystem 참조 연결
+- SampleScene 에:
+  - RiftGeneratorPlacer 컴포넌트가 붙은 게임오브젝트 추가
+  - RiftGeneratorPanel UI 패널 추가 + UnitPanelController 와 연결
+  - BuildModeToggleButton 또는 기존 HUD 확장
 
 ## 4. 테스트 계획
 
@@ -101,38 +162,53 @@ WaveSystem.StartRiftWave(modifiers) → ObjectPoolSystem.Get() + Enemy.Initializ
    - `RemoveRandomOption` 마지막 1개는 false
    - `UpgradeRandomOption` 값이 1.5배 (max clamp) 적용
    - `Clone` 후 옵션 동일
-2. **RiftGenerator 큐브 적용**
-   - Lower 큐브 → Reroll 동작, 큐브 1개 소비
-   - Upper 큐브 → 옵션 추가, 큐브 1개 소비
-   - 큐브 부족 시 false 반환, 차원석 변경 없음
-3. **균열 개방 → 강화 스폰**
-   - HP Boost +30% 옵션 차원석으로 개방 → 적 MaxHp 가 (baseHp * stageMult * 1.3) 인지 검증
-   - MonsterCountBoost +5 → 스폰 적 수가 base + 5 인지
-4. **보상**
-   - RewardCubeBoost +20% → 웨이브 클리어 후 추가 큐브 지급
+2. **RiftGeneratorPlacer 설치**
+   - Buildable 타일에 Lower 큐브 충분 → 설치 성공, 큐브 N개 소비, MapTileSystem 등록
+   - 이미 Tower 또는 다른 Rift 가 있는 타일 → 설치 실패
+   - Path / Decoration 타일 → 설치 실패
+   - 큐브 부족 → 설치 실패, 차원석 변경 없음
+3. **RiftGenerator 큐브 적용**
+   - Lower → Reroll, Upper → 옵션 추가, TopTier → 삭제+업그레이드, Delete → 삭제, Clone → 복제
+4. **선택 상호 배타**
+   - Rift 선택 시 Tower 선택 해제, 그 반대도
+5. **균열 개방 → 강화 스폰**
+   - HP Boost +30% 옵션 → 적 MaxHp 가 (baseHp * stageMult * 1.3)
+   - MonsterCountBoost +5 → 스폰 적 수가 base + 5
+   - 이미 일반 웨이브 진행 중이면 OpenRift 실패
+6. **보상**
+   - RewardCubeBoost +20% → 웨이브 클리어 후 보너스 큐브 지급
+7. **타워 삭제 패턴 비교 (Rift 도 삭제 가능)**
+   - 본 이슈 범위는 삭제 없음(추후). 단, Scene 종료/씬 전환 시 MapTileSystem 잔존 등록이 없는지 OnDestroy 검증.
 
 ### 수동 검증 체크리스트
-- [ ] SampleScene 에서 RiftGenerator 오브젝트 인터랙션 가능
-- [ ] 패널 UI 가 차원석 옵션 표시
-- [ ] 5종 큐브 버튼이 활성/비활성 (보유 큐브 수에 따라)
-- [ ] 균열 개방 시 WaveSystem 이 정상 활성화
-- [ ] 강화된 적이 일반 적보다 HP/속도가 더 높음 (디버그 로그 확인)
+- [ ] SampleScene 에서 Rift 배치 모드 토글이 동작
+- [ ] Buildable 타일 클릭 → RiftGenerator 설치
+- [ ] 설치된 RiftGenerator 클릭 → 패널 표시
+- [ ] 차원석 슬롯에 보유 차원석 장착 / 해제
+- [ ] 5종 큐브 버튼 활성/비활성 (보유 큐브 수에 따라)
+- [ ] "균열 개방" 클릭 시 WaveSystem 활성화 + 강화 적 등장
+- [ ] 강화 적이 일반 적보다 HP/속도가 더 높음 (디버그 로그)
 - [ ] 클리어 후 보너스 큐브 지급
-- [ ] 차원석이 소모되어 인벤토리에서 제거
+- [ ] 차원석 소모 후 인벤토리에서 제거
+- [ ] Rift 선택과 Tower 선택이 동시에 활성화되지 않음
 
 ## 5. 위험 요소
 
 ### 사이드 이펙트
-- **WaveSystem 진입점 분기**: 기존 `StartWave()` 와 `StartRiftWave()` 가 공존. 두 흐름이 동시에 활성화되지 않도록 `IsWaveActive` 가드 유지.
-- **Enemy.Initialize 시그니처 변경**: 기존 호출처(WaveSystem 일반 스폰)는 default modifier 로 호출되도록 오버로드 분리. 기존 동작 무변화 확인 필요.
-- **자동 웨이브(`_autoWave`)**: 균열 웨이브 클리어 후 auto 가 켜져 있으면 일반 스테이지가 다시 시작될 수 있음 → 균열 웨이브는 auto 미연동 (1회성)으로 고정.
+- **MapTileSystem 변경**: Tower 와 Rift 가 같은 Buildable 타일을 공유한다. `_placedTowers` dictionary 만 있어 Rift 등록을 위한 별도 컬렉션 또는 공통 추상화가 필요. 가장 작은 변경은 `_placedRifts` 별도 dictionary + `CanPlace` 시 양쪽 확인.
+- **InputManager 클릭 분기**: 기존 Tower 클릭 로직과 Rift 클릭 로직이 동일 셀 단위로 동작. 셀에 Rift 가 있으면 Tower 분기로 빠지지 않도록 조건 순서 주의.
+- **WaveSystem 분기**: 일반 `StartWave()` 와 `StartRiftWave()` 가 공존. `IsWaveActive` 가드로 동시 활성 금지. 균열 웨이브는 `_autoWave` 미연동(1회성)으로 고정해 다음 일반 웨이브가 자동 트리거되지 않게 한다.
+- **InventorySystem 선택 상호 배타**: Rift 선택 시 Tower 선택을 해제하고 그 반대도 해제. UI 패널이 두 개 동시 표시되지 않도록 `UnitPanelController` 가 양쪽 이벤트를 구독해 한 번에 하나만 띄운다.
+- **Enemy.Initialize 시그니처**: 오버로드로 분리. 기존 호출처는 default modifier 호출 (또는 그대로 호출 → 내부에서 `RiftWaveModifiers.Default` 사용).
 
 ### 미확정 항목
-- 옵션 수치 범위: HP/Defense/Speed Boost 의 min/max 는 잠정값(+5~+30%)으로 두고 Inspector 에서 후속 튜닝.
-- 차원석 획득 경로: 본 이슈 범위에서는 디버그용 초기 지급 + 균열 클리어 시 일정 확률 드랍(잠정 30%)으로 두고, 별도 이슈에서 드랍 테이블 정식화.
-- 균열 생성기 배치 방식: 본 이슈에서는 SampleScene 에 고정 배치(상점/UI 패널 형태). 맵에 직접 설치(Tower 처럼)는 후속 작업.
+- **설치 비용**: 잠정 Lower 10개. 후속 튜닝.
+- **옵션 수치 범위**: 잠정값(+5~+30% 등) → Inspector 튜닝.
+- **차원석 획득 경로**: 본 이슈에서는 디버그용 초기 지급 + 균열 클리어 시 일정 확률 드랍(잠정 30%). 정식 드랍 테이블은 별도 이슈.
+- **균열 웨이브의 스테이지 차원 처리**: 현재 `CurrentStage` 를 그대로 사용. 별도 "균열 난이도" 개념은 후속 이슈로 분리.
 
 ### 주의사항
-- **차원석 옵션 enum 은 `ItemOptionType` 과 분리**: 같은 enum 을 재사용하면 Tower 의 `AccumulateOption` 이 차원석 옵션을 잘못 합산할 위험. 별도 enum `DimensionStoneOptionType` 으로 분리한다.
+- **차원석 옵션 enum 은 `ItemOptionType` 과 분리**: `DimensionStoneOptionType` 별도 enum. Tower 의 `AccumulateOption` 이 차원석 옵션을 잘못 합산할 위험 차단.
 - **UnityMCP 로만 prefab/scene 수정**: AGENTS.md §7 가이드에 따라 `.prefab`/`.unity`/`.meta` 직접 YAML 편집 금지.
-- **풀 시스템 영향**: 강화 스폰도 `ObjectPoolSystem` 을 그대로 사용. 보정값은 풀에서 꺼낸 후 `Initialize` 단계에서 한 번만 적용 (반환 시 자동 리셋되어야 함 — 현재 `Enemy.Initialize` 가 매번 덮어쓰므로 안전).
+- **풀 시스템 영향**: 강화 스폰도 `ObjectPoolSystem` 그대로 사용. 보정값은 `Initialize` 단계에서 매번 덮어쓰므로 반환 후 재사용 시 잔존 위험 없음.
+- **타워 삭제 팝업(`TowerDeleteConfirmPopup`) 와의 분리**: 본 이슈 범위에서 Rift 삭제는 다루지 않음. 셀에 Rift 가 있을 때 Tower 삭제 UI 가 잘못 활성화되지 않도록 `UnitPanelController` 가드.
