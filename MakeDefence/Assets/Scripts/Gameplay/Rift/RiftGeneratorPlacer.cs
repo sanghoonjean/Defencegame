@@ -7,7 +7,25 @@ public class RiftGeneratorPlacer : MonoBehaviour
     [SerializeField] private RiftGenerator riftPrefab;
     [SerializeField] private int placementCostLower = 10;
 
+    [Header("자동 배치 (게임 시작 시 큐브 소비 없이 설치)")]
+    [SerializeField] private bool autoPlaceOnStart = true;
+    [SerializeField] private Vector2Int autoPlaceCoord;
+
     private void Awake() { Instance = this; }
+
+    private void Start()
+    {
+        if (!autoPlaceOnStart) return;
+        if (MapTileSystem.Instance == null) { Debug.LogWarning("[RiftGeneratorPlacer] MapTileSystem 미초기화 — 자동 배치 skip"); return; }
+        if (riftPrefab == null) { Debug.LogWarning("[RiftGeneratorPlacer] riftPrefab 미할당 — 자동 배치 skip"); return; }
+        if (!MapTileSystem.Instance.CanPlaceRift(autoPlaceCoord))
+        {
+            Debug.LogWarning($"[RiftGeneratorPlacer] autoPlaceCoord {autoPlaceCoord} 가 배치 불가 — Inspector 에서 Buildable 셀로 조정 필요");
+            return;
+        }
+        PlaceRift(autoPlaceCoord);
+        Debug.Log($"[RiftGeneratorPlacer] 자동 배치 완료 — coord={autoPlaceCoord}");
+    }
 
     public int PlacementCost => placementCostLower;
 
