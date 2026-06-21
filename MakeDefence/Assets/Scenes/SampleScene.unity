@@ -14143,7 +14143,7 @@ MonoBehaviour:
     type: 3}
   placementCostLower: 10
   autoPlaceOnStart: 1
-  autoPlaceCoord: {x: 3, y: 1}
+  autoPlaceCoord: {x: -3, y: -2}
 --- !u!4 &741511769
 Transform:
   m_ObjectHideFlags: 0
