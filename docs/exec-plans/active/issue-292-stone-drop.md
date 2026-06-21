@@ -90,7 +90,10 @@ Output
   - 인벤 슬롯 수만큼 자식 slot 인스턴스. 보유 차원석 1개와 1:1 매핑.
 - `MakeDefence/Assets/Scripts/UI/DimensionStoneSlot.cs`
   - 1칸 슬롯. Image + Button + Bind(DimensionStone)
-  - 클릭 시 `InventorySystem.SelectedRift` 가 있으면 `rift.SetStone(stone)` + `DimensionStoneInventory.Remove(stone)`
+  - 클릭 시 `InventorySystem.SelectedRift` 가 있을 때 **swap 패턴**으로 장착 (Codex P2 반영):
+    1. `rift.LoadedStone != null` → `DimensionStoneInventory.Add(rift.LoadedStone)` 후 `rift.ClearStone()` (기존 stone 회수)
+    2. `DimensionStoneInventory.Remove(stone)` + `rift.SetStone(stone)` (새 stone 장착)
+  - 단순 덮어쓰기는 기존 stone 소실 위험이 있어 금지.
 
 ### 신규 Unity 에셋 (UnityMCP)
 - `MakeDefence/Assets/Prefabs/DroppedStonePickup.prefab`
@@ -140,6 +143,7 @@ Output
 ### 사이드 이펙트
 - **DroppedCubeSystem 과 동시 활성**: 두 시스템이 같은 `Enemy.OnEnemyDied` 구독. 둘 다 픽업 spawn → 시각적으로 겹침. spawnArrangementRadius + jitter 로 분산 처리 (DroppedCubeSystem 이미 사용 중). 두 시스템 동일 시드면 겹칠 위험 → DroppedStoneSystem 은 별도 jitter 패턴.
 - **구독 순서 의존성** (Codex P1 반영): WaveSystem (기본 ExecutionOrder 0) 의 `HandleEnemyRemoved` 가 마지막 적 사망 시 즉시 `OnWaveEnded(true)` 를 발행한다. DroppedStoneSystem 이 그보다 늦게 활성되면 픽업 등록 전에 `CollectAll` 이 실행되어 마지막 픽업이 누락된다. → `[DefaultExecutionOrder(-100)]` 으로 명시적으로 WaveSystem 앞에 두어 구독 등록 순서 보장 (DroppedCubeSystem 의 검증된 패턴).
+- **차원석 swap** (Codex P2 반영): DimensionStoneSlot 클릭 시 RiftGenerator 에 이미 LoadedStone 이 있으면 단순 덮어쓰기 → 기존 stone 소실. 반드시 기존 stone 을 인벤으로 반환(`Add` + `ClearStone`) 후 새 stone 장착(`Remove` + `SetStone`) 순으로 swap.
 
 ### 미확정 항목
 - 등급별 확률/카운트는 잠정값. 후속 밸런싱.
