@@ -33,15 +33,15 @@
 [웨이브 종료]                                      │
   │ WaveSystem.OnWaveEnded(true)                  │
   ▼                                               │
-DroppedStoneSystem.CollectAll() ────── 각 픽업 → DimensionStoneInventory.Add(CreateRandom())
-                                + GrantClearBonus() — 무조건 1개 추가
-DroppedStoneSystem.DiscardAll()  ────── 패배 시 폐기 (보장 1개도 없음)
+DroppedStoneSystem.CollectAll() ────── 각 픽업: fade out + Inventory.Add(CreateRandom())
+                                + GrantClearBonus() — 무조건 1개 추가 (픽업 없이 즉시)
+DroppedStoneSystem.DiscardAll()  ────── 패배 시 fade out 만 (인벤 추가 없음)
 ```
 
 ### 컴포넌트 역할
 - **DroppedStoneSystem**: DroppedCubeSystem 과 동일 패턴의 컨트롤러. 등급별 확률/카운트 SerializeField, `_dropsBlocked` 가드, CollectAll/DiscardAll, OnPendingChanged 이벤트.
-- **DroppedStonePickup**: DroppedCubePickup 의 시각 효과(spawn pop/pulse/collect arc/discard fade) 그대로 사용. 차원석 sprite + 보라 톤 라벨 스타일. 수확 도착 시점에 `DimensionStoneInventory.Add(DimensionStone.CreateRandom())` 1회.
-- **수확 목적지**: 화면 우측 `DimesionStoneInventoryUI` 패널 위치 (`Camera.main.WorldToScreenPoint` 기반) — 좌표가 동적이라 CollectTarget 계산은 패널의 RectTransform 위치를 ScreenToWorld 로 변환.
+- **DroppedStonePickup**: DroppedCubePickup 의 spawn pop / pulse / discard fade 만 차용. **수확 아크 애니메이션은 사용하지 않음** — 클리어 시 그 자리에서 fade out 하고 인벤에 즉시 +1. 수확 도착 좌표 계산 불필요.
+- **수확 시점**: 클리어 → 픽업 fade 시작과 동시에 `DimensionStoneInventory.Add(CreateRandom())` 1회 호출. 도착 좌표 / Camera 의존 제거.
 
 ### 데이터 흐름
 ```
@@ -49,15 +49,14 @@ Input
  ↓ 적 사망 (Enemy.OnEnemyDied)
 DroppedStoneSystem.HandleEnemyDied
  ↓ 등급별 확률 roll
- ↓ pass → Instantiate(stonePickupPrefab)
- ↓ pickup.Initialize(deathPos)
+ ↓ pass → Instantiate(stonePickupPrefab) at deathPos
  ↓ _activePickups.Add(pickup), _pending++
  ↓
 [웨이브 진행]
  ↓ WaveSystem.OnWaveEnded(true)
 DroppedStoneSystem.CollectAll
- ↓ pickup.StartCollect(target, duration, onArrived)
- ↓ onArrived → DimensionStoneInventory.Add(DimensionStone.CreateRandom())
+ ↓ 각 픽업: pickup.StartCollectFade(duration) + Inventory.Add(CreateRandom())
+ ↓ GrantClearBonus() — Inventory.Add(CreateRandom())
 Output
  ↓ 인벤토리 UI 카운트 증가 (RiftPanelToggle 가 보일 때 자동 갱신)
 ```
@@ -79,14 +78,15 @@ Output
   - Enemy.OnEnemyDied / WaveSystem.OnWaveStarted / OnWaveEnded 구독
   - `_dropsBlocked` 가드, _activePickups HashSet, _pending count
 - `MakeDefence/Assets/Scripts/Gameplay/DroppedStonePickup.cs`
-  - DroppedCubePickup 의 비주얼 패턴 차용 — body/beam SpriteRenderer + 라벨(Text)
-  - LabelStyle 1종 (차원석 보라 톤) — 등급 구분 없음
-  - PulseStyle / Spawn/Collect Arc / Discard Fade 동일
-  - 수확 도착 시점에 외부 콜백 호출 (DroppedStoneSystem 이 인벤 추가)
+  - DroppedCubePickup 의 비주얼 패턴 일부 차용 — body SpriteRenderer (sprite 는 사용자가 인스펙터에서 직접 설정)
+  - 보라 톤 placeholder color
+  - Spawn pop (pop-in scale) + alpha pulse 만 사용. **수확 아크 미사용** — 그 자리에서 fade out 후 Destroy.
+  - `StartCollectFade(duration)` / `StartDiscardFade(duration)` — 둘 다 같은 alpha fade. 차이는 인벤 추가 여부(시스템 측 책임).
 
 ### 신규 Unity 에셋 (UnityMCP)
 - `MakeDefence/Assets/Prefabs/DroppedStonePickup.prefab`
-  - DroppedCubePickup.prefab 의 구조 차용 → 색상만 보라 톤. SpriteRenderer + Collider2D + DroppedStonePickup 컴포
+  - 최소 구성 — SpriteRenderer (sprite null, 보라 placeholder color) + DroppedStonePickup 컴포
+  - **sprite 는 사용자가 인스펙터에서 직접 잡음**. 본 작업은 placeholder color 만.
 
 ### 신규 EditMode 테스트 (AGENTS.md §8)
 - `MakeDefence/Assets/Tests/EditMode/Drop/DroppedStoneSystemTests.cs`
@@ -124,11 +124,10 @@ Output
 
 ### 사이드 이펙트
 - **DroppedCubeSystem 과 동시 활성**: 두 시스템이 같은 `Enemy.OnEnemyDied` 구독. 둘 다 픽업 spawn → 시각적으로 겹침. spawnArrangementRadius + jitter 로 분산 처리 (DroppedCubeSystem 이미 사용 중). 두 시스템 동일 시드면 겹칠 위험 → DroppedStoneSystem 은 별도 jitter 패턴.
-- **수확 도착 좌표**: 화면 우측 DimesionStoneInventoryUI 패널은 Rift 미선택 시 alpha 0 으로 숨겨져 있음 → CollectTarget 으로 부적합. fallback 으로 화면 우상단 fixed 좌표 사용.
 
 ### 미확정 항목
 - 등급별 확률/카운트는 잠정값. 후속 밸런싱.
-- 차원석 sprite — sprite-sheet.png 가 working tree 에 있으니 그 안에서 적당한 sprite 사용. 미정시 흰 동그라미 placeholder + 보라 틴트.
+- 차원석 sprite — 인스펙터에서 사용자가 직접 잡음 (본 작업 범위 밖, placeholder color 만).
 - LastBoss 의 count=2 가 타당한지 — 클리어 시 균열 2회 시동 가능. 게임 진행 속도에 영향.
 
 ### 주의사항
