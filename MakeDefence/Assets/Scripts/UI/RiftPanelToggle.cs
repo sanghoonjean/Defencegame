@@ -10,8 +10,10 @@ using UnityEngine;
 [RequireComponent(typeof(CanvasGroup), typeof(RectTransform))]
 public class RiftPanelToggle : MonoBehaviour
 {
-    [Tooltip("균열 화면 좌표에서 패널 중심까지의 픽셀 offset. 인스펙터에서 조정.")]
-    [SerializeField] private Vector2 screenOffset = new Vector2(300f, 0f);
+    [Header("패널 위치 — 균열 우측 픽셀 offset")]
+    [Tooltip("균열 화면 좌표에서 패널 중심까지의 픽셀 offset. " +
+             "x=양수=오른쪽, y=양수=위, y=음수=아래.")]
+    [SerializeField] private Vector2 screenOffset = new Vector2(100f, -150f);
 
     private CanvasGroup _canvasGroup;
     private RectTransform _rectTransform;
