@@ -4,39 +4,36 @@ using UnityEngine;
 /// <summary>
 /// 사용자가 디자인한 ScrollRect Content 에 부착해 차원석 인벤토리 슬롯
 /// 그리드를 표시한다. DimensionStoneInventory.OnInventoryChanged 구독.
-/// 보유 차원석 1개당 슬롯 1개 (1:1). 초과 슬롯은 비활성.
+///
+/// 인스펙터에서 미리 만든 자식 DimensionStoneSlot 들을 풀로 등록해 활용하고,
+/// 보유 차원석이 풀보다 많으면 slotPrefab 으로 추가 인스턴스. 인벤 수만큼
+/// 활성 + 나머지 비활성 (InvenUI 패턴).
 /// </summary>
 public class DimensionStoneInventoryView : MonoBehaviour
 {
     [Tooltip("슬롯을 자식으로 만들 컨테이너. 비워두면 자기 자신.")]
     [SerializeField] private RectTransform slotContainer;
 
-    [Tooltip("슬롯 1칸 prefab.")]
+    [Tooltip("동적 추가용 슬롯 prefab. 인스펙터에서 미리 만든 자식만 쓰려면 null 도 가능.")]
     [SerializeField] private DimensionStoneSlot slotPrefab;
 
     private readonly List<DimensionStoneSlot> _slots = new();
 
-    private bool _designTimeChildrenCleaned;
-
     private void Awake()
     {
         if (slotContainer == null) slotContainer = GetComponent<RectTransform>();
+        // 인스펙터에서 추가한 기존 자식 슬롯을 풀로 등록 (Destroy 하지 않는다)
+        foreach (Transform child in slotContainer)
+        {
+            var slot = child.GetComponent<DimensionStoneSlot>();
+            if (slot != null) _slots.Add(slot);
+        }
     }
 
     private void OnEnable()
     {
         DimensionStoneInventory.OnInventoryChanged += Rebuild;
-        CleanupDesignTimeChildren();
         Rebuild();
-    }
-
-    private void CleanupDesignTimeChildren()
-    {
-        if (_designTimeChildrenCleaned || slotContainer == null) return;
-        _designTimeChildrenCleaned = true;
-        // OnEnable 시점에 _slots 는 비어있으므로 자식 전체가 디자인 시점 placeholder
-        for (int i = slotContainer.childCount - 1; i >= 0; i--)
-            Destroy(slotContainer.GetChild(i).gameObject);
     }
 
     private void OnDisable()
@@ -46,12 +43,13 @@ public class DimensionStoneInventoryView : MonoBehaviour
 
     private void Rebuild()
     {
-        if (slotContainer == null || slotPrefab == null) return;
+        if (slotContainer == null) return;
 
         var inv = DimensionStoneInventory.Instance;
         int count = inv != null ? inv.Count : 0;
 
-        while (_slots.Count < count)
+        // 풀이 부족하면 slotPrefab 으로 채움 (prefab 미할당이면 풀 크기 그대로)
+        while (_slots.Count < count && slotPrefab != null)
         {
             var slot = Instantiate(slotPrefab, slotContainer);
             _slots.Add(slot);
