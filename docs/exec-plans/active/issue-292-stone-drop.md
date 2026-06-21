@@ -75,6 +75,7 @@ Output
 ### 신규 C# 스크립트
 - `MakeDefence/Assets/Scripts/Systems/DroppedStoneSystem.cs`
   - DroppedCubeSystem 과 동일 구조의 MonoBehaviour 싱글톤
+  - **`[DefaultExecutionOrder(-100)]` 필수** — WaveSystem(기본 0) 보다 먼저 `Enemy.OnEnemyDied` 를 구독해, 마지막 킬 → 픽업 등록 → `OnWaveEnded(true)` → `CollectAll` 순서 보장 (DroppedCubeSystem 과 동일 모델)
   - SerializeField: stonePickupPrefab, 등급별 chance(5종)/count(5종), collect/discard 튜닝
   - Enemy.OnEnemyDied / WaveSystem.OnWaveStarted / OnWaveEnded 구독
   - `_dropsBlocked` 가드, _activePickups HashSet, _pending count
@@ -138,6 +139,7 @@ Output
 
 ### 사이드 이펙트
 - **DroppedCubeSystem 과 동시 활성**: 두 시스템이 같은 `Enemy.OnEnemyDied` 구독. 둘 다 픽업 spawn → 시각적으로 겹침. spawnArrangementRadius + jitter 로 분산 처리 (DroppedCubeSystem 이미 사용 중). 두 시스템 동일 시드면 겹칠 위험 → DroppedStoneSystem 은 별도 jitter 패턴.
+- **구독 순서 의존성** (Codex P1 반영): WaveSystem (기본 ExecutionOrder 0) 의 `HandleEnemyRemoved` 가 마지막 적 사망 시 즉시 `OnWaveEnded(true)` 를 발행한다. DroppedStoneSystem 이 그보다 늦게 활성되면 픽업 등록 전에 `CollectAll` 이 실행되어 마지막 픽업이 누락된다. → `[DefaultExecutionOrder(-100)]` 으로 명시적으로 WaveSystem 앞에 두어 구독 등록 순서 보장 (DroppedCubeSystem 의 검증된 패턴).
 
 ### 미확정 항목
 - 등급별 확률/카운트는 잠정값. 후속 밸런싱.
