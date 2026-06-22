@@ -55,11 +55,9 @@ public class DimensionStoneInventoryView : MonoBehaviour
             _slots.Add(slot);
         }
 
-        // 빈 슬롯도 visible 로 유지 (InvenUI 패턴) — Bind 가 색/활성으로 채움/빈 표현
+        // 사용자가 인스펙터에서 만든 슬롯의 SetActive 는 만지지 않는다 (InvenUI 패턴).
+        // 시각화는 Bind 가 자식 ICON Image 의 색으로만 처리 — 채움=흰색, 빈=투명.
         for (int i = 0; i < _slots.Count; i++)
-        {
-            _slots[i].gameObject.SetActive(true);
             _slots[i].Bind(i < count ? inv.Stones[i] : null);
-        }
     }
 }
