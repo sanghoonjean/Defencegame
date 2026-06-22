@@ -15,7 +15,7 @@ public class DimensionStoneSlot : MonoBehaviour
     [SerializeField] private Image iconImage;
 
     [SerializeField] private Color emptyColor  = new(1f, 1f, 1f, 0f); // 빈 슬롯은 투명
-    [SerializeField] private Color filledColor = new(1f, 1f, 1f, 1f); // 채워진 슬롯은 흰색 (sprite 가 그대로 보임)
+    [SerializeField] private Color filledColor = new(0.55f, 0.2f, 0.85f, 1f); // 진단용 보라 — 채워진 슬롯이 시각적으로 두드러지게
 
     private Button _button;
     private DimensionStone _bound;
@@ -29,6 +29,8 @@ public class DimensionStoneSlot : MonoBehaviour
             var iconTr = transform.Find("ICON");
             if (iconTr != null) iconImage = iconTr.GetComponent<Image>();
         }
+        if (iconImage == null)
+            Debug.LogWarning($"[DimensionStoneSlot] iconImage 자동 탐색 실패 — '{name}' 에 자식 'ICON' Image 없음");
     }
 
     public void Bind(DimensionStone stone)
