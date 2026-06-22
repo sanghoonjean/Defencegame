@@ -26,7 +26,16 @@ public class DimensionStoneInventoryView : MonoBehaviour
         foreach (Transform child in slotContainer)
         {
             var slot = child.GetComponent<DimensionStoneSlot>();
-            if (slot != null) _slots.Add(slot);
+            if (slot != null)
+            {
+                _slots.Add(slot);
+            }
+            else
+            {
+                // 차원석 슬롯이 아닌 자식(예: 옛 SkillInvenSlot)은 비활성화 — 차원석 슬롯이
+                // 그 뒤에 append 되어 화면 밖으로 밀려나는 것을 차단 (Codex P2 반영).
+                child.gameObject.SetActive(false);
+            }
         }
         Debug.Log($"[InvView] Awake — slotContainer={(slotContainer != null ? slotContainer.name : "null")}, pool _slots.Count={_slots.Count}");
     }
