@@ -28,11 +28,13 @@ public class DimensionStoneInventoryView : MonoBehaviour
             var slot = child.GetComponent<DimensionStoneSlot>();
             if (slot != null) _slots.Add(slot);
         }
+        Debug.Log($"[InvView] Awake — slotContainer={(slotContainer != null ? slotContainer.name : "null")}, pool _slots.Count={_slots.Count}");
     }
 
     private void OnEnable()
     {
         DimensionStoneInventory.OnInventoryChanged += Rebuild;
+        Debug.Log("[InvView] OnEnable — Rebuild 호출");
         Rebuild();
     }
 
@@ -43,10 +45,11 @@ public class DimensionStoneInventoryView : MonoBehaviour
 
     private void Rebuild()
     {
-        if (slotContainer == null) return;
+        if (slotContainer == null) { Debug.LogWarning("[InvView] Rebuild skip — slotContainer null"); return; }
 
         var inv = DimensionStoneInventory.Instance;
         int count = inv != null ? inv.Count : 0;
+        Debug.Log($"[InvView] Rebuild — inv.Instance={(inv != null ? "OK" : "null")}, inv.Count={count}, _slots.Count={_slots.Count}");
 
         // 풀이 부족하면 slotPrefab 으로 채움 (prefab 미할당이면 풀 크기 그대로)
         while (_slots.Count < count && slotPrefab != null)
