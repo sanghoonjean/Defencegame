@@ -54,6 +54,33 @@ Claude Code는 Plan PR을 임의로 close/merge하지 않는다 (사용자가 �
 
 ---
 
+## PR 라벨 규칙
+
+PR 생성 시 **반드시 상황에 맞는 라벨을 함께 부여**한다. `gh pr create --label "<라벨>"` 형태로 생성 시점에 전달 (생성 후 `gh pr edit <num> --add-label "<라벨>"` 도 가능).
+
+### PR 종류별 라벨 매핑
+
+| PR 종류 | 제목 prefix 예시 | 라벨 |
+|---|---|---|
+| 플랜 PR | `[Plan] Issue #X — ...` | `documentation` |
+| 새 기능 구현 | `feat(#X): ...` / `feat: ...` | `Feature` |
+| 버그 수정 | `fix(#X): ...` | `bug` |
+| 긴급 main 핫픽스 | `fix(#X): ...` (main 직접) | `Hotfix` (+ `bug`) |
+| 리팩토링 | `refactor(#X): ...` | `refactor` |
+| 문서/플랜 이동/주석 | `docs(#X): ...` | `documentation` |
+| 잡일 (씬 갱신, 설정) | `chore(#X): ...` | 라벨 생략 |
+
+### 보조 라벨 (필요 시 함께)
+
+- `In Review`: 사용자가 코드 리뷰 요청 시 부여. Claude 가 PR 생성 시점에는 부여하지 않음.
+- `Review Done`: 리뷰 완료 후 사용자가 부여. Claude 는 부여하지 않음.
+
+### 미존재 라벨 처리
+
+매핑 라벨이 repo 에 없으면 → `gh label list` 로 확인 후 사용자에게 의도 확인. **임의로 새 라벨을 생성하지 않는다**.
+
+---
+
 ## 브랜치 규칙
 
 - 작업 브랜치: `claude/fix-issue-{number}-{slug}`
