@@ -25,19 +25,20 @@ Canvas/DimesionStoneInventoryUI
  ↓
 RepeatGenerateToggleButton.OnToggleOn()
  ├─ IsActive = true
+ ├─ _remaining = DimensionStoneInventory.Instance.Count   ← ON 시점 스냅샷 (Codex P1 반영)
  ├─ Image/Color 토글 ON 시각
  └─ TryConsumeNext()
        ↓
-   인벤 stones.Count == 0 ?
+   _remaining <= 0 || inv.Count == 0 ?
        ├─ YES → Stop()  (즉시 OFF 복귀)
-       └─ NO  → 첫 stone 을 SelectedRift 에 SetStone → rift.OpenRift()
-                  OpenRift() == false ? Stop()
+       └─ NO  → _remaining-- → 첫 stone 을 SelectedRift 에 SetStone → rift.OpenRift()
+                  OpenRift() == false ? stone 회수 + Stop()
                   OpenRift() == true  ? 대기 (다음 WaveEnded 이벤트까지)
 
 [WaveSystem.OnWaveEnded(true)]  — 클리어
  ↓
 IsActive == true && IsRiftWaveActive 였음?
- └─ TryConsumeNext() 반복
+ └─ TryConsumeNext() 반복  (DroppedStoneSystem 의 클리어 보너스는 _remaining 카운터로 무시됨)
 
 [WaveSystem.OnWaveEnded(false)]  — 패배
  ↓
@@ -94,18 +95,34 @@ WaveSystem.OnWaveEnded(cleared)
 - `[RequireComponent(typeof(Button))]`
 - 책임:
   - 클릭 → `IsActive` 토글 (true ↔ false)
-  - `IsActive` 진입 시 `TryConsumeNext()` 즉시 실행 → 첫 차원석 장착 + OpenRift
-  - `WaveSystem.OnWaveEnded(true)` 구독 → IsActive 이면 `TryConsumeNext()` 반복
+  - **ON 진입 시 인벤 카운트 스냅샷** `_remaining = inv.Count` (아래 P1 회신 참조) → `TryConsumeNext()` 즉시 실행
+  - `WaveSystem.OnWaveEnded(true)` 구독 → IsActive 이면 `_remaining > 0 && inv.Count > 0` 일 때만 `TryConsumeNext()` 반복
   - `WaveSystem.OnWaveEnded(false)` / `GameStateSystem.OnStateChanged(non-Playing)` / `InventorySystem.OnRiftSelected(null)` 구독 → 자동 `Stop()`
-  - `Button.interactable` 자동 갱신 — Rift 미선택 / non-Playing / 인벤토리 empty 면 비활성 (단 IsActive 중에는 OFF 누름 가능하도록 유지)
+  - `Button.interactable` 자동 갱신 — 아래 조건표 참조
 - 내부 상태:
   - `bool IsActive` — 토글 상태 (외부 노출 X)
+  - `int _remaining` — ON 시 인벤 카운트 스냅샷. 매 사이클 `--`. 0 도달 시 Stop.
   - `ColorBlock` 백업 — ON 시각 (예: pressedColor / selectedColor 사용) 적용 후 OFF 복귀
+- `Button.interactable` 조건표 (Codex P2 반영):
+
+  | 상태 | interactable |
+  |---|---|
+  | `IsActive == true` | **항상 true** (사용자가 OFF 누를 수 있어야 함) |
+  | `IsActive == false` + 아래 모두 만족 | true |
+  | 그 외 | false |
+
+  비활성 모드 활성 조건 (전부 만족):
+  - `SelectedRift != null`
+  - `DimensionStoneInventory.Instance.Count > 0`
+  - `WaveSystem.Instance != null && !WaveSystem.Instance.IsWaveActive` ← **신규 (Codex P2)**
+  - `GameStateSystem.Current == GameState.Playing`
+
 - 차원석 장착 로직:
   - `DimensionStoneSlot.EquipToRift(rift, stone)` 정적 메서드 **재사용** (swap 패턴 포함). 이미 검증된 경로라 신규 로직 추가 없음.
 - 주의:
   - `OnWaveEnded(true)` 후 `EndWave` 가 `Playing` 상태를 유지하므로 `OpenRift` 가드 통과 OK.
-  - `OpenRift()` 실패 시 (`StartRiftWave` 거부 등) **`SetStone` 한 stone 을 인벤토리로 자동 회수**한 뒤 `Stop()` 호출 (위험 요소 섹션의 결정과 일치). 회수 코드 예: `if (rift.LoadedStone == lastEquipped) { DimensionStoneInventory.Instance.Add(rift.LoadedStone); rift.ClearStone(); }`.
+  - `OpenRift()` 실패 시 (`StartRiftWave` 거부 등) **`SetStone` 한 stone 을 인벤토리로 자동 회수**한 뒤 `Stop()` 호출. 회수 코드 예: `if (rift.LoadedStone == lastEquipped) { DimensionStoneInventory.Instance.Add(rift.LoadedStone); rift.ClearStone(); }`.
+  - 단 `IsWaveActive` 가드를 interactable 에 추가했으므로 토글 ON 시 진입 자체가 차단됨 — 회수 로직은 race 안전망일 뿐 정상 경로에서는 호출되지 않음.
 
 ### `MakeDefence/Assets/Scripts/UI/RepeatGenerateToggleButton.cs` — 시각 처리 메모
 
@@ -125,8 +142,11 @@ WaveSystem.OnWaveEnded(cleared)
 - [ ] 균열 선택 + 인벤토리 stone ≥ 1 → 활성
 - [ ] 토글 ON 클릭 → 시각 변화(색) + GenerateSlot 에 첫 stone 장착 + 웨이브 시작
 - [ ] 웨이브 클리어 → 다음 stone 자동 장착 + 웨이브 자동 시작 (인벤 카운트 -1, 반복)
+- [ ] **ON 시점 인벤 N=3 → 정확히 3회 사이클 후 자동 Stop** (Codex P1 — 클리어 보너스 stone 누적돼도 카운터로 차단)
+- [ ] **ON 시점 인벤 N=3 → 3회 사이클 종료 후 인벤에 클리어 보너스 stone 만 잔존**
 - [ ] 인벤토리가 비면 자동 Stop → 토글 OFF 시각 복귀, 버튼 비활성
 - [ ] 토글 ON 중 OFF 클릭 → 진행 중 웨이브는 끝까지 진행, 다음 웨이브 자동 시작 안 함
+- [ ] **일반 웨이브 진행 중에는 토글 자체가 비활성** (Codex P2 — `!IsWaveActive` 가드)
 - [ ] 토글 ON 중 사용자가 `Generatebtn`(1회성) 클릭 → `IsWaveActive` 가드로 중복 실행 안 됨 (정상)
 - [ ] Defeat 발생 → 자동 Stop
 - [ ] 게임 일시정지 / WaveResult 진입 시 토글 OFF 복귀
@@ -137,6 +157,12 @@ WaveSystem.OnWaveEnded(cleared)
 신규 컴포넌트는 Unity 이벤트 + 싱글톤 의존이라 단위 테스트 부담이 크다. `OpenRiftButton` 과 동일하게 EditMode 테스트는 추가하지 않고 수동 검증으로 커버.
 
 ## 5. 위험 요소
+
+- **DroppedStoneSystem 클리어 보너스로 인한 무한 farming** 🔴 (Codex P1 회신)
+  - `WaveSystem.EndWave` 가 `OnWaveEnded(true)` 를 발화. `DroppedStoneSystem` 은 `[DefaultExecutionOrder(-100)]` 으로 본 토글(기본 0)보다 **먼저** 핸들러가 호출 → `CollectAll()` + `GrantClearBonus()` (인벤 +1 보장, `DroppedStoneSystem.cs:149-154`).
+  - 본 토글이 그 다음에 `OnWaveEnded(true)` 콜백을 받았을 때 단순히 `inv.Count > 0` 만 체크하면 보상 stone 이 항상 채워져 있어 **무한 반복 farming** 가능.
+  - **해결 (채택)**: ON 진입 시 `_remaining = inv.Count` 스냅샷 → 매 사이클 `--`. `_remaining <= 0` 이면 Stop. 클리어 중 추가된 보너스 stone 은 큐 외 보유분으로 남아 다음 토글 ON 시 다시 카운트됨.
+  - 검증 체크리스트: ON 시점 인벤 N개 → 정확히 N회 OpenRift 후 자동 Stop (보너스 stone 은 인벤에 누적된 채 유지).
 
 - **`SetStone` 후 `OpenRift` 실패 시 stone 잔존**
   - `OpenRift()` 가 `IsWaveActive` / `GameState` 가드로 실패하면 이미 `SetStone` 한 stone 이 `LoadedStone` 에 남는다.
