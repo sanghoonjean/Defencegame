@@ -16,6 +16,8 @@ Canvas/DimesionStoneInventoryUI
 
 - `RepeateGeneratebtn` 은 현재 `OpenRiftButton` 이 부착돼 있음 (복사 흔적). 이 컴포넌트를 제거하고 신규 `RepeatGenerateToggleButton` 으로 교체.
 
+> ⚠️ **씬 커밋 상태 주의** (Codex P2 회신): 본 플랜 작성 시점에 `RepeateGeneratebtn` GameObject 는 사용자가 Unity Editor 에서 추가한 **로컬 미커밋 변경**(working tree `M MakeDefence/Assets/Scenes/SampleScene.unity`) 상태로 존재한다. UnityMCP `find_gameobjects` 로 `instanceID=-35718`, path `Canvas/DimesionStoneInventoryUI/RepeateGeneratebtn` 직접 확인 완료. `git grep` 으로 origin/main 의 씬을 검색하면 발견되지 않는데, 이는 커밋 누락 때문이며 누락된 객체가 아니다. **구현 PR 단계에서 씬을 함께 커밋**해 origin 에 반영한다.
+
 ### 핵심 흐름
 
 ```
@@ -103,12 +105,13 @@ WaveSystem.OnWaveEnded(cleared)
   - `DimensionStoneSlot.EquipToRift(rift, stone)` 정적 메서드 **재사용** (swap 패턴 포함). 이미 검증된 경로라 신규 로직 추가 없음.
 - 주의:
   - `OnWaveEnded(true)` 후 `EndWave` 가 `Playing` 상태를 유지하므로 `OpenRift` 가드 통과 OK.
-  - `OpenRift()` 실패 시 (`StartRiftWave` 거부 등) `Stop()` 호출. **`SetStone` 후 OpenRift 실패하면 장착된 stone 이 rift 에 남게 됨** → 그 stone 은 다음 사용자 행동(인벤 회수 드래그 / 1회 Generatebtn)으로 처리. 자동 회수는 하지 않음 (UX 결정 — 단순성 우선).
+  - `OpenRift()` 실패 시 (`StartRiftWave` 거부 등) **`SetStone` 한 stone 을 인벤토리로 자동 회수**한 뒤 `Stop()` 호출 (위험 요소 섹션의 결정과 일치). 회수 코드 예: `if (rift.LoadedStone == lastEquipped) { DimensionStoneInventory.Instance.Add(rift.LoadedStone); rift.ClearStone(); }`.
 
 ### `MakeDefence/Assets/Scripts/UI/RepeatGenerateToggleButton.cs` — 시각 처리 메모
 
 - 토글 ON 시 `Button.colors.normalColor = pressedColor`(또는 selectedColor) 로 강조.
-- `OnDisable` 또는 `Stop()` 에서 원본 `ColorBlock` 복원.
+- `Stop()` 에서 원본 `ColorBlock` 복원 (시각만 — 구독은 그대로 유지).
+- `OnDisable` 에서도 원본 `ColorBlock` 복원 (안전망).
 - 별도 Sprite Swap 은 사용하지 않음 (씬에 ON/OFF 별도 sprite 없음 — 색만 변경).
 
 ## 4. 테스트 계획
@@ -155,8 +158,11 @@ WaveSystem.OnWaveEnded(cleared)
 - **연속 모드 ON 중 사용자가 GenerateSlot 에 수동 드래그**
   - 사용자가 다른 stone 을 GenerateSlot 에 드롭하면 `EquipToRift` 의 swap 로직으로 기존 stone 이 인벤 복귀. 이후 자동 사이클이 다음 cycle 에 그 stone 을 다시 집을 수 있음. **의도된 동작** — 사용자 우선.
 
-- **이벤트 누수**
-  - `OnDisable` / `Stop()` 에서 모든 구독 해제. rift 교체 시 `OnStoneChanged` 재구독 패턴은 본 토글에서는 불필요 (LoadedStone 직접 추적 안 함, `IsActive` 만 관리).
+- **이벤트 구독 수명** (Codex P2 회신)
+  - 모든 구독은 `OnEnable` 에서 등록 / `OnDisable` 에서 해제. **`Stop()` 은 런타임 전환**(인벤 empty / Defeat / Rift 해제 / 사용자 OFF)이라 구독 해제 금지 — 해제하면 인벤이 다시 채워지거나 Rift 가 재선택돼도 `Button.interactable` 이 갱신되지 않아 토글이 영구 비활성화된다.
+  - `Stop()` 책임 = `IsActive=false` + 시각(`ColorBlock`) 복원 + `LoadedStone` 회수(필요 시) **그게 전부**.
+  - rift 교체 시 `OnStoneChanged` 재구독 패턴은 본 토글에서는 불필요 (LoadedStone 직접 추적 안 함, `IsActive` 만 관리).
+  - 참고: `OpenRiftButton.cs` 21-35 행도 동일 패턴(OnEnable 구독 / OnDisable 해제)으로 검증됨.
 
 - **씬 dirty 상태**
   - `RepeateGeneratebtn` 의 `OpenRiftButton` 제거 + `RepeatGenerateToggleButton` 추가는 UnityMCP `manage_components` 로 수행. 구현 단계에서 `manage_scene save` 로 baseline 확정.
