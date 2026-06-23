@@ -18,7 +18,6 @@ public class RiftGeneratorPanel : MonoBehaviour
     [SerializeField] private Button applyTopTierButton;
     [SerializeField] private Button applyDeleteButton;
     [SerializeField] private Button applyCloneButton;
-    [SerializeField] private Button openRiftButton;
 
     private RiftGenerator _current;
 
@@ -31,7 +30,6 @@ public class RiftGeneratorPanel : MonoBehaviour
         if (applyTopTierButton  != null) applyTopTierButton.onClick.AddListener(() => ApplyCube(CubeType.TopTier));
         if (applyDeleteButton   != null) applyDeleteButton.onClick.AddListener(() => ApplyCube(CubeType.Delete));
         if (applyCloneButton    != null) applyCloneButton.onClick.AddListener(() => ApplyCube(CubeType.Clone));
-        if (openRiftButton      != null) openRiftButton.onClick.AddListener(OpenRift);
     }
 
     private void OnEnable()
@@ -93,8 +91,6 @@ public class RiftGeneratorPanel : MonoBehaviour
         if (applyTopTierButton  != null) applyTopTierButton.interactable  = hasStone;
         if (applyDeleteButton   != null) applyDeleteButton.interactable   = hasStone;
         if (applyCloneButton    != null) applyCloneButton.interactable    = hasStone;
-        if (openRiftButton      != null) openRiftButton.interactable      = hasStone
-            && WaveSystem.Instance != null && !WaveSystem.Instance.IsWaveActive;
     }
 
     private void LoadNextStone()
@@ -119,13 +115,6 @@ public class RiftGeneratorPanel : MonoBehaviour
     {
         if (_current == null) return;
         _current.ApplyCube(cube);
-        Refresh();
-    }
-
-    private void OpenRift()
-    {
-        if (_current == null) return;
-        _current.OpenRift();
         Refresh();
     }
 }
