@@ -23,6 +23,7 @@ public class OpenRiftButton : MonoBehaviour
         InventorySystem.OnRiftSelected   += HandleRiftSelected;
         WaveSystem.OnWaveStarted         += HandleWaveStarted;
         WaveSystem.OnWaveEnded           += HandleWaveEnded;
+        GameStateSystem.OnStateChanged   += HandleStateChanged;
         HandleRiftSelected(InventorySystem.Instance?.SelectedRift);
     }
 
@@ -31,6 +32,7 @@ public class OpenRiftButton : MonoBehaviour
         InventorySystem.OnRiftSelected   -= HandleRiftSelected;
         WaveSystem.OnWaveStarted         -= HandleWaveStarted;
         WaveSystem.OnWaveEnded           -= HandleWaveEnded;
+        GameStateSystem.OnStateChanged   -= HandleStateChanged;
         if (_current != null)
         {
             _current.OnStoneChanged -= Refresh;
@@ -48,17 +50,16 @@ public class OpenRiftButton : MonoBehaviour
 
     private void HandleWaveStarted(int _) => Refresh();
     private void HandleWaveEnded(bool _) => Refresh();
+    private void HandleStateChanged(GameState _) => Refresh();
 
     private void Refresh()
     {
         if (_button == null) return;
-        // GameState 가드는 RiftGenerator.OpenRift 내부에서 한다 — 여기서는 자주 변하는
-        // 상태(rift/stone/wave) 만 반영. 비-Playing 상태에서도 버튼은 활성이지만 클릭은
-        // OpenRift 가 거절. (WaveResult 가 자동 해제되지 않는 별도 미구현 회피 — #298)
         _button.interactable =
             _current != null
             && _current.LoadedStone != null
-            && WaveSystem.Instance != null && !WaveSystem.Instance.IsWaveActive;
+            && WaveSystem.Instance != null && !WaveSystem.Instance.IsWaveActive
+            && GameStateSystem.Current == GameState.Playing;
     }
 
     private void OnClick()
