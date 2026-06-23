@@ -216,11 +216,20 @@ public class WaveSystem : MonoBehaviour
 
             OnWaveEnded?.Invoke(true);
 
-            // 균열 웨이브는 1회성 — autoWave 무관하게 결과 화면 또는 일반 상태 복귀
-            if (!wasRift && _autoWave)
+            // 균열 웨이브는 1회성이지만 일반 게임 흐름을 멈추지 않는다 — Playing 유지.
+            // 일반 웨이브는 autoWave 면 자동 재시작, 아니면 결과 화면(WaveResult).
+            if (wasRift)
+            {
+                // no-op — Playing 유지
+            }
+            else if (_autoWave)
+            {
                 StartWave();
+            }
             else
+            {
                 GameStateSystem.SetState(GameState.WaveResult);
+            }
         }
         else
         {
