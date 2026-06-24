@@ -53,6 +53,7 @@ public class DroppedStonePickup : MonoBehaviour
         _labelTextBaseAlpha   = labelText   != null ? labelText.color.a   : 0f;
 
         transform.position = new Vector3(worldPos.x, worldPos.y, transform.position.z);
+        DroppedPickupRegistry.Register(transform);
         _spawnCoroutine = StartCoroutine(SpawnEffect());
     }
 
@@ -108,6 +109,7 @@ public class DroppedStonePickup : MonoBehaviour
 
     private void OnDestroy()
     {
+        DroppedPickupRegistry.Unregister(transform);
         if (DroppedStoneSystem.Instance != null)
             DroppedStoneSystem.Instance.UnregisterPickup(this);
     }

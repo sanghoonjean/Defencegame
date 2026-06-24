@@ -109,6 +109,7 @@ public class DroppedCubePickup : MonoBehaviour
 
         _basePos = new Vector3(worldPos.x, worldPos.y, transform.position.z);
         transform.position = _basePos;
+        DroppedPickupRegistry.Register(transform);
         _pulseStartTime = Time.time;
         _spawnCoroutine = StartCoroutine(SpawnEffect());
     }
@@ -243,6 +244,7 @@ public class DroppedCubePickup : MonoBehaviour
 
     private void OnDestroy()
     {
+        DroppedPickupRegistry.Unregister(transform);
         if (DroppedCubeSystem.Instance != null)
             DroppedCubeSystem.Instance.UnregisterPickup(this);
     }
