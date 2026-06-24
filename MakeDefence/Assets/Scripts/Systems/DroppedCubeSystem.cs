@@ -38,6 +38,8 @@ public class DroppedCubeSystem : MonoBehaviour
     [SerializeField] private float discardFadeDuration  = 0.3f;
     [SerializeField] private float spawnArrangementRadius = 0.5f;  // count>1 일 때 원형 배치 반경
     [SerializeField] private float spawnPositionJitter    = 0.15f; // 배치 후 추가 무작위 흔들림
+    [SerializeField] private float spawnMinSeparation     = 0.6f;  // 기존 픽업과 최소 거리 (라벨 겹침 완화)
+    [SerializeField] private int   spawnSeparationAttempts = 6;    // 회피 반복 횟수
 
     private readonly HashSet<DroppedCubePickup> _activePickups = new();
     private readonly Dictionary<CubeType, int>  _pendingCounts = new()
@@ -133,6 +135,7 @@ public class DroppedCubeSystem : MonoBehaviour
 
     private void SpawnPickup(CubeType type, Vector2 worldPos)
     {
+        worldPos = DroppedPickupRegistry.ResolveSpawnPos(worldPos, spawnMinSeparation, spawnSeparationAttempts);
         var pickup = Instantiate(pickupPrefab);
         pickup.Initialize(type, worldPos);
         _activePickups.Add(pickup);

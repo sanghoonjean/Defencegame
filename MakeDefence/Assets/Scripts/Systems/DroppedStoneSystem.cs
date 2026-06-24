@@ -27,6 +27,8 @@ public class DroppedStoneSystem : MonoBehaviour
     [SerializeField] private float fadeDuration = 0.3f;
     [SerializeField] private float spawnArrangementRadius = 0.5f;
     [SerializeField] private float spawnPositionJitter    = 0.2f;
+    [SerializeField] private float spawnMinSeparation     = 0.6f;
+    [SerializeField] private int   spawnSeparationAttempts = 6;
 
     private readonly HashSet<DroppedStonePickup> _activePickups = new();
     private int _pending;
@@ -105,6 +107,7 @@ public class DroppedStoneSystem : MonoBehaviour
 
     private void SpawnPickup(Vector2 worldPos)
     {
+        worldPos = DroppedPickupRegistry.ResolveSpawnPos(worldPos, spawnMinSeparation, spawnSeparationAttempts);
         var pickup = Instantiate(pickupPrefab);
         pickup.Initialize(worldPos);
         _activePickups.Add(pickup);
