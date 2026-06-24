@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "cmd=$(jq -r '.tool_input.command // \"\"'); if echo \"$cmd\" | grep -q 'git commit'; then plan_count=$(ls /home/user/Defencegame/docs/exec-plans/active/*.md 2>/dev/null | wc -l); if [ \"$plan_count\" -eq 0 ]; then echo '{\"hookSpecificOutput\": {\"hookEventName\": \"PreToolUse\", \"additionalContext\": \"[워크플로우 경고] 커밋 전 docs/exec-plans/active/에 플랜 파일이 없습니다. CLAUDE.md 워크플로우: 이슈 → 플랜 파일 → 플랜 PR → 구현 PR\"}}'; fi; fi",
+            "statusMessage": "워크플로우 체크 중..."
+          }
+        ]
+      }
+    ]
+  }
+}
