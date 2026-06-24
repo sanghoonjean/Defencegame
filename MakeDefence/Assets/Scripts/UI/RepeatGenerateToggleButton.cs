@@ -32,6 +32,7 @@ public class RepeatGenerateToggleButton : MonoBehaviour
         WaveSystem.OnWaveStarted                 += HandleWaveStarted;
         WaveSystem.OnWaveEnded                   += HandleWaveEnded;
         GameStateSystem.OnStateChanged           += HandleStateChanged;
+        PauseSystem.OnPauseChanged               += HandlePauseChanged;
         DimensionStoneInventory.OnInventoryChanged += Refresh;
         Refresh();
     }
@@ -42,6 +43,7 @@ public class RepeatGenerateToggleButton : MonoBehaviour
         WaveSystem.OnWaveStarted                 -= HandleWaveStarted;
         WaveSystem.OnWaveEnded                   -= HandleWaveEnded;
         GameStateSystem.OnStateChanged           -= HandleStateChanged;
+        PauseSystem.OnPauseChanged               -= HandlePauseChanged;
         DimensionStoneInventory.OnInventoryChanged -= Refresh;
         RestoreColors();
     }
@@ -129,6 +131,12 @@ public class RepeatGenerateToggleButton : MonoBehaviour
         Refresh();
     }
 
+    private void HandlePauseChanged(bool paused)
+    {
+        if (_isActive && paused) Stop();
+        Refresh();
+    }
+
     private void Refresh()
     {
         if (_button == null) return;
@@ -144,7 +152,8 @@ public class RepeatGenerateToggleButton : MonoBehaviour
             InventorySystem.Instance?.SelectedRift != null
             && inv != null && inv.Count > 0
             && WaveSystem.Instance != null && !WaveSystem.Instance.IsWaveActive
-            && GameStateSystem.Current == GameState.Playing;
+            && GameStateSystem.Current == GameState.Playing
+            && (PauseSystem.Instance == null || !PauseSystem.Instance.IsPaused);
     }
 
     private void ApplyActiveColors()
