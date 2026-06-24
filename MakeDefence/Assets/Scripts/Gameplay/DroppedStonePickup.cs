@@ -2,49 +2,57 @@ using System.Collections;
 using UnityEngine;
 
 /// <summary>
-/// 차원석 픽업 비주얼 (수확 아크 없는 단순 spawn pop + pulse + fade out).
-/// Sprite 는 사용자가 인스펙터에서 직접 설정 — 본 작업은 placeholder color 만.
+/// 차원석 픽업 비주얼. 큐브 픽업과 동일한 라벨 패턴 (Border + Bg + Text).
+/// "차원석" 이름만 표시. 수확 아크 없이 그 자리에서 fade out.
 /// </summary>
 public class DroppedStonePickup : MonoBehaviour
 {
     [System.Serializable]
-    public struct PulseStyle
+    public struct LabelStyle
     {
-        [Range(0f, 1f)] public float amplitude;
-        public float                 frequency;
+        public Color borderColor;
+        public Color bgColor;
+        public Color textColor;
     }
 
-    [Header("Renderer")]
-    [SerializeField] private SpriteRenderer body;
+    [Header("Renderers")]
+    [SerializeField] private SpriteRenderer labelBorder;
+    [SerializeField] private SpriteRenderer labelBg;
+    [SerializeField] private TextMesh       labelText;
 
-    [Header("Placeholder Color (sprite 미할당 시 색만 표시)")]
-    [SerializeField] private Color placeholderColor = new(0.55f, 0.2f, 0.85f, 1f);
+    [Header("Label Style")]
+    [SerializeField] private LabelStyle style = new() {
+        borderColor = new Color(0.690f, 0.498f, 1.000f, 1f),
+        bgColor     = new Color(0.239f, 0.165f, 0.376f, 0.9f),
+        textColor   = new Color(0.816f, 0.663f, 1.000f, 1f),
+    };
 
-    [Header("Pulse (반짝임)")]
-    [SerializeField] private PulseStyle bodyPulse = new() { amplitude = 0.25f, frequency = 1.5f };
+    [SerializeField] private string displayName = "차원석";
 
     [Header("Spawn Effect")]
     [SerializeField] private float spawnEffectDuration = 0.25f;
 
-    private float _baseAlpha;
-    private float _pulseStartTime;
-    private bool  _movementLocked;
+    private bool      _movementLocked;
     private Coroutine _spawnCoroutine;
-
-    private void Awake()
-    {
-        if (body == null) body = GetComponent<SpriteRenderer>();
-    }
+    private float     _labelBorderBaseAlpha;
+    private float     _labelBgBaseAlpha;
+    private float     _labelTextBaseAlpha;
 
     public void Initialize(Vector2 worldPos)
     {
-        if (body != null)
+        if (labelBorder != null) labelBorder.color = style.borderColor;
+        if (labelBg     != null) labelBg.color     = style.bgColor;
+        if (labelText   != null)
         {
-            body.color = placeholderColor;
-            _baseAlpha = placeholderColor.a;
+            labelText.text  = displayName;
+            labelText.color = style.textColor;
         }
+
+        _labelBorderBaseAlpha = labelBorder != null ? labelBorder.color.a : 0f;
+        _labelBgBaseAlpha     = labelBg     != null ? labelBg.color.a     : 0f;
+        _labelTextBaseAlpha   = labelText   != null ? labelText.color.a   : 0f;
+
         transform.position = new Vector3(worldPos.x, worldPos.y, transform.position.z);
-        _pulseStartTime = Time.time;
         _spawnCoroutine = StartCoroutine(SpawnEffect());
     }
 
@@ -66,15 +74,6 @@ public class DroppedStonePickup : MonoBehaviour
         _spawnCoroutine = null;
     }
 
-    private void Update()
-    {
-        if (_movementLocked) return;
-        if (body == null || bodyPulse.amplitude <= 0f) return;
-        float t = Time.time - _pulseStartTime;
-        float m = 1f + Mathf.Sin(t * bodyPulse.frequency * Mathf.PI * 2f) * bodyPulse.amplitude;
-        var c = body.color; c.a = Mathf.Clamp01(_baseAlpha * m); body.color = c;
-    }
-
     public void StartCollectFade(float duration) => StartFade(duration);
     public void StartDiscardFade(float duration) => StartFade(duration);
 
@@ -94,13 +93,17 @@ public class DroppedStonePickup : MonoBehaviour
         {
             t += Time.deltaTime;
             float k = 1f - Mathf.Clamp01(t / duration);
-            if (body != null)
-            {
-                var c = body.color; c.a = _baseAlpha * k; body.color = c;
-            }
+            SetGroupAlpha(k);
             yield return null;
         }
         Destroy(gameObject);
+    }
+
+    private void SetGroupAlpha(float a)
+    {
+        if (labelBorder != null) { var c = labelBorder.color; c.a = _labelBorderBaseAlpha * a; labelBorder.color = c; }
+        if (labelBg     != null) { var c = labelBg.color;     c.a = _labelBgBaseAlpha     * a; labelBg.color     = c; }
+        if (labelText   != null) { var c = labelText.color;   c.a = _labelTextBaseAlpha   * a; labelText.color   = c; }
     }
 
     private void OnDestroy()
