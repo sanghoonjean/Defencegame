@@ -3,12 +3,11 @@ using UnityEngine.UI;
 
 /// <summary>
 /// 차원석 인벤토리 패널의 "웨이브 연속 생성" 토글 버튼.
-/// ON 진입 시 인벤 카운트 스냅샷 → 매 클리어마다 다음 차원석 자동 장착 + OpenRift.
-/// _remaining 0 / OpenRift 실패 / Defeat / Rift 해제 / 사용자 OFF 클릭 시 자동 Stop.
+/// ON 진입 시 첫 차원석 장착 + OpenRift → 매 클리어마다 다음 차원석 자동 장착 + OpenRift.
+/// 인벤 empty / OpenRift 실패 / Defeat / Pause / 사용자 OFF 클릭 시 자동 Stop.
 ///
 /// 구독은 OnEnable/OnDisable 에만 두고 Stop() 은 런타임 전환(시각 + 상태)만 담당.
-/// 클리어 보너스 stone(DroppedStoneSystem.GrantClearBonus) 으로 인한 무한 farming 은
-/// _remaining 카운터로 차단된다.
+/// 인벤이 빌 때까지 계속 소진 — 클리어 보너스 stone 도 다음 사이클에서 자동 사용 (사용자 결정).
 /// </summary>
 [RequireComponent(typeof(Button))]
 public class RepeatGenerateToggleButton : MonoBehaviour
@@ -16,7 +15,6 @@ public class RepeatGenerateToggleButton : MonoBehaviour
     private Button _button;
     private ColorBlock _originalColors;
     private bool _isActive;
-    private int _remaining;
     private DimensionStone _lastEquipped;
     private RiftGenerator _cachedRift;
 
@@ -64,7 +62,6 @@ public class RepeatGenerateToggleButton : MonoBehaviour
         if (GameStateSystem.Current != GameState.Playing) return;
 
         _isActive   = true;
-        _remaining  = inv.Count;
         _cachedRift = rift;
         ApplyActiveColors();
         Refresh();
@@ -82,7 +79,6 @@ public class RepeatGenerateToggleButton : MonoBehaviour
         _lastEquipped = null;
         _cachedRift   = null;
         _isActive  = false;
-        _remaining = 0;
         RestoreColors();
         Refresh();
     }
@@ -93,11 +89,10 @@ public class RepeatGenerateToggleButton : MonoBehaviour
 
         var inv = DimensionStoneInventory.Instance;
         if (_cachedRift == null || inv == null) { Stop(); return; }
-        if (_remaining <= 0 || inv.Count <= 0) { Stop(); return; }
+        if (inv.Count <= 0) { Stop(); return; }
 
         var stone = inv.Stones[0];
         _lastEquipped = stone;
-        _remaining--;
 
         DimensionStoneSlot.EquipToRift(_cachedRift, stone);
 
