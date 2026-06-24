@@ -18,6 +18,7 @@ public class RepeatGenerateToggleButton : MonoBehaviour
     private bool _isActive;
     private int _remaining;
     private DimensionStone _lastEquipped;
+    private RiftGenerator _cachedRift;
 
     private void Awake()
     {
@@ -62,8 +63,9 @@ public class RepeatGenerateToggleButton : MonoBehaviour
         if (WaveSystem.Instance == null || WaveSystem.Instance.IsWaveActive) return;
         if (GameStateSystem.Current != GameState.Playing) return;
 
-        _isActive  = true;
-        _remaining = inv.Count;
+        _isActive   = true;
+        _remaining  = inv.Count;
+        _cachedRift = rift;
         ApplyActiveColors();
         Refresh();
         TryConsumeNext();
@@ -71,16 +73,14 @@ public class RepeatGenerateToggleButton : MonoBehaviour
 
     private void Stop()
     {
-        if (_lastEquipped != null)
+        if (_lastEquipped != null && _cachedRift != null
+            && _cachedRift.LoadedStone == _lastEquipped)
         {
-            var rift = InventorySystem.Instance?.SelectedRift;
-            if (rift != null && rift.LoadedStone == _lastEquipped)
-            {
-                DimensionStoneInventory.Instance?.Add(rift.LoadedStone);
-                rift.ClearStone();
-            }
-            _lastEquipped = null;
+            DimensionStoneInventory.Instance?.Add(_cachedRift.LoadedStone);
+            _cachedRift.ClearStone();
         }
+        _lastEquipped = null;
+        _cachedRift   = null;
         _isActive  = false;
         _remaining = 0;
         RestoreColors();
@@ -91,24 +91,22 @@ public class RepeatGenerateToggleButton : MonoBehaviour
     {
         if (!_isActive) return;
 
-        var rift = InventorySystem.Instance?.SelectedRift;
-        var inv  = DimensionStoneInventory.Instance;
-        if (rift == null || inv == null) { Stop(); return; }
+        var inv = DimensionStoneInventory.Instance;
+        if (_cachedRift == null || inv == null) { Stop(); return; }
         if (_remaining <= 0 || inv.Count <= 0) { Stop(); return; }
 
         var stone = inv.Stones[0];
         _lastEquipped = stone;
         _remaining--;
 
-        DimensionStoneSlot.EquipToRift(rift, stone);
+        DimensionStoneSlot.EquipToRift(_cachedRift, stone);
 
-        bool started = rift.OpenRift();
+        bool started = _cachedRift.OpenRift();
         if (!started) Stop();
     }
 
     private void HandleRiftSelected(RiftGenerator rift)
     {
-        if (rift == null && _isActive) Stop();
         Refresh();
     }
 
