@@ -95,19 +95,4 @@ public class TestRunner : MonoBehaviour
         bool ok = rift.ApplyCube(cube);
         Debug.Log($"[TestRunner] {cube} → {ok}");
     }
-
-    private void OnGUI()
-    {
-        if (WaveSystem.Instance == null || PlayerSystem.Instance == null) return;
-
-        GUI.Label(new Rect(10, 10, 300, 25), $"Stage: {WaveSystem.Instance.CurrentStage}");
-        GUI.Label(new Rect(10, 35, 300, 25), $"Wave Active: {WaveSystem.Instance.IsWaveActive}");
-        GUI.Label(new Rect(10, 60, 300, 25), $"Player HP: {PlayerSystem.Instance.CurrentHp}");
-        GUI.Label(new Rect(10, 85, 300, 25), $"Game State: {GameStateSystem.Current}");
-        string selected = InventorySystem.Instance?.SelectedTower != null
-            ? $"{InventorySystem.Instance.SelectedTower.TileCoord}"
-            : "없음";
-        GUI.Label(new Rect(10, 110, 300, 25), $"선택 타워: {selected}");
-        GUI.Label(new Rect(10, 135, 400, 25), "[Space] 웨이브  [A] 자동  [C] 큐브+10  [R] 리셋");
-    }
 }
