@@ -10,15 +10,23 @@ public class InvenSlotDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandl
 
     public SkillData         Skill              { get; set; }
     public SupportOptionData Support            { get; set; }
+    public DimensionStone    Stone              { get; set; }
+    public Sprite            StoneIconOverride  { get; set; }
 
     // SourceDisplayIndex: 인벤 그리드에서의 슬롯 위치. 인벤 외부 (장착 슬롯 등) 에서 시작한 드래그는 -1
     public int SourceDisplayIndex { get; set; } = -1;
     // legacy alias — 기존 호출자 호환
     public int SlotIndex { get => SourceDisplayIndex; set => SourceDisplayIndex = value; }
 
-    public InventoryItemKind Kind => Skill != null ? InventoryItemKind.Skill : InventoryItemKind.Support;
-    public bool   HasItem => Skill != null || Support != null;
-    public Sprite Icon    => Skill != null ? Skill.icon : Support?.icon;
+    public InventoryItemKind Kind =>
+        Skill   != null ? InventoryItemKind.Skill   :
+        Support != null ? InventoryItemKind.Support :
+                          InventoryItemKind.Stone;
+    public bool   HasItem => Skill != null || Support != null || Stone != null;
+    public Sprite Icon    =>
+        Skill   != null ? Skill.icon   :
+        Support != null ? Support.icon :
+                          StoneIconOverride;
 
     private Image  _iconImage;
     private Canvas _rootCanvas;

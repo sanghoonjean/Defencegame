@@ -198,4 +198,24 @@ public class InventorySystem : MonoBehaviour
         if (SelectedTower == null) return false;
         return ItemSystem.Instance.ApplyCube(cube, SelectedTower, slot);
     }
+
+    /// <summary>
+    /// 인벤(ShopSystem)에서 stone 을 빼서 rift 에 장착. 기존 LoadedStone 은 인벤으로 회수 (swap).
+    /// 클릭/드래그-드롭 양쪽에서 공유. (구 DimensionStoneSlot.EquipToRift 후속)
+    /// </summary>
+    public static bool EquipStoneToRift(RiftGenerator rift, DimensionStone stone)
+    {
+        if (rift == null || stone == null) return false;
+        if (ShopSystem.Instance == null) return false;
+
+        // swap 패턴 — 기존 stone 인벤 회수 후 새 stone 장착 (소실 방지)
+        if (rift.LoadedStone != null)
+        {
+            ShopSystem.Instance.AddStone(rift.LoadedStone);
+            rift.ClearStone();
+        }
+        ShopSystem.Instance.RemoveStone(stone);
+        rift.SetStone(stone);
+        return true;
+    }
 }

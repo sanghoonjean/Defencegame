@@ -57,7 +57,7 @@ public class RiftGenerator : MonoBehaviour
             // in-place 업그레이드로 의미를 살린다 (#286 PR 리뷰 반영).
             case CubeType.TopTier: success = LoadedStone.UpgradeRandomOption(); break;
             case CubeType.Delete:  success = LoadedStone.RemoveRandomOption(); break;
-            case CubeType.Clone:   DimensionStoneInventory.Instance.Add(LoadedStone.Clone()); success = true; break;
+            case CubeType.Clone:   ShopSystem.Instance.AddStone(LoadedStone.Clone()); success = true; break;
             default:               success = false; break;
         }
 
@@ -83,7 +83,7 @@ public class RiftGenerator : MonoBehaviour
             // TopTier — upgradeable 옵션이 있어야만. (모두 max 도달이면 큐브 손실 방지)
             CubeType.TopTier => LoadedStone.CanUpgrade(),
             CubeType.Delete  => LoadedStone.Options.Count >= 2,
-            CubeType.Clone   => DimensionStoneInventory.Instance != null,
+            CubeType.Clone   => ShopSystem.Instance != null,
             _                => false,
         };
     }
@@ -107,7 +107,7 @@ public class RiftGenerator : MonoBehaviour
         bool started = WaveSystem.Instance.StartRiftWave(mods);
         if (!started) return false;
 
-        DimensionStoneInventory.Instance?.Remove(LoadedStone);
+        // LoadedStone 은 이미 EquipStoneToRift 시점에 인벤에서 제거됨 (소비만 처리).
         LoadedStone = null;
         OnStoneChanged?.Invoke();
         OnRiftOpened?.Invoke(this);

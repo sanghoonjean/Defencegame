@@ -7,6 +7,21 @@ public class InvenDropHandler : MonoBehaviour, IDropHandler
     {
         if (eventData.pointerDrag == null) return;
 
+        // GenerateSlot (Rift 장착 stone) → 인벤: 회수
+        var generate = eventData.pointerDrag.GetComponent<GenerateSlotDropTarget>();
+        if (generate != null)
+        {
+            var rift = InventorySystem.Instance?.SelectedRift;
+            if (rift == null || rift.LoadedStone == null) return;
+            // 드래그 중 다른 경로로 stone 이 바뀌었을 race 회피
+            if (generate.DraggingStone != null && generate.DraggingStone != rift.LoadedStone) return;
+
+            var stone = rift.LoadedStone;
+            ShopSystem.Instance?.AddStone(stone);
+            rift.ClearStone();
+            return;
+        }
+
         // 스킬 장착 슬롯 → 인벤: 스킬 해제 + 인벤 반환
         if (eventData.pointerDrag.GetComponent<SkillSlotDragHandler>() != null)
         {
