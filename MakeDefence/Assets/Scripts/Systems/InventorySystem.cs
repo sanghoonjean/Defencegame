@@ -218,4 +218,22 @@ public class InventorySystem : MonoBehaviour
         rift.SetStone(stone);
         return true;
     }
+
+    /// <summary>
+    /// GenerateSlot 에서 시작한 드래그로 rift 에 장착된 stone 을 인벤으로 회수.
+    /// 인벤 패널 배경(InvenDropHandler) 과 인벤 슬롯(InvenSlotDragHandler) 양쪽 드롭 경로에서 공유.
+    /// 드래그 중 stone 이 바뀌었을 race 회피용 캐시(`source.DraggingStone`) 검사 포함.
+    /// </summary>
+    public static bool TryUnloadStoneFromRift(GenerateSlotDropTarget source)
+    {
+        if (source == null) return false;
+        var rift = Instance?.SelectedRift;
+        if (rift == null || rift.LoadedStone == null) return false;
+        if (source.DraggingStone != null && source.DraggingStone != rift.LoadedStone) return false;
+
+        var stone = rift.LoadedStone;
+        ShopSystem.Instance?.AddStone(stone);
+        rift.ClearStone();
+        return true;
+    }
 }

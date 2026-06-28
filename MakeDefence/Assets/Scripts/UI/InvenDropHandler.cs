@@ -11,14 +11,7 @@ public class InvenDropHandler : MonoBehaviour, IDropHandler
         var generate = eventData.pointerDrag.GetComponent<GenerateSlotDropTarget>();
         if (generate != null)
         {
-            var rift = InventorySystem.Instance?.SelectedRift;
-            if (rift == null || rift.LoadedStone == null) return;
-            // 드래그 중 다른 경로로 stone 이 바뀌었을 race 회피
-            if (generate.DraggingStone != null && generate.DraggingStone != rift.LoadedStone) return;
-
-            var stone = rift.LoadedStone;
-            ShopSystem.Instance?.AddStone(stone);
-            rift.ClearStone();
+            InventorySystem.TryUnloadStoneFromRift(generate);
             return;
         }
 
