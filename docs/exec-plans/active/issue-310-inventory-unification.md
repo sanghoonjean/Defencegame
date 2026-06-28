@@ -66,8 +66,8 @@ ShopSystem
 |---|---|
 | `MakeDefence/Assets/Scripts/Systems/InventoryItemKind.cs` | `Stone` enum 추가 |
 | `MakeDefence/Assets/Scripts/Systems/IInventoryItem.cs` | (변경 없음 — 인터페이스 유지) |
-| `MakeDefence/Assets/Scripts/Systems/ShopSystem.cs` | `_ownedStones`, `AddStone`, `RemoveStone`, `OwnedStones`, Display* 메서드의 Stone 분기 추가. `[SerializeField] Sprite stoneIcon` 추가. `DisplayItem` 에 `Stone` 필드 추가 |
-| `MakeDefence/Assets/Scripts/Gameplay/Rift/Core/DimensionStone.cs` | `IInventoryItem` 구현 — `DisplayName`("차원석" 또는 옵션 첫 글자), `Icon` (ShopSystem.StoneIcon), `Kind = Stone` |
+| `MakeDefence/Assets/Scripts/Systems/ShopSystem.cs` | `_ownedStones`, `AddStone`, `RemoveStone`, `OwnedStones`, Display* 메서드의 Stone 분기 추가. `[SerializeField] Sprite stoneIcon` + `[SerializeField] string stoneDisplayName = "차원석"`. `DisplayItem` 에 `Stone` 필드 + Stone 분기. 내부에 `IInventoryItem` 어댑터 (private class `StoneInventoryItem`) 두어 `OwnedItems` 가 stone 도 yield |
+| ~~`MakeDefence/Assets/Scripts/Gameplay/Rift/Core/DimensionStone.cs`~~ | **변경 없음** — `MakeDefence.Rift.Core.asmdef` 가 Assembly-CSharp 참조 불가 (`references: []`). `IInventoryItem` / `ShopSystem` 의존 금지. 어댑터는 ShopSystem 측에서 처리 |
 | `MakeDefence/Assets/Scripts/UI/InvenUI.cs` | `DisplayItem.Stone` 경로 처리. 클릭 장착: Stone 일 때 SelectedRift 에 `EquipToRift` (기존 swap 로직). drag 핸들러에 `Stone` 페이로드 셋업 |
 | `MakeDefence/Assets/Scripts/UI/InvenSlotDragHandler.cs` | `DimensionStone Stone` 프로퍼티. `HasItem`/`Icon`/`Kind` 확장. `OnDrop` 에서 Stone 출처 인벤 슬롯 ↔ 인벤 슬롯 swap 도 동작. (Stone → Rift 는 `GenerateSlotDropTarget.OnDrop` 에서 받음) |
 | `MakeDefence/Assets/Scripts/UI/InvenDropHandler.cs` | `GenerateSlotDropTarget` 출처 드래그 (현재 LoadedStone 회수) 추가 — 기존 `DimensionStoneInventoryDropTarget` 로직 이전 |
@@ -91,7 +91,11 @@ ShopSystem
 
 ### 핵심 설계 결정
 
-- **차원석 sprite 공급원**: `DimensionStone` 은 ScriptableObject 아님 → `IInventoryItem.Icon` 을 어떻게 제공할지 문제. → `ShopSystem` 에 `[SerializeField] Sprite stoneIcon` 추가 + static 접근자 (`ShopSystem.Instance.StoneIcon`) 노출. `DimensionStone.IInventoryItem.Icon` 이 그 값을 반환. 인스펙터에서 지정.
+- **asmdef 경계 (Codex P1)**: `MakeDefence.Rift.Core.asmdef` 의 `references: []`. Unity 규칙상 custom asmdef → 사전 정의 어셈블리 (Assembly-CSharp, `IInventoryItem` / `ShopSystem` 위치) 참조 **불가**. 따라서 `DimensionStone` 은 `IInventoryItem` 을 구현하지 않는다. 대신 **어댑터를 ShopSystem 측에 둔다**:
+  - `ShopSystem` 내부 private class `StoneInventoryItem : IInventoryItem` — ctor 로 `DimensionStone` + 공용 icon/name 보관
+  - `OwnedItems` 의 Stone 분기에서 그 어댑터를 yield
+  - `DisplayItem.Stone` 필드는 raw `DimensionStone`, `DisplayItem.Icon` / `DisplayName` getter 가 Stone 케이스에서 ShopSystem 의 공용 값을 반환
+- **차원석 sprite/name 공급원**: `ShopSystem` 에 `[SerializeField] Sprite stoneIcon`, `[SerializeField] string stoneDisplayName = "차원석"`. 인스펙터에서 지정. `DimensionStone` 은 기존대로 데이터만.
 - **display order 의 Stone 항목 식별**: 기존 `_ownedSkills` / `_ownedSupports` 와 동일 패턴으로 `_ownedStones` 인덱스를 `DisplayEntry.DataIndex` 가 가리킨다. 같은 stone 이 중복 보유될 수 있어 인덱스 기반 식별이 정확.
 - **Stone 클릭 장착 동작**: SelectedRift 가 있으면 기존 `DimensionStoneSlot.EquipToRift` 와 동일하게 swap. SelectedRift 가 없으면 아무것도 안 함 (기존과 동일).
 - **Stone 드래그 ghost**: `InvenSlotDragHandler` 의 기존 ghost 사이즈/sprite 로직 그대로. 자식 ICON Image 색은 흰색(채움) 동일.
@@ -124,6 +128,7 @@ ShopSystem
 
 ## 5. 위험 요소
 
+- **asmdef 경계 (Codex P1 — 해결됨)**: `MakeDefence.Rift.Core.asmdef` 가 Assembly-CSharp 을 역참조할 수 없어 `DimensionStone : IInventoryItem` 불가. 어댑터를 `ShopSystem` 내부 private class 로 두는 방식으로 해결 (§3 핵심 설계 결정 참조). 구현 시 `DimensionStone.cs` 에 `using` 추가하지 말 것.
 - **씬 의존성 (Scene 마이그레이션)**: `SampleScene.unity` 안에 `DimensionStoneInventory` 와 `DimensionStoneInventoryView` 가 GameObject 로 살아 있다. 스크립트만 지우면 missing script 경고. UnityMCP 의 `manage_gameobject` / `manage_scene` 으로 정리 필요. 이건 구현 단계의 핵심 위험 — 메모리에 따르면 .unity / .prefab 직접 편집은 금지.
 - **stoneIcon 미할당**: `ShopSystem.stoneIcon` 을 인스펙터에서 안 채워두면 인벤 슬롯이 빈 아이콘으로 보임. 구현 시 fallback (예: 빈 sprite 일 때 자식 ICON 의 기본 색을 사용) 검토 필요.
 - **`DimensionStoneInventory.Instance` 동시 접근**: 다른 시스템 (`DroppedStoneSystem`, `RiftGenerator`, `RepeatGenerateToggleButton`) 이 `Instance` 를 null 체크하지만 빈도 높게 참조. 마이그레이션 누락 시 NullRef. 전체 grep + 치환으로 잡아야 함 (확인됨: 5 파일).
