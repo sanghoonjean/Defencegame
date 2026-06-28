@@ -77,7 +77,7 @@ ShopSystem
 | `MakeDefence/Assets/Scripts/Systems/DroppedStoneSystem.cs` | `DimensionStoneInventory.Instance.Add(stone)` → `ShopSystem.Instance.AddStone(stone)` |
 | `MakeDefence/Assets/Scripts/Gameplay/Rift/RiftGenerator.cs` | Clone 큐브 분기 `DimensionStoneInventory.Instance.Add(LoadedStone.Clone())` → `ShopSystem.Instance.AddStone(...)`. `Remove` 도 마찬가지 |
 | `MakeDefence/Assets/Scripts/TestRunner.cs` | `DimensionStoneInventory.Instance.Stones[0]` 등 참조 갱신 |
-| `MakeDefence/Assets/Tests/EditMode/Rift/DimensionStoneTests.cs` | (필요 시) 시스템 의존 부분 갱신 |
+| `MakeDefence/Assets/Tests/EditMode/Rift/DimensionStoneTests.cs` | Pure 데이터 클래스 테스트 — 변경 없음 예정 |
 | `MakeDefence/Assets/Scenes/SampleScene.unity` | DimensionStoneInventory GameObject 제거, DimensionStoneInventoryView GameObject 제거, InvenUI 의 slot prefab/풀 크기 조정 (UnityMCP 로 처리) |
 
 ## 3. 신규 클래스 / 파일
@@ -105,11 +105,11 @@ ShopSystem
 
 ### 자동 (EditMode)
 
-- 기존 `DimensionStoneTests` 가 통과해야 함 — 시스템 호출이 있다면 `ShopSystem` 으로 마이그레이션.
-- 통합 시점에 다음 시나리오용 신규 EditMode 테스트 추가:
-  - `ShopSystem.AddStone` 후 `OwnedDisplayOrder` 의 마지막 항목이 `Stone` Kind 로 들어감
-  - 스킬/서포트/차원석 혼합 보유 상태에서 `RemoveByDisplayIndex` 가 다른 Kind 의 DataIndex 를 깨뜨리지 않음
-  - `SwapDisplayOrder` / `MoveDisplayOrder` 가 Stone 끼리 / Stone↔Skill 양쪽에서 정상
+- 기존 `DimensionStoneTests` 가 통과해야 함 — Pure 데이터 클래스 테스트라 영향 없음.
+- **`ShopSystem` 신규 EditMode 테스트는 이번 PR 범위 외** (Codex P2 반영):
+  - 사유: `MakeDefence.Tests.EditMode.asmdef` 가 `MakeDefence.Rift.Core` 만 참조. `ShopSystem` 은 Assembly-CSharp 거주 → 테스트에서 보이지 않음. custom asmdef 는 사전 정의 어셈블리 역참조 불가.
+  - 기존에도 `ShopSystem.SwapDisplayOrder` 등 display-order 로직은 테스트 미존재 — 본 PR 가 그 공백을 새로 만들지는 않음.
+  - 자동 테스트 추가를 원하면 **별도 follow-up 이슈** 에서 `MakeDefence.Inventory.asmdef` 도입 후 ShopSystem + IInventoryItem + InventoryItemKind 이동 → 테스트 asmdef 가 참조하도록.
 
 ### 수동 (PlayMode in Unity Editor)
 
@@ -135,4 +135,4 @@ ShopSystem
 - **`OnInventoryChanged` 이벤트 통합**: 기존 차원석 변동 시점 (`Add`/`Remove`) 이 이제 `ShopSystem.OnInventoryChanged` 로 합류. `RiftGeneratorPanel` / `RepeatGenerateToggleButton` 등의 구독 채널 변경. 구독 누락 → UI 미갱신.
 - **EquipToRift 의 위치**: 현재 `DimensionStoneSlot.EquipToRift` 가 static helper. 클래스 삭제 시 호출처 (`RepeatGenerateToggleButton.TryConsumeNext`) 가 깨짐. → `ShopSystem` 또는 `InventorySystem` 또는 `RiftGenerator` 로 이동.
 - **drag/drop 회귀**: GenerateSlot ↔ 인벤 사이 swap 로직 (`DimensionStoneInventoryDropTarget` + `GenerateSlotDropTarget.OnBeginDrag`) 이 InvenDropHandler 와 InvenSlotDragHandler 로 분산되면서 race 위험. 테스트 체크리스트로 회귀 잡기.
-- **자동 테스트 한도**: PlayMode 드래그/드롭 자동화는 미지원. 수동 체크리스트 의존.
+- **자동 테스트 한도**: PlayMode 드래그/드롭 자동화 미지원 + ShopSystem 의 display-order 로직도 테스트 asmdef 가 못 봄 (asmdef 경계). 수동 체크리스트 의존. ShopSystem 자동 테스트는 별도 follow-up 이슈에서 `MakeDefence.Inventory.asmdef` 도입 시 추가.
