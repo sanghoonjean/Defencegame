@@ -64,30 +64,30 @@ ShopSystem
 
 | 파일 | 변경 내용 |
 |---|---|
-| `Assets/Scripts/Systems/InventoryItemKind.cs` | `Stone` enum 추가 |
-| `Assets/Scripts/Systems/IInventoryItem.cs` | (변경 없음 — 인터페이스 유지) |
-| `Assets/Scripts/Systems/ShopSystem.cs` | `_ownedStones`, `AddStone`, `RemoveStone`, `OwnedStones`, Display* 메서드의 Stone 분기 추가. `[SerializeField] Sprite stoneIcon` 추가. `DisplayItem` 에 `Stone` 필드 추가 |
-| `Assets/Scripts/Gameplay/Rift/Core/DimensionStone.cs` | `IInventoryItem` 구현 — `DisplayName`("차원석" 또는 옵션 첫 글자), `Icon` (ShopSystem.StoneIcon), `Kind = Stone` |
-| `Assets/Scripts/UI/InvenUI.cs` | `DisplayItem.Stone` 경로 처리. 클릭 장착: Stone 일 때 SelectedRift 에 `EquipToRift` (기존 swap 로직). drag 핸들러에 `Stone` 페이로드 셋업 |
-| `Assets/Scripts/UI/InvenSlotDragHandler.cs` | `DimensionStone Stone` 프로퍼티. `HasItem`/`Icon`/`Kind` 확장. `OnDrop` 에서 Stone 출처 인벤 슬롯 ↔ 인벤 슬롯 swap 도 동작. (Stone → Rift 는 `GenerateSlotDropTarget.OnDrop` 에서 받음) |
-| `Assets/Scripts/UI/InvenDropHandler.cs` | `GenerateSlotDropTarget` 출처 드래그 (현재 LoadedStone 회수) 추가 — 기존 `DimensionStoneInventoryDropTarget` 로직 이전 |
-| `Assets/Scripts/UI/GenerateSlotDropTarget.cs` | `OnDrop` 에서 `DimensionStoneSlot` 대신 `InvenSlotDragHandler`(Stone 페이로드) 도 받도록. 기존 `DimensionStoneSlot` 분기 제거 |
-| `Assets/Scripts/UI/RiftGeneratorPanel.cs` | 인벤 카운트/`LoadNextStone`/`UnloadStone` 을 `ShopSystem` 의 stone 컬렉션 기반으로 변경. 구독 이벤트도 `DimensionStoneInventory.OnInventoryChanged` → `ShopSystem.OnInventoryChanged` |
-| `Assets/Scripts/UI/RepeatGenerateToggleButton.cs` | 동일 — `ShopSystem` 기반 stone 카운트/소비 |
-| `Assets/Scripts/Systems/DroppedStoneSystem.cs` | `DimensionStoneInventory.Instance.Add(stone)` → `ShopSystem.Instance.AddStone(stone)` |
-| `Assets/Scripts/Gameplay/Rift/RiftGenerator.cs` | Clone 큐브 분기 `DimensionStoneInventory.Instance.Add(LoadedStone.Clone())` → `ShopSystem.Instance.AddStone(...)`. `Remove` 도 마찬가지 |
-| `Assets/Scripts/TestRunner.cs` | `DimensionStoneInventory.Instance.Stones[0]` 등 참조 갱신 |
-| `Assets/Tests/EditMode/Rift/DimensionStoneTests.cs` | (필요 시) 시스템 의존 부분 갱신 |
-| `Assets/Scenes/SampleScene.unity` | DimensionStoneInventory GameObject 제거, DimensionStoneInventoryView GameObject 제거, InvenUI 의 slot prefab/풀 크기 조정 (UnityMCP 로 처리) |
+| `MakeDefence/Assets/Scripts/Systems/InventoryItemKind.cs` | `Stone` enum 추가 |
+| `MakeDefence/Assets/Scripts/Systems/IInventoryItem.cs` | (변경 없음 — 인터페이스 유지) |
+| `MakeDefence/Assets/Scripts/Systems/ShopSystem.cs` | `_ownedStones`, `AddStone`, `RemoveStone`, `OwnedStones`, Display* 메서드의 Stone 분기 추가. `[SerializeField] Sprite stoneIcon` 추가. `DisplayItem` 에 `Stone` 필드 추가 |
+| `MakeDefence/Assets/Scripts/Gameplay/Rift/Core/DimensionStone.cs` | `IInventoryItem` 구현 — `DisplayName`("차원석" 또는 옵션 첫 글자), `Icon` (ShopSystem.StoneIcon), `Kind = Stone` |
+| `MakeDefence/Assets/Scripts/UI/InvenUI.cs` | `DisplayItem.Stone` 경로 처리. 클릭 장착: Stone 일 때 SelectedRift 에 `EquipToRift` (기존 swap 로직). drag 핸들러에 `Stone` 페이로드 셋업 |
+| `MakeDefence/Assets/Scripts/UI/InvenSlotDragHandler.cs` | `DimensionStone Stone` 프로퍼티. `HasItem`/`Icon`/`Kind` 확장. `OnDrop` 에서 Stone 출처 인벤 슬롯 ↔ 인벤 슬롯 swap 도 동작. (Stone → Rift 는 `GenerateSlotDropTarget.OnDrop` 에서 받음) |
+| `MakeDefence/Assets/Scripts/UI/InvenDropHandler.cs` | `GenerateSlotDropTarget` 출처 드래그 (현재 LoadedStone 회수) 추가 — 기존 `DimensionStoneInventoryDropTarget` 로직 이전 |
+| `MakeDefence/Assets/Scripts/UI/GenerateSlotDropTarget.cs` | `OnDrop` 에서 `DimensionStoneSlot` 대신 `InvenSlotDragHandler`(Stone 페이로드) 도 받도록. 기존 `DimensionStoneSlot` 분기 제거 |
+| `MakeDefence/Assets/Scripts/UI/RiftGeneratorPanel.cs` | 인벤 카운트/`LoadNextStone`/`UnloadStone` 을 `ShopSystem` 의 stone 컬렉션 기반으로 변경. 구독 이벤트도 `DimensionStoneInventory.OnInventoryChanged` → `ShopSystem.OnInventoryChanged` |
+| `MakeDefence/Assets/Scripts/UI/RepeatGenerateToggleButton.cs` | 동일 — `ShopSystem` 기반 stone 카운트/소비 |
+| `MakeDefence/Assets/Scripts/Systems/DroppedStoneSystem.cs` | `DimensionStoneInventory.Instance.Add(stone)` → `ShopSystem.Instance.AddStone(stone)` |
+| `MakeDefence/Assets/Scripts/Gameplay/Rift/RiftGenerator.cs` | Clone 큐브 분기 `DimensionStoneInventory.Instance.Add(LoadedStone.Clone())` → `ShopSystem.Instance.AddStone(...)`. `Remove` 도 마찬가지 |
+| `MakeDefence/Assets/Scripts/TestRunner.cs` | `DimensionStoneInventory.Instance.Stones[0]` 등 참조 갱신 |
+| `MakeDefence/Assets/Tests/EditMode/Rift/DimensionStoneTests.cs` | (필요 시) 시스템 의존 부분 갱신 |
+| `MakeDefence/Assets/Scenes/SampleScene.unity` | DimensionStoneInventory GameObject 제거, DimensionStoneInventoryView GameObject 제거, InvenUI 의 slot prefab/풀 크기 조정 (UnityMCP 로 처리) |
 
 ## 3. 신규 클래스 / 파일
 
 - 신규 클래스 없음. 기존 `ShopSystem` 을 확장.
 - 4개 클래스 **삭제**:
-  - `Assets/Scripts/Systems/DimensionStoneInventory.cs`
-  - `Assets/Scripts/UI/DimensionStoneInventoryView.cs`
-  - `Assets/Scripts/UI/DimensionStoneSlot.cs`
-  - `Assets/Scripts/UI/DimensionStoneInventoryDropTarget.cs`
+  - `MakeDefence/Assets/Scripts/Systems/DimensionStoneInventory.cs`
+  - `MakeDefence/Assets/Scripts/UI/DimensionStoneInventoryView.cs`
+  - `MakeDefence/Assets/Scripts/UI/DimensionStoneSlot.cs`
+  - `MakeDefence/Assets/Scripts/UI/DimensionStoneInventoryDropTarget.cs`
 
 ### 핵심 설계 결정
 
