@@ -95,6 +95,8 @@ public class InvenUI : MonoBehaviour
 
             _slots[i].drag.Skill              = hasItem ? item.Skill   : null;
             _slots[i].drag.Support            = hasItem ? item.Support : null;
+            _slots[i].drag.Stone              = hasItem ? item.Stone   : null;
+            _slots[i].drag.StoneIconOverride  = hasItem ? item.StoneIconOverride : null;
             _slots[i].drag.SourceDisplayIndex = i;
 
             _slots[i].image.sprite = hasItem ? item.Icon : null;
@@ -103,8 +105,11 @@ public class InvenUI : MonoBehaviour
             if (_slots[i].button == null) continue;
             _slots[i].button.onClick.RemoveAllListeners();
 
-            // 클릭 장착: 스킬만 (서포트는 슬롯 인덱스 필요로 클릭 장착 미지원)
-            if (hasItem && item.Kind == InventoryItemKind.Skill)
+            if (!hasItem) continue;
+
+            // 클릭 장착: 스킬은 SelectedTower 에, 차원석은 SelectedRift 에.
+            // 서포트는 슬롯 인덱스가 필요해 클릭 장착 미지원.
+            if (item.Kind == InventoryItemKind.Skill)
             {
                 int    displayIdx = i;
                 var    s          = item.Skill;
@@ -116,6 +121,16 @@ public class InvenUI : MonoBehaviour
                         ShopSystem.Instance?.ReturnSkill(tower.EquippedSkill);
                     ShopSystem.Instance?.RemoveByDisplayIndex(displayIdx);
                     InventorySystem.Instance.EquipSkill(s);
+                });
+            }
+            else if (item.Kind == InventoryItemKind.Stone)
+            {
+                var stone = item.Stone;
+                _slots[i].button.onClick.AddListener(() =>
+                {
+                    var rift = InventorySystem.Instance?.SelectedRift;
+                    if (rift == null || stone == null) return;
+                    InventorySystem.EquipStoneToRift(rift, stone);
                 });
             }
         }

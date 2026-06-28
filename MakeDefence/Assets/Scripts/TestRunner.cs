@@ -68,10 +68,10 @@ public class TestRunner : MonoBehaviour
         {
             var rift = InventorySystem.Instance?.SelectedRift;
             if (rift == null) { Debug.Log("[TestRunner] O: SelectedRift 없음"); return; }
-            if (rift.LoadedStone == null && DimensionStoneInventory.Instance != null && DimensionStoneInventory.Instance.Count > 0)
+            if (rift.LoadedStone == null && ShopSystem.Instance != null && ShopSystem.Instance.OwnedStones.Count > 0)
             {
-                var stone = DimensionStoneInventory.Instance.Stones[0];
-                DimensionStoneInventory.Instance.Remove(stone);
+                var stone = ShopSystem.Instance.OwnedStones[0];
+                ShopSystem.Instance.RemoveStone(stone);
                 rift.SetStone(stone);
                 Debug.Log("[TestRunner] O: 차원석 자동 장착");
             }

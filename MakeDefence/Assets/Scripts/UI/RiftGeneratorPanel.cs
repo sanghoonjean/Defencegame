@@ -35,14 +35,14 @@ public class RiftGeneratorPanel : MonoBehaviour
     private void OnEnable()
     {
         InventorySystem.OnRiftSelected += HandleRiftSelected;
-        DimensionStoneInventory.OnInventoryChanged += Refresh;
+        ShopSystem.OnInventoryChanged  += Refresh;
         HandleRiftSelected(InventorySystem.Instance?.SelectedRift);
     }
 
     private void OnDisable()
     {
         InventorySystem.OnRiftSelected -= HandleRiftSelected;
-        DimensionStoneInventory.OnInventoryChanged -= Refresh;
+        ShopSystem.OnInventoryChanged  -= Refresh;
     }
 
     private void HandleRiftSelected(RiftGenerator rift)
@@ -79,7 +79,7 @@ public class RiftGeneratorPanel : MonoBehaviour
         }
         if (stoneStatusText != null) stoneStatusText.text = sb.ToString();
 
-        int invCount = DimensionStoneInventory.Instance != null ? DimensionStoneInventory.Instance.Count : 0;
+        int invCount = ShopSystem.Instance != null ? ShopSystem.Instance.OwnedStones.Count : 0;
         if (inventoryCountText != null) inventoryCountText.text = $"보유 차원석: {invCount}";
 
         bool hasStone = _current.LoadedStone != null;
@@ -96,9 +96,9 @@ public class RiftGeneratorPanel : MonoBehaviour
     private void LoadNextStone()
     {
         if (_current == null || _current.LoadedStone != null) return;
-        if (DimensionStoneInventory.Instance == null || DimensionStoneInventory.Instance.Count == 0) return;
-        var stone = DimensionStoneInventory.Instance.Stones[0];
-        DimensionStoneInventory.Instance.Remove(stone);
+        if (ShopSystem.Instance == null || ShopSystem.Instance.OwnedStones.Count == 0) return;
+        var stone = ShopSystem.Instance.OwnedStones[0];
+        ShopSystem.Instance.RemoveStone(stone);
         _current.SetStone(stone);
         Refresh();
     }
@@ -106,7 +106,7 @@ public class RiftGeneratorPanel : MonoBehaviour
     private void UnloadStone()
     {
         if (_current == null || _current.LoadedStone == null) return;
-        DimensionStoneInventory.Instance?.Add(_current.LoadedStone);
+        ShopSystem.Instance?.AddStone(_current.LoadedStone);
         _current.ClearStone();
         Refresh();
     }

@@ -11,13 +11,24 @@ public class ShopSystem : MonoBehaviour
     [SerializeField] private List<SkillData>         availableSkills;
     [SerializeField] private List<SupportOptionData> availableSupports;
 
+    [Header("Stone")]
+    [SerializeField] private Sprite stoneIcon;
+    [SerializeField] private string stoneDisplayName = "차원석";
+    [Tooltip("게임 시작 시 자동 지급되는 차원석 개수 (DimensionStoneInventory.initialStones 이전).")]
+    [SerializeField] private int initialStones = 1;
+
     private readonly List<SkillData>         _ownedSkills   = new();
     private readonly List<SupportOptionData> _ownedSupports = new();
+    private readonly List<DimensionStone>    _ownedStones   = new();
     private readonly List<DisplayEntry>      _displayOrder  = new();
 
     public IReadOnlyList<SkillData>         OwnedSkills        => _ownedSkills;
     public IReadOnlyList<SupportOptionData> OwnedSupports      => _ownedSupports;
+    public IReadOnlyList<DimensionStone>    OwnedStones        => _ownedStones;
     public IReadOnlyList<DisplayEntry>      OwnedDisplayOrder  => _displayOrder;
+
+    public Sprite StoneIcon        => stoneIcon;
+    public string StoneDisplayName => stoneDisplayName;
 
     /// <summary>
     /// 인벤 표시 순서대로 스킬/서포트를 단일 시퀀스로 노출 (#236).
@@ -36,13 +47,34 @@ public class ShopSystem : MonoBehaviour
                     if (entry.DataIndex < 0 || entry.DataIndex >= _ownedSkills.Count) continue;
                     yield return _ownedSkills[entry.DataIndex];
                 }
-                else
+                else if (entry.Kind == InventoryItemKind.Support)
                 {
                     if (entry.DataIndex < 0 || entry.DataIndex >= _ownedSupports.Count) continue;
                     yield return _ownedSupports[entry.DataIndex];
                 }
+                else // Stone
+                {
+                    if (entry.DataIndex < 0 || entry.DataIndex >= _ownedStones.Count) continue;
+                    yield return new StoneInventoryItem(_ownedStones[entry.DataIndex], stoneIcon, stoneDisplayName);
+                }
             }
         }
+    }
+
+    // DimensionStone 은 MakeDefence.Rift.Core asmdef 거주 → Assembly-CSharp 의
+    // IInventoryItem 을 구현할 수 없음 (asmdef references: []). 어댑터를 여기 둔다.
+    private sealed class StoneInventoryItem : IInventoryItem
+    {
+        private readonly Sprite _icon;
+        private readonly string _name;
+        public DimensionStone Stone { get; }
+        public StoneInventoryItem(DimensionStone stone, Sprite icon, string name)
+        {
+            Stone = stone; _icon = icon; _name = name;
+        }
+        public string DisplayName       => _name;
+        public Sprite Icon              => _icon;
+        public InventoryItemKind Kind   => InventoryItemKind.Stone;
     }
 
     public readonly struct DisplayEntry
@@ -57,13 +89,40 @@ public class ShopSystem : MonoBehaviour
         public readonly InventoryItemKind Kind;
         public readonly SkillData         Skill;
         public readonly SupportOptionData Support;
-        public DisplayItem(SkillData skill)         { Kind = InventoryItemKind.Skill;   Skill = skill;   Support = null; }
-        public DisplayItem(SupportOptionData supp)  { Kind = InventoryItemKind.Support; Skill = null;    Support = supp; }
-        public Sprite Icon        => Kind == InventoryItemKind.Skill ? Skill?.icon        : Support?.icon;
-        public string DisplayName => Kind == InventoryItemKind.Skill ? Skill?.displayName : Support?.displayName;
+        public readonly DimensionStone    Stone;
+        public readonly Sprite            StoneIconOverride;
+        public readonly string            StoneNameOverride;
+        public DisplayItem(SkillData skill)
+        { Kind = InventoryItemKind.Skill;   Skill = skill; Support = null; Stone = null; StoneIconOverride = null; StoneNameOverride = null; }
+        public DisplayItem(SupportOptionData supp)
+        { Kind = InventoryItemKind.Support; Skill = null;  Support = supp; Stone = null; StoneIconOverride = null; StoneNameOverride = null; }
+        public DisplayItem(DimensionStone stone, Sprite icon, string name)
+        { Kind = InventoryItemKind.Stone;   Skill = null;  Support = null; Stone = stone; StoneIconOverride = icon; StoneNameOverride = name; }
+        public Sprite Icon => Kind switch
+        {
+            InventoryItemKind.Skill   => Skill?.icon,
+            InventoryItemKind.Support => Support?.icon,
+            _                         => StoneIconOverride,
+        };
+        public string DisplayName => Kind switch
+        {
+            InventoryItemKind.Skill   => Skill?.displayName,
+            InventoryItemKind.Support => Support?.displayName,
+            _                         => StoneNameOverride,
+        };
     }
 
-    private void Awake() { Instance = this; }
+    private void Awake()
+    {
+        Instance = this;
+        for (int i = 0; i < initialStones; i++)
+            AddStoneInternal(DimensionStone.CreateRandom());
+        if (initialStones > 0)
+        {
+            Debug.Log($"[ShopSystem] 초기 차원석 {initialStones}개 지급");
+            OnInventoryChanged?.Invoke();
+        }
+    }
 
     public DisplayItem GetDisplayItem(int displayIdx)
     {
@@ -74,8 +133,14 @@ public class ShopSystem : MonoBehaviour
             if (entry.DataIndex < 0 || entry.DataIndex >= _ownedSkills.Count) return default;
             return new DisplayItem(_ownedSkills[entry.DataIndex]);
         }
-        if (entry.DataIndex < 0 || entry.DataIndex >= _ownedSupports.Count) return default;
-        return new DisplayItem(_ownedSupports[entry.DataIndex]);
+        if (entry.Kind == InventoryItemKind.Support)
+        {
+            if (entry.DataIndex < 0 || entry.DataIndex >= _ownedSupports.Count) return default;
+            return new DisplayItem(_ownedSupports[entry.DataIndex]);
+        }
+        // Stone
+        if (entry.DataIndex < 0 || entry.DataIndex >= _ownedStones.Count) return default;
+        return new DisplayItem(_ownedStones[entry.DataIndex], stoneIcon, stoneDisplayName);
     }
 
     public bool BuySkill(SkillData skill)
@@ -123,6 +188,23 @@ public class ShopSystem : MonoBehaviour
         OnInventoryChanged?.Invoke();
     }
 
+    public void AddStone(DimensionStone stone)
+    {
+        if (stone == null) return;
+        AddStoneInternal(stone);
+        OnInventoryChanged?.Invoke();
+    }
+
+    public bool RemoveStone(DimensionStone stone)
+    {
+        if (stone == null) return false;
+        int dataIdx = _ownedStones.IndexOf(stone);
+        if (dataIdx < 0) return false;
+        int displayIdx = FindStoneDisplayIndex(dataIdx);
+        if (displayIdx < 0) return false;
+        return RemoveByDisplayIndex(displayIdx);
+    }
+
     public bool RemoveByDisplayIndex(int displayIdx)
     {
         if (displayIdx < 0 || displayIdx >= _displayOrder.Count) return false;
@@ -133,15 +215,31 @@ public class ShopSystem : MonoBehaviour
             _ownedSkills.RemoveAt(entry.DataIndex);
             ShiftDataIndexAfterRemove(InventoryItemKind.Skill, entry.DataIndex);
         }
-        else
+        else if (entry.Kind == InventoryItemKind.Support)
         {
             if (entry.DataIndex < 0 || entry.DataIndex >= _ownedSupports.Count) return false;
             _ownedSupports.RemoveAt(entry.DataIndex);
             ShiftDataIndexAfterRemove(InventoryItemKind.Support, entry.DataIndex);
         }
+        else // Stone
+        {
+            if (entry.DataIndex < 0 || entry.DataIndex >= _ownedStones.Count) return false;
+            _ownedStones.RemoveAt(entry.DataIndex);
+            ShiftDataIndexAfterRemove(InventoryItemKind.Stone, entry.DataIndex);
+        }
         _displayOrder.RemoveAt(displayIdx);
         OnInventoryChanged?.Invoke();
         return true;
+    }
+
+    private int FindStoneDisplayIndex(int stoneDataIdx)
+    {
+        for (int i = 0; i < _displayOrder.Count; i++)
+        {
+            var e = _displayOrder[i];
+            if (e.Kind == InventoryItemKind.Stone && e.DataIndex == stoneDataIdx) return i;
+        }
+        return -1;
     }
 
     public bool SwapDisplayOrder(int indexA, int indexB)
@@ -254,6 +352,12 @@ public class ShopSystem : MonoBehaviour
     {
         _ownedSupports.Add(option);
         _displayOrder.Add(new DisplayEntry(InventoryItemKind.Support, _ownedSupports.Count - 1));
+    }
+
+    private void AddStoneInternal(DimensionStone stone)
+    {
+        _ownedStones.Add(stone);
+        _displayOrder.Add(new DisplayEntry(InventoryItemKind.Stone, _ownedStones.Count - 1));
     }
 
     private void ShiftDataIndexAfterRemove(InventoryItemKind kind, int removedDataIndex)

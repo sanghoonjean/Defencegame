@@ -10,15 +10,23 @@ public class InvenSlotDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandl
 
     public SkillData         Skill              { get; set; }
     public SupportOptionData Support            { get; set; }
+    public DimensionStone    Stone              { get; set; }
+    public Sprite            StoneIconOverride  { get; set; }
 
     // SourceDisplayIndex: 인벤 그리드에서의 슬롯 위치. 인벤 외부 (장착 슬롯 등) 에서 시작한 드래그는 -1
     public int SourceDisplayIndex { get; set; } = -1;
     // legacy alias — 기존 호출자 호환
     public int SlotIndex { get => SourceDisplayIndex; set => SourceDisplayIndex = value; }
 
-    public InventoryItemKind Kind => Skill != null ? InventoryItemKind.Skill : InventoryItemKind.Support;
-    public bool   HasItem => Skill != null || Support != null;
-    public Sprite Icon    => Skill != null ? Skill.icon : Support?.icon;
+    public InventoryItemKind Kind =>
+        Skill   != null ? InventoryItemKind.Skill   :
+        Support != null ? InventoryItemKind.Support :
+                          InventoryItemKind.Stone;
+    public bool   HasItem => Skill != null || Support != null || Stone != null;
+    public Sprite Icon    =>
+        Skill   != null ? Skill.icon   :
+        Support != null ? Support.icon :
+                          StoneIconOverride;
 
     private Image  _iconImage;
     private Canvas _rootCanvas;
@@ -70,6 +78,15 @@ public class InvenSlotDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandl
         // IDropHandler 동작은 인벤 슬롯에서만 의미가 있다. SourceDisplayIndex < 0 은 인벤 외부 슬롯의 표시이므로
         // 여기서 드롭 처리를 그대로 두면 장착 메인 스킬을 서포트 슬롯에 떨어뜨릴 때 의도치 않은 unequip 이 발생한다.
         if (SourceDisplayIndex < 0) return;
+
+        // GenerateSlot (Rift 장착 stone) → 인벤 슬롯: 회수.
+        // 인벤 슬롯이 IDropHandler 라 panel-level InvenDropHandler 까지 안 가므로 여기서도 처리.
+        var generate = eventData.pointerDrag.GetComponent<GenerateSlotDropTarget>();
+        if (generate != null)
+        {
+            InventorySystem.TryUnloadStoneFromRift(generate);
+            return;
+        }
 
         // 장착 스킬 슬롯에서 드랍: 언이퀴 + 인벤 반환
         if (eventData.pointerDrag.GetComponent<SkillSlotDragHandler>() != null)

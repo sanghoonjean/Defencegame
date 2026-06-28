@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 /// <summary>
 /// GenerateSlot 에 부착. 두 가지 역할:
-/// - 드롭 존: DimensionStoneSlot 드래그를 받아 SelectedRift 에 swap 장착
+/// - 드롭 존: 인벤 슬롯(Stone 페이로드) 드래그를 받아 SelectedRift 에 swap 장착
 /// - 드래그 소스: 이미 장착된 stone 을 인벤토리 영역으로 끌어 회수
 ///
 /// 시각화: 자식 ICON Image 에 sprite + 색을 채워 표시. sprite 는 드롭한 슬롯에서 이어받아 캐시.
@@ -88,17 +88,16 @@ public class GenerateSlotDropTarget : MonoBehaviour,
         }
     }
 
-    // --- Drop (DimensionStoneSlot → GenerateSlot) ---
+    // --- Drop (InvenSlot[Stone payload] → GenerateSlot) ---
 
     public void OnDrop(PointerEventData eventData)
     {
         if (eventData.pointerDrag == null) return;
 
-        var source = eventData.pointerDrag.GetComponent<DimensionStoneSlot>();
-        if (source == null) return;
+        var source = eventData.pointerDrag.GetComponent<InvenSlotDragHandler>();
+        if (source == null || source.Stone == null) return;
 
         var stone = source.Stone;
-        if (stone == null) return;
 
         var rift = InventorySystem.Instance?.SelectedRift;
         if (rift == null)
@@ -107,13 +106,13 @@ public class GenerateSlotDropTarget : MonoBehaviour,
             return;
         }
 
-        var srcSprite = source.IconSprite;
+        var srcSprite = source.Icon;
         if (srcSprite != null) _cachedSprite = srcSprite;
 
-        DimensionStoneSlot.EquipToRift(rift, stone);
+        InventorySystem.EquipStoneToRift(rift, stone);
     }
 
-    // --- Drag (GenerateSlot → DimensionStoneInventoryUI) ---
+    // --- Drag (GenerateSlot → 인벤 패널 회수) ---
 
     public void OnBeginDrag(PointerEventData eventData)
     {

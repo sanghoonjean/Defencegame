@@ -198,4 +198,42 @@ public class InventorySystem : MonoBehaviour
         if (SelectedTower == null) return false;
         return ItemSystem.Instance.ApplyCube(cube, SelectedTower, slot);
     }
+
+    /// <summary>
+    /// 인벤(ShopSystem)에서 stone 을 빼서 rift 에 장착. 기존 LoadedStone 은 인벤으로 회수 (swap).
+    /// 클릭/드래그-드롭 양쪽에서 공유. (구 DimensionStoneSlot.EquipToRift 후속)
+    /// </summary>
+    public static bool EquipStoneToRift(RiftGenerator rift, DimensionStone stone)
+    {
+        if (rift == null || stone == null) return false;
+        if (ShopSystem.Instance == null) return false;
+
+        // swap 패턴 — 기존 stone 인벤 회수 후 새 stone 장착 (소실 방지)
+        if (rift.LoadedStone != null)
+        {
+            ShopSystem.Instance.AddStone(rift.LoadedStone);
+            rift.ClearStone();
+        }
+        ShopSystem.Instance.RemoveStone(stone);
+        rift.SetStone(stone);
+        return true;
+    }
+
+    /// <summary>
+    /// GenerateSlot 에서 시작한 드래그로 rift 에 장착된 stone 을 인벤으로 회수.
+    /// 인벤 패널 배경(InvenDropHandler) 과 인벤 슬롯(InvenSlotDragHandler) 양쪽 드롭 경로에서 공유.
+    /// 드래그 중 stone 이 바뀌었을 race 회피용 캐시(`source.DraggingStone`) 검사 포함.
+    /// </summary>
+    public static bool TryUnloadStoneFromRift(GenerateSlotDropTarget source)
+    {
+        if (source == null) return false;
+        var rift = Instance?.SelectedRift;
+        if (rift == null || rift.LoadedStone == null) return false;
+        if (source.DraggingStone != null && source.DraggingStone != rift.LoadedStone) return false;
+
+        var stone = rift.LoadedStone;
+        ShopSystem.Instance?.AddStone(stone);
+        rift.ClearStone();
+        return true;
+    }
 }

@@ -128,10 +128,10 @@ public class DroppedStoneSystem : MonoBehaviour
         _pending = 0;
         OnPendingChanged?.Invoke();
 
-        if (DimensionStoneInventory.Instance != null)
+        if (ShopSystem.Instance != null)
         {
             for (int i = 0; i < harvested; i++)
-                DimensionStoneInventory.Instance.Add(DimensionStone.CreateRandom());
+                ShopSystem.Instance.AddStone(DimensionStone.CreateRandom());
         }
 
         foreach (var pickup in snapshot)
@@ -152,8 +152,8 @@ public class DroppedStoneSystem : MonoBehaviour
     /// <summary>웨이브 클리어 시 픽업과 별개로 무조건 차원석 1개 추가.</summary>
     private void GrantClearBonus()
     {
-        if (DimensionStoneInventory.Instance == null) return;
-        DimensionStoneInventory.Instance.Add(DimensionStone.CreateRandom());
+        if (ShopSystem.Instance == null) return;
+        ShopSystem.Instance.AddStone(DimensionStone.CreateRandom());
         Debug.Log("[DroppedStoneSystem] 클리어 보장 차원석 +1");
     }
 }

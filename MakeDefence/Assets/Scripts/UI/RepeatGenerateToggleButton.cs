@@ -27,23 +27,23 @@ public class RepeatGenerateToggleButton : MonoBehaviour
 
     private void OnEnable()
     {
-        InventorySystem.OnRiftSelected           += HandleRiftSelected;
-        WaveSystem.OnWaveStarted                 += HandleWaveStarted;
-        WaveSystem.OnWaveEnded                   += HandleWaveEnded;
-        GameStateSystem.OnStateChanged           += HandleStateChanged;
-        PauseSystem.OnPauseChanged               += HandlePauseChanged;
-        DimensionStoneInventory.OnInventoryChanged += Refresh;
+        InventorySystem.OnRiftSelected += HandleRiftSelected;
+        WaveSystem.OnWaveStarted       += HandleWaveStarted;
+        WaveSystem.OnWaveEnded         += HandleWaveEnded;
+        GameStateSystem.OnStateChanged += HandleStateChanged;
+        PauseSystem.OnPauseChanged     += HandlePauseChanged;
+        ShopSystem.OnInventoryChanged  += Refresh;
         Refresh();
     }
 
     private void OnDisable()
     {
-        InventorySystem.OnRiftSelected           -= HandleRiftSelected;
-        WaveSystem.OnWaveStarted                 -= HandleWaveStarted;
-        WaveSystem.OnWaveEnded                   -= HandleWaveEnded;
-        GameStateSystem.OnStateChanged           -= HandleStateChanged;
-        PauseSystem.OnPauseChanged               -= HandlePauseChanged;
-        DimensionStoneInventory.OnInventoryChanged -= Refresh;
+        InventorySystem.OnRiftSelected -= HandleRiftSelected;
+        WaveSystem.OnWaveStarted       -= HandleWaveStarted;
+        WaveSystem.OnWaveEnded         -= HandleWaveEnded;
+        GameStateSystem.OnStateChanged -= HandleStateChanged;
+        PauseSystem.OnPauseChanged     -= HandlePauseChanged;
+        ShopSystem.OnInventoryChanged  -= Refresh;
         RestoreColors();
     }
 
@@ -56,8 +56,8 @@ public class RepeatGenerateToggleButton : MonoBehaviour
     private void BeginRepeat()
     {
         var rift = InventorySystem.Instance?.SelectedRift;
-        var inv  = DimensionStoneInventory.Instance;
-        if (rift == null || inv == null || inv.Count <= 0) return;
+        var shop = ShopSystem.Instance;
+        if (rift == null || shop == null || shop.OwnedStones.Count <= 0) return;
         if (WaveSystem.Instance == null || WaveSystem.Instance.IsWaveActive) return;
         if (GameStateSystem.Current != GameState.Playing) return;
 
@@ -73,7 +73,7 @@ public class RepeatGenerateToggleButton : MonoBehaviour
         if (_lastEquipped != null && _cachedRift != null
             && _cachedRift.LoadedStone == _lastEquipped)
         {
-            DimensionStoneInventory.Instance?.Add(_cachedRift.LoadedStone);
+            ShopSystem.Instance?.AddStone(_cachedRift.LoadedStone);
             _cachedRift.ClearStone();
         }
         _lastEquipped = null;
@@ -87,14 +87,14 @@ public class RepeatGenerateToggleButton : MonoBehaviour
     {
         if (!_isActive) return;
 
-        var inv = DimensionStoneInventory.Instance;
-        if (_cachedRift == null || inv == null) { Stop(); return; }
-        if (inv.Count <= 0) { Stop(); return; }
+        var shop = ShopSystem.Instance;
+        if (_cachedRift == null || shop == null) { Stop(); return; }
+        if (shop.OwnedStones.Count <= 0) { Stop(); return; }
 
-        var stone = inv.Stones[0];
+        var stone = shop.OwnedStones[0];
         _lastEquipped = stone;
 
-        DimensionStoneSlot.EquipToRift(_cachedRift, stone);
+        InventorySystem.EquipStoneToRift(_cachedRift, stone);
 
         bool started = _cachedRift.OpenRift();
         if (!started) Stop();
@@ -140,10 +140,10 @@ public class RepeatGenerateToggleButton : MonoBehaviour
             return;
         }
 
-        var inv = DimensionStoneInventory.Instance;
+        var shop = ShopSystem.Instance;
         _button.interactable =
             InventorySystem.Instance?.SelectedRift != null
-            && inv != null && inv.Count > 0
+            && shop != null && shop.OwnedStones.Count > 0
             && WaveSystem.Instance != null && !WaveSystem.Instance.IsWaveActive
             && GameStateSystem.Current == GameState.Playing
             && (PauseSystem.Instance == null || !PauseSystem.Instance.IsPaused);
