@@ -34,6 +34,11 @@ public class BuildModeToggleButton : MonoBehaviour
             ? BuildMode.Rift
             : BuildMode.Tower;
         InputManager.Instance.SetBuildMode(next);
+
+        if (next == BuildMode.Tower)
+            TowerPlacer.Instance?.EnterPlacementMode();
+        else
+            TowerPlacer.Instance?.ExitPlacementMode();
     }
 
     private void RefreshLabel(BuildMode mode)

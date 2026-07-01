@@ -72,8 +72,20 @@ public class Tower : MonoBehaviour
         OnTowerPlaced?.Invoke(this);
     }
 
+    public bool IsGhost { get; private set; }
+
+    public void InitAsGhost()
+    {
+        IsGhost = true;
+        enabled = false;
+        foreach (var col in GetComponentsInChildren<Collider2D>())
+            col.enabled = false;
+        if (_animator != null) _animator.enabled = false;
+    }
+
     private void OnDestroy()
     {
+        if (IsGhost) return;
         ItemSystem.Instance?.UnregisterTower(this);
         MapTileSystem.Instance?.RemoveTower(TileCoord);
     }
