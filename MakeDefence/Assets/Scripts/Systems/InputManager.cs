@@ -51,8 +51,8 @@ public class InputManager : MonoBehaviour
         {
             Vector3 wp = Camera.main.ScreenToWorldPoint(Input.mousePosition);
             var c = new Vector2Int(Mathf.FloorToInt(wp.x), Mathf.FloorToInt(wp.y));
-            TowerPlacer.Instance.TryPlace(c);
-            TowerPlacer.Instance.ExitPlacementMode();
+            if (TowerPlacer.Instance.TryPlace(c))
+                TowerPlacer.Instance.ExitPlacementMode();
             return;
         }
 
