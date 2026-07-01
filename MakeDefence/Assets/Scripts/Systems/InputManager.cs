@@ -23,7 +23,9 @@ public class InputManager : MonoBehaviour
         if (CurrentBuildMode == mode) return;
         CurrentBuildMode = mode;
         OnBuildModeChanged?.Invoke(mode);
-        if (mode != BuildMode.Tower)
+        if (mode == BuildMode.Tower)
+            TowerPlacer.Instance?.EnterPlacementMode();
+        else
             TowerPlacer.Instance?.ExitPlacementMode();
     }
 
