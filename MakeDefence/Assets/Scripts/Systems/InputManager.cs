@@ -14,7 +14,7 @@ public class InputManager : MonoBehaviour
 
     public static event Action<BuildMode> OnBuildModeChanged;
 
-    public BuildMode CurrentBuildMode { get; private set; } = BuildMode.Tower;
+    public BuildMode CurrentBuildMode { get; private set; } = BuildMode.Rift;
 
     private void Awake() { Instance = this; }
 
