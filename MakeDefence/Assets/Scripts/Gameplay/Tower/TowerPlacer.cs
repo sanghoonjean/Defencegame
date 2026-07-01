@@ -49,6 +49,7 @@ public class TowerPlacer : MonoBehaviour
         IsPlacingTower = false;
         if (_ghost != null) { Destroy(_ghost); _ghost = null; }
         _ghostRenderers = null;
+        InputManager.Instance?.SetBuildMode(BuildMode.Rift);
     }
 
     public bool TryPlace(Vector2Int coord)
