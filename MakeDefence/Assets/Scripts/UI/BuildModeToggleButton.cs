@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -5,6 +6,7 @@ using UnityEngine.UI;
 public class BuildModeToggleButton : MonoBehaviour
 {
     [SerializeField] private Text label;
+    [SerializeField] private TMP_Text tmpLabel;
     [SerializeField] private string towerLabel = "Build: Tower";
     [SerializeField] private string riftLabel  = "Build: Rift";
 
@@ -43,7 +45,8 @@ public class BuildModeToggleButton : MonoBehaviour
 
     private void RefreshLabel(BuildMode mode)
     {
-        if (label == null) return;
-        label.text = mode == BuildMode.Rift ? riftLabel : towerLabel;
+        var text = mode == BuildMode.Rift ? riftLabel : towerLabel;
+        if (label != null) label.text = text;
+        if (tmpLabel != null) tmpLabel.text = text;
     }
 }
