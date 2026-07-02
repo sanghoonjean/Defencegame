@@ -3,10 +3,12 @@ using UnityEngine;
 
 public class GameUIManager : MonoBehaviour
 {
-    [Header("Enemy HP Bar")]
-    [SerializeField] private float barWidth  = 40f;
-    [SerializeField] private float barHeight = 5f;
-    [SerializeField] private float yOffset   = 20f;
+    [Header("Enemy HP Bar (world units — 카메라 줌에 비례해서 화면 크기가 스케일됨)")]
+    [SerializeField] private float barWidth  = 0.79f;
+    [SerializeField] private float barHeight = 0.05f;
+    [SerializeField] private float yOffset   = 0.1f; // 스프라이트 머리 위 추가 여백
+    [SerializeField] private Texture2D hpFrameTex;
+    [SerializeField] private Texture2D hpLineTex;
 
     [Header("Tower Range")]
     [SerializeField] private Color rangeColor    = new Color(1f, 1f, 0f, 0.8f);
@@ -65,8 +67,6 @@ public class GameUIManager : MonoBehaviour
     private readonly List<ConeAoe>    _coneAoes    = new();
     private readonly List<DamageText> _damageTexts = new();
 
-    private Texture2D _bgTex;
-    private Texture2D _fillTex;
     private Material  _rangeMat;
 
     private GUIStyle _dmgStyle;
@@ -81,8 +81,6 @@ public class GameUIManager : MonoBehaviour
     private void Awake()
     {
         _instance = this;
-        _bgTex    = MakeTex(Color.gray);
-        _fillTex  = MakeTex(Color.green);
 
         _dmgStyle      = new GUIStyle();
         _critStyle     = new GUIStyle();
@@ -116,8 +114,6 @@ public class GameUIManager : MonoBehaviour
     private void OnDestroy()
     {
         if (_instance == this) _instance = null;
-        Destroy(_bgTex);
-        Destroy(_fillTex);
         if (_rangeMat != null) Destroy(_rangeMat);
     }
 
@@ -287,6 +283,12 @@ public class GameUIManager : MonoBehaviour
         var cam = Camera.main;
         if (cam == null) return;
 
+        // 월드 단위 크기를 현재 줌(orthographicSize)에 맞춰 화면 픽셀로 환산
+        // → 확대/축소해도 몬스터 스프라이트와 같은 비율로 커지고 작아짐
+        float pixelsPerUnit = Screen.height / (cam.orthographicSize * 2f);
+        float pxBarWidth    = barWidth  * pixelsPerUnit;
+        float pxBarHeight   = barHeight * pixelsPerUnit;
+
         var enemies = Enemy.ActiveEnemies;
         for (int i = 0; i < enemies.Count; i++)
         {
@@ -296,12 +298,18 @@ public class GameUIManager : MonoBehaviour
             Vector3 screenPos = cam.WorldToScreenPoint(e.transform.position);
             if (screenPos.z < 0f) continue;
 
-            float x    = screenPos.x - barWidth * 0.5f;
-            float y    = Screen.height - screenPos.y - yOffset - barHeight;
+            // 머리 위 = 스프라이트 상단(SpriteTopOffset) + 여백(yOffset)
+            float pxYOffset = (e.SpriteTopOffset + yOffset) * pixelsPerUnit;
+
+            float x    = screenPos.x - pxBarWidth * 0.5f;
+            float y    = Screen.height - screenPos.y - pxYOffset - pxBarHeight;
             float fill = Mathf.Clamp01(e.CurrentHp / e.MaxHp);
 
-            GUI.DrawTexture(new Rect(x, y, barWidth, barHeight), _bgTex);
-            GUI.DrawTexture(new Rect(x, y, barWidth * fill, barHeight), _fillTex);
+            if (hpLineTex != null && fill > 0f)
+                GUI.DrawTextureWithTexCoords(new Rect(x, y, pxBarWidth * fill, pxBarHeight),
+                    hpLineTex, new Rect(0f, 0f, fill, 1f));
+            if (hpFrameTex != null)
+                GUI.DrawTexture(new Rect(x, y, pxBarWidth, pxBarHeight), hpFrameTex);
         }
 
         DrawDamageTexts(cam);
@@ -445,11 +453,4 @@ public class GameUIManager : MonoBehaviour
         }
     }
 
-    private static Texture2D MakeTex(Color color)
-    {
-        var tex = new Texture2D(1, 1);
-        tex.SetPixel(0, 0, color);
-        tex.Apply();
-        return tex;
-    }
 }
