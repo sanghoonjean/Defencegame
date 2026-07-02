@@ -14,7 +14,7 @@ public class InputManager : MonoBehaviour
 
     public static event Action<BuildMode> OnBuildModeChanged;
 
-    public BuildMode CurrentBuildMode { get; private set; } = BuildMode.Tower;
+    public BuildMode CurrentBuildMode { get; private set; } = BuildMode.Rift;
 
     private void Awake() { Instance = this; }
 
@@ -23,6 +23,10 @@ public class InputManager : MonoBehaviour
         if (CurrentBuildMode == mode) return;
         CurrentBuildMode = mode;
         OnBuildModeChanged?.Invoke(mode);
+        if (mode == BuildMode.Tower)
+            TowerPlacer.Instance?.EnterPlacementMode();
+        else
+            TowerPlacer.Instance?.ExitPlacementMode();
     }
 
     private void Update()
@@ -45,6 +49,16 @@ public class InputManager : MonoBehaviour
         if (!Input.GetMouseButtonDown(0)) return;
 
         if (EventSystem.current != null && EventSystem.current.IsPointerOverGameObject()) return;
+
+        // 타워 배치 대기 모드: ghost 위치에 배치 시도 후 모드 종료
+        if (TowerPlacer.Instance != null && TowerPlacer.Instance.IsPlacingTower)
+        {
+            Vector3 wp = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+            var c = new Vector2Int(Mathf.FloorToInt(wp.x), Mathf.FloorToInt(wp.y));
+            TowerPlacer.Instance.TryPlace(c);
+            TowerPlacer.Instance.ExitPlacementMode();
+            return;
+        }
 
         Vector3 worldPos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         var hit = Physics2D.OverlapPoint(new Vector2(worldPos.x, worldPos.y));
