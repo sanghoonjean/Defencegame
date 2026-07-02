@@ -80,7 +80,6 @@ public class Tower : MonoBehaviour
         enabled = false;
         foreach (var col in GetComponentsInChildren<Collider2D>())
             col.enabled = false;
-        if (_animator != null) _animator.enabled = false;
     }
 
     private void OnDestroy()
