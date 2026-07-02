@@ -7,8 +7,12 @@
     └─ InputManager.SetBuildMode(Tower)
            └─ TowerPlacer.EnterPlacementMode()
                   ├─ MapTileSystem에 이미 배치된 타워가 있는가?
-                  │      ├─ 있음 → 기존 Tower 인스턴스를 "이동 모드" 대상으로 픽업
-                  │      │          (SetGhostVisual(true)로 비활성화, 신규 Instantiate 없음)
+                  │      ├─ 있음 → MapTileSystem.HasVacantBuildableTile(원래 좌표) 체크
+                  │      │      ├─ 옮길 빈 Buildable 타일이 하나도 없음
+                  │      │      │      └─ 이동 모드 진입 취소 (SetBuildMode(Rift)로 즉시 복귀,
+                  │      │      │         ghost/픽업 없이 종료)
+                  │      │      └─ 있음 → 기존 Tower 인스턴스를 "이동 모드" 대상으로 픽업
+                  │      │                (SetGhostVisual(true)로 비활성화, 신규 Instantiate 없음)
                   │      └─ 없음 → 기존과 동일하게 신규 ghost Instantiate (issue #314)
                   └─ 공통: _ghost / _ghostRenderers 참조 설정, IsPlacingTower = true
 
@@ -49,8 +53,11 @@
 
 - `MakeDefence/Assets/Scripts/Gameplay/Tower/TowerPlacer.cs`
   - `EnterPlacementMode()` — `MapTileSystem.Instance.GetPlacedTower()` (신규) 조회 후 분기.
+    있으면 먼저 `MapTileSystem.Instance.HasVacantBuildableTile(existing.TileCoord)`로 옮길 곳이
+    있는지 확인. 없으면 픽업하지 않고 `InputManager.Instance.SetBuildMode(BuildMode.Rift)`를 호출해
+    이동 모드 진입 자체를 취소(버튼을 눌러도 아무 일도 일어나지 않은 것처럼 즉시 원상 복귀).
     있으면 `_isMoving = true`, `_movingTower`, `_moveOriginCoord` 저장 + `SetGhostVisual(true)`.
-    없으면 기존처럼 `Instantiate(towerPrefab)` + `InitAsGhost()`.
+    타워가 없으면 기존처럼 `Instantiate(towerPrefab)` + `InitAsGhost()`.
   - `Update()` — 유효성 체크에 "이동 모드 && 원래 좌표" 예외 추가.
   - `TryPlace(coord)` — 이동 모드 분기 추가 (큐브 미소모, `RemoveTower` + `MoveTo` + `PlaceTower`).
   - `ExitPlacementMode()` — 이동 모드일 때 `Destroy(_ghost)` 대신 `tower.MoveTo(원래 좌표)` +
@@ -60,6 +67,9 @@
 - `MakeDefence/Assets/Scripts/Systems/MapTileSystem.cs`
   - `GetPlacedTower()` 추가 — `_placedTowers`에 항목이 있으면 첫 번째(유일한) `Tower` 반환, 없으면 null.
     (현재 게임 설계상 타워는 항상 최대 1개이므로 선택 UI 없이 단순 조회로 충분)
+  - `HasVacantBuildableTile(Vector2Int excludeCoord)` 추가 — `buildableTilemap.cellBounds`를
+    순회하며 `excludeCoord`를 제외하고 `GetTileType == Buildable && !_placedTowers.ContainsKey
+    && !_placedRifts.ContainsKey`인 셀이 하나라도 있으면 true. 이동 모드 진입 가능 여부 판단에 사용.
 
 ## 3. 신규 클래스 / 파일
 
@@ -69,6 +79,7 @@
 
 - [ ] 타워가 없는 상태에서 유닛 버튼 클릭 → 기존과 동일하게 신규 ghost 생성/배치 동작 (회귀 없음)
 - [ ] 타워가 이미 배치된 상태에서 유닛 버튼 클릭 → 새 ghost가 생기지 않고 기존 타워가 반투명 상태로 커서를 따라다님
+- [ ] 맵의 모든 Buildable 타일이 (타워 자기 자신 좌표 제외하고) 다른 타워/균열 생성기로 이미 채워진 상태에서 유닛 버튼 클릭 → 이동 모드에 진입하지 않고 즉시 Rift 모드로 복귀 (버튼 라벨도 원래대로)
 - [ ] 이동 모드에서 원래 좌표 위 → ghost 초록색(유효) 유지
 - [ ] 이동 모드에서 다른 Buildable 빈 타일 위 → 초록색, 좌클릭 시 그 위치로 이동 확정 (원래 좌표는 비워짐)
 - [ ] 이동 모드에서 Path/이미 다른 오브젝트 있는 타일 위 → 빨간색, 좌클릭해도 이동 안 됨
@@ -92,3 +103,7 @@
   무관하게 클릭 시 즉시 `ExitPlacementMode()`를 호출한다(issue #314부터 존재하는 기존 동작).
   즉 빨간 타일을 클릭하면 이동이 실패하며 그대로 취소(원위치 복귀)된다 — 재시도를 위해 다시
   버튼을 눌러야 하는 기존 UX 그대로 유지.
+- **옮길 곳 없을 때 무반응 취소에 대한 피드백 부재**: `HasVacantBuildableTile`이 false면 버튼을
+  눌러도 겉보기엔 아무 일도 일어나지 않는다(라벨은 Tower→Rift로 바뀌었다가 즉시 Rift로 되돌아옴).
+  플레이어에게 "옮길 곳이 없습니다" 같은 명시적 피드백(토스트/로그)을 줄지는 이번 플랜 범위 밖으로
+  두고 `Debug.Log` 수준으로만 남긴다 — 필요 시 별도 UX 이슈로 분리.
