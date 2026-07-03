@@ -12,7 +12,8 @@
                   │      │      │      └─ 이동 모드 진입 취소 (SetBuildMode(Rift)로 즉시 복귀,
                   │      │      │         ghost/픽업 없이 종료)
                   │      │      └─ 있음 → 기존 Tower 인스턴스를 "이동 모드" 대상으로 픽업
-                  │      │                (SetGhostVisual(true)로 비활성화, 신규 Instantiate 없음)
+                  │      │                (SetGhostVisual(true)로 비활성화, 신규 Instantiate 없음,
+                  │      │                 _ghostRenderers의 원래 색상을 _originalColors에 저장)
                   │      └─ 없음 → 기존과 동일하게 신규 ghost Instantiate (issue #314)
                   └─ 공통: _ghost / _ghostRenderers 참조 설정, IsPlacingTower = true
 
@@ -30,26 +31,35 @@
            │      └─ MapTileSystem.RemoveTower(원래 좌표)
            │             → tower.MoveTo(coord) (TileCoord + transform 갱신, 재등록 없음)
            │             → MapTileSystem.PlaceTower(coord, tower)
-           │             → tower.SetGhostVisual(false) (여기서 즉시 복귀 — Exit에서 처리 안 함)
-           │             → _isMoving/_movingTower/_ghost 등 이동 상태 즉시 초기화 (성공 확정)
+           │             → tower.SetGhostVisual(false) + _ghostRenderers 색상을 _originalColors로
+           │               복원 (여기서 즉시 복귀 — Exit에서 처리 안 함)
+           │             → _isMoving/_movingTower/_ghost/_originalColors 등 이동 상태 즉시 초기화
+           │               (성공 확정)
            │             → 큐브 소모 없음 → true 반환
            └─ 무효 → 이동 상태를 그대로 둔 채 false 반환 (아직 "취소되지 않은 진행 중" 상태 유지)
     └─ 이후 ExitPlacementMode() 호출 (기존 흐름 유지 — TryPlace 성공/실패와 무관하게 항상 호출됨)
 
 [우클릭 / ESC / TryPlace 이후 — TowerPlacer.ExitPlacementMode()]
-    ├─ 신규 생성 모드 → ghost Destroy (기존과 동일)
+    ├─ 신규 생성 모드 → ghost Destroy (기존과 동일, 색상 복원 불필요 — 오브젝트 자체가 사라짐)
     ├─ 이동 모드였지만 TryPlace 성공으로 이미 상태가 초기화됨(_isMoving=false, _ghost=null)
     │      → 이 함수는 아무 것도 되돌리지 않고 IsPlacingTower=false / SetBuildMode(Rift)만 수행
     └─ 이동 모드가 아직 진행 중(_isMoving=true — 취소 또는 무효 클릭)
-           → tower.MoveTo(원래 좌표)로 원위치 복귀 + SetGhostVisual(false)
+           → tower.MoveTo(원래 좌표)로 원위치 복귀 + SetGhostVisual(false) +
+             _ghostRenderers 색상을 _originalColors로 복원
              (MapTileSystem 등록은 픽업 시점부터 건드리지 않았으므로 별도 복구 불필요)
 ```
 
-> ⚠️ Codex 리뷰 반영: `InputManager.HandleClick`이 `TryPlace(c)` 이후 성공 여부와 무관하게
+> ⚠️ Codex 리뷰 반영 (1): `InputManager.HandleClick`이 `TryPlace(c)` 이후 성공 여부와 무관하게
 > `ExitPlacementMode()`를 항상 호출하기 때문에, 이동 성공 케이스에서 `ExitPlacementMode()`가
 > 다시 원좌표로 되돌리면 `MapTileSystem`(새 좌표로 갱신됨)과 실제 타워 위치(원좌표로 되돌아감)가
 > 어긋난다. 따라서 **이동 성공은 `TryPlace()` 안에서 즉시 상태를 종료**시키고,
 > `ExitPlacementMode()`는 오직 "아직 진행 중인 이동(취소/무효 클릭)"만 되돌리도록 분리한다.
+>
+> ⚠️ Codex 리뷰 반영 (2): 이동 모드에서는 실제 타워를 `_ghost`로 재사용하는데, 매 프레임
+> `SetGhostColor()`가 `_ghostRenderers`를 초록/빨강 반투명(alpha 0.5)으로 덮어쓴다.
+> `SetGhostVisual(false)`는 `enabled`/`Collider2D`만 되돌릴 뿐 색상은 그대로라서, 이동을
+> 확정/취소해도 **타워가 계속 반투명하게 물들어 보이는 문제**가 생긴다. 픽업 시점에
+> `_originalColors`로 원래 색을 저장해두고, 성공/취소 두 경로 모두에서 복원한다.
 
 ## 2. 수정 파일
 
@@ -67,18 +77,24 @@
     있으면 먼저 `MapTileSystem.Instance.HasVacantBuildableTile(existing.TileCoord)`로 옮길 곳이
     있는지 확인. 없으면 픽업하지 않고 `InputManager.Instance.SetBuildMode(BuildMode.Rift)`를 호출해
     이동 모드 진입 자체를 취소(버튼을 눌러도 아무 일도 일어나지 않은 것처럼 즉시 원상 복귀).
-    있으면 `_isMoving = true`, `_movingTower`, `_moveOriginCoord` 저장 + `SetGhostVisual(true)`.
-    타워가 없으면 기존처럼 `Instantiate(towerPrefab)` + `InitAsGhost()`.
+    있으면 `_isMoving = true`, `_movingTower`, `_moveOriginCoord` 저장 + `SetGhostVisual(true)` +
+    `_originalColors = _ghostRenderers.Select(r => r.color)`로 픽업 당시 원래 색상 저장.
+    타워가 없으면 기존처럼 `Instantiate(towerPrefab)` + `InitAsGhost()` (이 경로는 `_originalColors`
+    불필요 — 오브젝트가 나중에 Destroy됨).
   - `Update()` — 유효성 체크에 "이동 모드 && 원래 좌표" 예외 추가.
   - `TryPlace(coord)` — 이동 모드 분기 추가 (큐브 미소모, `RemoveTower` + `MoveTo` + `PlaceTower`).
-    **성공 시 그 자리에서 `SetGhostVisual(false)` 호출 + `_isMoving=false`/`_movingTower=null`/
-    `_ghost=null` 등 이동 상태를 즉시 초기화**하여, 뒤이어 호출되는 `ExitPlacementMode()`가
-    이미 확정된 이동을 다시 원좌표로 되돌리지 않도록 한다. 실패 시에는 상태를 그대로 두어
-    `ExitPlacementMode()`의 되돌리기 로직이 정상 작동하게 한다.
+    **성공 시 그 자리에서 `SetGhostVisual(false)` 호출 + `RestoreGhostColors()`(아래 신설,
+    `_originalColors`로 `_ghostRenderers` 복원) + `_isMoving=false`/`_movingTower=null`/
+    `_ghost=null`/`_originalColors=null` 등 이동 상태를 즉시 초기화**하여, 뒤이어 호출되는
+    `ExitPlacementMode()`가 이미 확정된 이동을 다시 원좌표로 되돌리거나 색을 놔두지 않도록 한다.
+    실패 시에는 상태를 그대로 두어 `ExitPlacementMode()`의 되돌리기 로직이 정상 작동하게 한다.
   - `ExitPlacementMode()` — `_isMoving == true`(아직 진행 중인 이동)일 때만 `Destroy(_ghost)` 대신
-    `tower.MoveTo(원래 좌표)` + `SetGhostVisual(false)`로 복귀. `_isMoving == false`면(생성 모드
-    이거나, 이동이 이미 `TryPlace()`에서 성공 처리된 경우) 기존 생성 모드 정리 로직만 수행.
-    마지막에 이동/생성 모드 공통 상태(`_isMoving`, `_movingTower`, `_moveOriginCoord`) 초기화.
+    `tower.MoveTo(원래 좌표)` + `SetGhostVisual(false)` + `RestoreGhostColors()`로 복귀.
+    `_isMoving == false`면(생성 모드이거나, 이동이 이미 `TryPlace()`에서 성공 처리된 경우) 기존
+    생성 모드 정리 로직만 수행. 마지막에 이동/생성 모드 공통 상태(`_isMoving`, `_movingTower`,
+    `_moveOriginCoord`, `_originalColors`) 초기화.
+  - `RestoreGhostColors()` (신규 private 헬퍼) — `_originalColors`가 있으면 `_ghostRenderers`
+    각각에 원래 색을 다시 대입. 이동 성공/취소 두 경로에서 공통으로 호출해 중복 제거.
 
 - `MakeDefence/Assets/Scripts/Systems/MapTileSystem.cs`
   - `GetPlacedTower()` 추가 — `_placedTowers`에 항목이 있으면 첫 번째(유일한) `Tower` 반환, 없으면 null.
@@ -104,6 +120,8 @@
 - [ ] 이동 모드에서 Path/이미 다른 오브젝트 있는 타일 위 → 빨간색, 좌클릭해도 이동 안 됨
 - [ ] 이동 확정 시 큐브가 소모되지 않는지 확인
 - [ ] 이동 모드 중 ESC/우클릭 취소 → 타워가 원래 좌표/위치로 정확히 복귀, 공격 동작 재개
+- [ ] **이동 확정/취소 후 타워 스프라이트 색상이 원래대로(반투명 초록/빨강 아님) 돌아오는지 확인**
+  (확정 경로와 취소 경로 둘 다)
 - [ ] 이동 후에도 타워의 스킬/보조옵션/아이템 슬롯 데이터가 그대로 유지되는지 확인 (인스턴스 재사용이므로 유지되어야 정상)
 - [ ] 이동 후 Rift 모드로 전환 시 정상적으로 이동 모드가 취소되는지 (기존 Rift 전환 취소 로직과 충돌 없는지)
 
@@ -127,6 +145,11 @@
   즉시 하지 않으면 `ExitPlacementMode()`가 이미 확정된 이동을 다시 원좌표로 되돌려
   `MapTileSystem` 등록 좌표와 실제 위치가 어긋난다. 구현 시 반드시 성공 경로에서 `_isMoving`을
   먼저 false로 내린 뒤 리턴하도록 순서를 지켜야 한다 (위 시스템 구조/수정 파일 섹션에 반영함).
+- **(Codex 리뷰로 발견) 이동 후 색상 잔류 버그**: 이동 모드는 실제 타워를 `_ghost`로 재사용하며
+  매 프레임 초록/빨강 반투명으로 틴트되는데, `SetGhostVisual(false)`가 `enabled`/`Collider2D`만
+  복원하고 색상은 그대로 두면 이동 확정/취소 후에도 타워가 계속 반투명하게 보인다. 픽업 시점의
+  원래 색을 `_originalColors`에 저장해뒀다가 `RestoreGhostColors()`로 성공/취소 두 경로 모두에서
+  복원하도록 반영함.
 - **옮길 곳 없을 때 무반응 취소에 대한 피드백 부재**: `HasVacantBuildableTile`이 false면 버튼을
   눌러도 겉보기엔 아무 일도 일어나지 않는다(라벨은 Tower→Rift로 바뀌었다가 즉시 Rift로 되돌아옴).
   플레이어에게 "옮길 곳이 없습니다" 같은 명시적 피드백(토스트/로그)을 줄지는 이번 플랜 범위 밖으로
