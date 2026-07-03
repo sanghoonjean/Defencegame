@@ -50,6 +50,33 @@ public class MapTileSystem : MonoBehaviour
         _placedTowers.Remove(coord);
     }
 
+    /// 현재 배치된 타워(설계상 항상 최대 1개)를 반환. 없으면 null.
+    public Tower GetPlacedTower()
+    {
+        foreach (var kv in _placedTowers)
+            return kv.Value;
+        return null;
+    }
+
+    /// excludeCoord를 제외하고 비어있는 Buildable 타일이 하나라도 있으면 true.
+    public bool HasVacantBuildableTile(Vector2Int excludeCoord)
+    {
+        if (buildableTilemap == null) return false;
+
+        buildableTilemap.CompressBounds();
+        foreach (var cell in buildableTilemap.cellBounds.allPositionsWithin)
+        {
+            if (!buildableTilemap.HasTile(cell)) continue;
+
+            var coord = new Vector2Int(cell.x, cell.y);
+            if (coord == excludeCoord) continue;
+            if (_placedTowers.ContainsKey(coord)) continue;
+            if (_placedRifts.ContainsKey(coord)) continue;
+            return true;
+        }
+        return false;
+    }
+
     public bool CanPlaceRift(Vector2Int coord)
     {
         return GetTileType(coord) == TileType.Buildable

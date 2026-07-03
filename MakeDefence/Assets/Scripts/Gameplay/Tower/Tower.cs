@@ -72,14 +72,28 @@ public class Tower : MonoBehaviour
         OnTowerPlaced?.Invoke(this);
     }
 
+    /// 이미 배치된 타워를 다른 좌표로 옮길 때 사용. Place()와 달리 ItemSystem 재등록이나
+    /// OnTowerPlaced 재발화 없이 좌표/월드 위치만 갱신한다.
+    public void MoveTo(Vector2Int coord)
+    {
+        TileCoord = coord;
+        transform.position = new Vector3(coord.x + 0.5f, coord.y + 0.5f, -1f);
+    }
+
     public bool IsGhost { get; private set; }
 
     public void InitAsGhost()
     {
         IsGhost = true;
-        enabled = false;
+        SetGhostVisual(true);
+    }
+
+    /// 배치 대기 중(신규 ghost 또는 재배치 픽업) 시각/충돌 비활성화를 토글한다.
+    public void SetGhostVisual(bool active)
+    {
+        enabled = !active;
         foreach (var col in GetComponentsInChildren<Collider2D>())
-            col.enabled = false;
+            col.enabled = !active;
     }
 
     private void OnDestroy()
