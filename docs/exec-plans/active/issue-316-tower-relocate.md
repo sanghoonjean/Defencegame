@@ -30,15 +30,26 @@
            │      └─ MapTileSystem.RemoveTower(원래 좌표)
            │             → tower.MoveTo(coord) (TileCoord + transform 갱신, 재등록 없음)
            │             → MapTileSystem.PlaceTower(coord, tower)
-           │             → 큐브 소모 없음
-           └─ 무효 → 배치 실패 (기존 TryPlace 실패와 동일 취급)
-    └─ 이후 ExitPlacementMode() 호출 (기존 흐름 유지)
+           │             → tower.SetGhostVisual(false) (여기서 즉시 복귀 — Exit에서 처리 안 함)
+           │             → _isMoving/_movingTower/_ghost 등 이동 상태 즉시 초기화 (성공 확정)
+           │             → 큐브 소모 없음 → true 반환
+           └─ 무효 → 이동 상태를 그대로 둔 채 false 반환 (아직 "취소되지 않은 진행 중" 상태 유지)
+    └─ 이후 ExitPlacementMode() 호출 (기존 흐름 유지 — TryPlace 성공/실패와 무관하게 항상 호출됨)
 
-[우클릭 / ESC — TowerPlacer.Update → ExitPlacementMode()]
+[우클릭 / ESC / TryPlace 이후 — TowerPlacer.ExitPlacementMode()]
     ├─ 신규 생성 모드 → ghost Destroy (기존과 동일)
-    └─ 이동 모드 → tower.MoveTo(원래 좌표)로 원위치 복귀 + SetGhostVisual(false)
-                  (MapTileSystem 등록은 픽업 시점부터 건드리지 않았으므로 별도 복구 불필요)
+    ├─ 이동 모드였지만 TryPlace 성공으로 이미 상태가 초기화됨(_isMoving=false, _ghost=null)
+    │      → 이 함수는 아무 것도 되돌리지 않고 IsPlacingTower=false / SetBuildMode(Rift)만 수행
+    └─ 이동 모드가 아직 진행 중(_isMoving=true — 취소 또는 무효 클릭)
+           → tower.MoveTo(원래 좌표)로 원위치 복귀 + SetGhostVisual(false)
+             (MapTileSystem 등록은 픽업 시점부터 건드리지 않았으므로 별도 복구 불필요)
 ```
+
+> ⚠️ Codex 리뷰 반영: `InputManager.HandleClick`이 `TryPlace(c)` 이후 성공 여부와 무관하게
+> `ExitPlacementMode()`를 항상 호출하기 때문에, 이동 성공 케이스에서 `ExitPlacementMode()`가
+> 다시 원좌표로 되돌리면 `MapTileSystem`(새 좌표로 갱신됨)과 실제 타워 위치(원좌표로 되돌아감)가
+> 어긋난다. 따라서 **이동 성공은 `TryPlace()` 안에서 즉시 상태를 종료**시키고,
+> `ExitPlacementMode()`는 오직 "아직 진행 중인 이동(취소/무효 클릭)"만 되돌리도록 분리한다.
 
 ## 2. 수정 파일
 
@@ -60,9 +71,14 @@
     타워가 없으면 기존처럼 `Instantiate(towerPrefab)` + `InitAsGhost()`.
   - `Update()` — 유효성 체크에 "이동 모드 && 원래 좌표" 예외 추가.
   - `TryPlace(coord)` — 이동 모드 분기 추가 (큐브 미소모, `RemoveTower` + `MoveTo` + `PlaceTower`).
-  - `ExitPlacementMode()` — 이동 모드일 때 `Destroy(_ghost)` 대신 `tower.MoveTo(원래 좌표)` +
-    `SetGhostVisual(false)`로 복귀. 이동/생성 모드 공통 상태(`_isMoving`, `_movingTower`,
-    `_moveOriginCoord`) 초기화.
+    **성공 시 그 자리에서 `SetGhostVisual(false)` 호출 + `_isMoving=false`/`_movingTower=null`/
+    `_ghost=null` 등 이동 상태를 즉시 초기화**하여, 뒤이어 호출되는 `ExitPlacementMode()`가
+    이미 확정된 이동을 다시 원좌표로 되돌리지 않도록 한다. 실패 시에는 상태를 그대로 두어
+    `ExitPlacementMode()`의 되돌리기 로직이 정상 작동하게 한다.
+  - `ExitPlacementMode()` — `_isMoving == true`(아직 진행 중인 이동)일 때만 `Destroy(_ghost)` 대신
+    `tower.MoveTo(원래 좌표)` + `SetGhostVisual(false)`로 복귀. `_isMoving == false`면(생성 모드
+    이거나, 이동이 이미 `TryPlace()`에서 성공 처리된 경우) 기존 생성 모드 정리 로직만 수행.
+    마지막에 이동/생성 모드 공통 상태(`_isMoving`, `_movingTower`, `_moveOriginCoord`) 초기화.
 
 - `MakeDefence/Assets/Scripts/Systems/MapTileSystem.cs`
   - `GetPlacedTower()` 추가 — `_placedTowers`에 항목이 있으면 첫 번째(유일한) `Tower` 반환, 없으면 null.
@@ -82,6 +98,9 @@
 - [ ] 맵의 모든 Buildable 타일이 (타워 자기 자신 좌표 제외하고) 다른 타워/균열 생성기로 이미 채워진 상태에서 유닛 버튼 클릭 → 이동 모드에 진입하지 않고 즉시 Rift 모드로 복귀 (버튼 라벨도 원래대로)
 - [ ] 이동 모드에서 원래 좌표 위 → ghost 초록색(유효) 유지
 - [ ] 이동 모드에서 다른 Buildable 빈 타일 위 → 초록색, 좌클릭 시 그 위치로 이동 확정 (원래 좌표는 비워짐)
+- [ ] **이동 확정 직후 타워 위치가 원좌표로 되돌아가지 않는지 확인** (`ExitPlacementMode()`가 뒤이어
+  호출돼도 새 좌표에 그대로 남아있어야 함 — `Tower.transform.position`/`TileCoord`와
+  `MapTileSystem`의 등록 좌표가 일치하는지 확인)
 - [ ] 이동 모드에서 Path/이미 다른 오브젝트 있는 타일 위 → 빨간색, 좌클릭해도 이동 안 됨
 - [ ] 이동 확정 시 큐브가 소모되지 않는지 확인
 - [ ] 이동 모드 중 ESC/우클릭 취소 → 타워가 원래 좌표/위치로 정확히 복귀, 공격 동작 재개
@@ -103,6 +122,11 @@
   무관하게 클릭 시 즉시 `ExitPlacementMode()`를 호출한다(issue #314부터 존재하는 기존 동작).
   즉 빨간 타일을 클릭하면 이동이 실패하며 그대로 취소(원위치 복귀)된다 — 재시도를 위해 다시
   버튼을 눌러야 하는 기존 UX 그대로 유지.
+- **(Codex 리뷰로 발견) 이동 성공 직후 되돌림 버그**: `TryPlace()`가 성공해도 `HandleClick`이
+  곧바로 `ExitPlacementMode()`를 호출하므로, 이동 상태 초기화를 `TryPlace()` 성공 분기 안에서
+  즉시 하지 않으면 `ExitPlacementMode()`가 이미 확정된 이동을 다시 원좌표로 되돌려
+  `MapTileSystem` 등록 좌표와 실제 위치가 어긋난다. 구현 시 반드시 성공 경로에서 `_isMoving`을
+  먼저 false로 내린 뒤 리턴하도록 순서를 지켜야 한다 (위 시스템 구조/수정 파일 섹션에 반영함).
 - **옮길 곳 없을 때 무반응 취소에 대한 피드백 부재**: `HasVacantBuildableTile`이 false면 버튼을
   눌러도 겉보기엔 아무 일도 일어나지 않는다(라벨은 Tower→Rift로 바뀌었다가 즉시 Rift로 되돌아옴).
   플레이어에게 "옮길 곳이 없습니다" 같은 명시적 피드백(토스트/로그)을 줄지는 이번 플랜 범위 밖으로
