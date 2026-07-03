@@ -83,9 +83,13 @@ public class TowerPlacer : MonoBehaviour
 
         if (_isMoving)
         {
-            _movingTower.MoveTo(_moveOriginCoord);
-            _movingTower.SetGhostVisual(false);
-            RestoreGhostColors();
+            // 이동 중이던 타워가 외부(삭제 버튼 등)에 의해 파괴됐을 수 있으므로 방어적으로 체크.
+            if (_movingTower != null)
+            {
+                _movingTower.MoveTo(_moveOriginCoord);
+                _movingTower.SetGhostVisual(false);
+                RestoreGhostColors();
+            }
         }
         else if (_ghost != null)
         {
@@ -109,6 +113,10 @@ public class TowerPlacer : MonoBehaviour
 
     private bool TryMove(Vector2Int coord)
     {
+        // 이동 중이던 타워가 외부(삭제 버튼 등)에 의해 파괴됐으면 이동 실패 처리.
+        // 뒤이어 호출되는 ExitPlacementMode()가 나머지 상태 정리를 담당한다.
+        if (_movingTower == null) return false;
+
         bool valid = coord == _moveOriginCoord || MapTileSystem.Instance.CanPlaceTower(coord);
         if (!valid) return false;
 
