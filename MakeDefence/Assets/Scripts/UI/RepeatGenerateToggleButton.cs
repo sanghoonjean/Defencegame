@@ -31,6 +31,13 @@ public class RepeatGenerateToggleButton : MonoBehaviour
         GameStateSystem.OnStateChanged += HandleStateChanged;
         PauseSystem.OnPauseChanged     += HandlePauseChanged;
         ShopSystem.OnInventoryChanged  += Refresh;
+    }
+
+    // Start 는 씬 전체의 Awake 가 모두 끝난 뒤 실행되므로, WaveGeneratorSystem/ShopSystem 의
+    // 초기화(초기 차원석 지급 등)가 이 시점엔 반드시 끝나 있다. OnEnable 에서 곧바로 Refresh 하면
+    // 계층 순서에 따라 이 값들보다 먼저 실행돼 오래된 상태로 굳어질 수 있다.
+    private void Start()
+    {
         Refresh();
     }
 

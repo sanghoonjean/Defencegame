@@ -23,6 +23,12 @@ public class OpenRiftButton : MonoBehaviour
         WaveSystem.OnWaveStarted         += HandleWaveStarted;
         WaveSystem.OnWaveEnded           += HandleWaveEnded;
         GameStateSystem.OnStateChanged   += HandleStateChanged;
+    }
+
+    // Start 는 씬 전체의 Awake 가 끝난 뒤 실행되므로, 계층 순서와 무관하게
+    // WaveGeneratorSystem.Instance 가 이미 준비된 상태에서 최초 평가가 이뤄진다.
+    private void Start()
+    {
         Refresh();
     }
 
