@@ -59,6 +59,9 @@ A* 기반 최단경로를 PathfindingSystem이 실시간 계산해 제공한다 
 - 타워 배치가 모든 route의 스폰 지점 → 본진 연결성을 끊지 않는지 검사 (유일한 통로를 막는 배치는 거부) (#326)
 - 배치 성공/실패 결과 반환
 
+### 7. 경로 시각화 (#331)
+`MonsterPathVisualizer`가 모든 route의 스폰 지점 → 본진 경로를 **스무딩 이전 셀 단위 전체 경로**(`PathfindingSystem.ComputeFullCellPath`)로 조회해, 각 셀에 작은 원 오브젝트를 상시 표시한다. 타워가 배치·이동·삭제될 때(`PathfindingSystem.OnPathsChanged`)마다 마커도 함께 갱신된다.
+
 ---
 
 ## 인터페이스
@@ -80,6 +83,13 @@ public class MapTileSystem
     public bool IsWalkable(Vector2Int cell);
     public bool WouldSeverPath(Vector2Int coord, Vector2Int? ignoreCoord = null);
     public bool CanPlaceTower(Vector2Int coord, Vector2Int? ignoreCoord = null);
+}
+
+public class PathfindingSystem
+{
+    // 경로 시각화 (#331) — 스무딩 없는 셀 단위 전체 경로
+    public Vector2[] ComputeFullCellPath(Vector2 fromWorld, Vector2 toWorld);
+    public static event Action OnPathsChanged;
 }
 
 public enum TileType
