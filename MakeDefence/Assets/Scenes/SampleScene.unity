@@ -8799,7 +8799,6 @@ GameObject:
   - component: {fileID: 157489368}
   - component: {fileID: 157489367}
   - component: {fileID: 157489371}
-  - component: {fileID: 157489370}
   m_Layer: 5
   m_Name: DimesionStoneInventoryUI
   m_TagString: Untagged
@@ -8879,23 +8878,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 157489365}
   m_CullTransparentMesh: 1
---- !u!114 &157489370
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 157489365}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 35edb938b98bb0547be6ce9c71b02da1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  screenOffset: {x: 290, y: -240}
-  _canvasGroup: {fileID: 0}
-  _rectTransform: {fileID: 0}
-  _current: {fileID: 0}
-  _cam: {fileID: 0}
 --- !u!225 &157489371
 CanvasGroup:
   m_ObjectHideFlags: 0
