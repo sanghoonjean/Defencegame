@@ -70,6 +70,15 @@ public class MapTileSystem : MonoBehaviour
     {
         if (spawnRoutes == null || spawnRoutes.Length == 0) return false;
 
+        var baseCell = WorldToCell(basePoint);
+
+        // AStarPathfinder.IsReachable/FindPath는 goal 셀 자체를 항상 도달 가능으로 예외 처리한다
+        // (basePoint가 Decoration 타일 위에 있을 수 있어 실제 이동에는 필요한 규칙). 하지만 그 예외
+        // 때문에 "본진 셀 자체를 막는 가상 배치"는 이 도달성 검사로는 절대 감지되지 않는다 — goal이
+        // coord와 같아도 isWalkable(goal) 호출 자체가 생략되기 때문(Codex 리뷰 지적). 본진 셀에
+        // 타워를 놓는 것은 항상 봉쇄로 간주해 여기서 직접 차단한다.
+        if (coord == baseCell) return true;
+
         bool HypotheticalWalkable(Vector2Int cell)
         {
             if (cell == coord) return false;
@@ -77,7 +86,6 @@ public class MapTileSystem : MonoBehaviour
             return IsWalkable(cell);
         }
 
-        var baseCell = WorldToCell(basePoint);
         foreach (var route in spawnRoutes)
         {
             var spawnCell = WorldToCell(route.spawnPoint);
