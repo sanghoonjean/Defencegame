@@ -19,7 +19,7 @@ public class OpenRiftButton : MonoBehaviour
 
     private void OnEnable()
     {
-        if (WaveGeneratorSystem.Instance != null) WaveGeneratorSystem.Instance.OnStoneChanged += Refresh;
+        WaveGeneratorSystem.OnStoneChanged += Refresh;
         WaveSystem.OnWaveStarted         += HandleWaveStarted;
         WaveSystem.OnWaveEnded           += HandleWaveEnded;
         GameStateSystem.OnStateChanged   += HandleStateChanged;
@@ -28,7 +28,7 @@ public class OpenRiftButton : MonoBehaviour
 
     private void OnDisable()
     {
-        if (WaveGeneratorSystem.Instance != null) WaveGeneratorSystem.Instance.OnStoneChanged -= Refresh;
+        WaveGeneratorSystem.OnStoneChanged -= Refresh;
         WaveSystem.OnWaveStarted         -= HandleWaveStarted;
         WaveSystem.OnWaveEnded           -= HandleWaveEnded;
         GameStateSystem.OnStateChanged   -= HandleStateChanged;

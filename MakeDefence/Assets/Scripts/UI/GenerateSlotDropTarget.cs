@@ -50,13 +50,13 @@ public class GenerateSlotDropTarget : MonoBehaviour,
 
     private void OnEnable()
     {
-        if (WaveGeneratorSystem.Instance != null) WaveGeneratorSystem.Instance.OnStoneChanged += Refresh;
+        WaveGeneratorSystem.OnStoneChanged += Refresh;
         Refresh();
     }
 
     private void OnDisable()
     {
-        if (WaveGeneratorSystem.Instance != null) WaveGeneratorSystem.Instance.OnStoneChanged -= Refresh;
+        WaveGeneratorSystem.OnStoneChanged -= Refresh;
     }
 
     private void Refresh()

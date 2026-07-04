@@ -12,7 +12,10 @@ public class WaveGeneratorSystem : MonoBehaviour
 
     public DimensionStone LoadedStone { get; private set; }
 
-    public event Action OnStoneChanged;
+    // static — Instance 생성(Awake) 이전에 구독해도 놓치지 않도록.
+    // Canvas 하위 UI(OpenRiftButton 등)의 OnEnable 이 이 오브젝트의 Awake 보다
+    // 먼저 실행될 수 있어(계층 순서 의존), 인스턴스 이벤트로는 구독이 누락될 수 있다.
+    public static event Action OnStoneChanged;
 
     private void Awake() { Instance = this; }
 
