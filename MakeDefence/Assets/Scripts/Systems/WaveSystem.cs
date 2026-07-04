@@ -62,6 +62,8 @@ public class WaveSystem : MonoBehaviour
     public void StartWave()
     {
         if (IsWaveActive) { Debug.Log("[WaveSystem] StartWave: already active"); return; }
+        if (!HasSpawnRoutes()) return;
+
         IsWaveActive = true;
         IsRiftWaveActive = false;
         _currentRiftMods = RiftWaveModifiers.Default;
@@ -90,6 +92,8 @@ public class WaveSystem : MonoBehaviour
     public bool StartRiftWave(RiftWaveModifiers modifiers)
     {
         if (IsWaveActive) { Debug.Log("[WaveSystem] StartRiftWave: already active"); return false; }
+        if (!HasSpawnRoutes()) return false;
+
         IsWaveActive = true;
         IsRiftWaveActive = true;
         _currentRiftMods = modifiers;
@@ -156,19 +160,35 @@ public class WaveSystem : MonoBehaviour
         return 30;
     }
 
+    // 진입부에서 방어됨 — SpawnEnemies 는 항상 routeCount >= 1 상태로 진입한다고 가정.
+    // 여기서 다시 실패해 yield break 하면 _aliveCount 가 감소할 계기가 없어 웨이브가 stuck 이 되므로,
+    // 진입부 (StartWave / StartRiftWave) 가 유일한 방어 지점.
+    private bool HasSpawnRoutes()
+    {
+        if (MapTileSystem.Instance == null || MapTileSystem.Instance.RouteCount == 0)
+        {
+            Debug.LogError("[WaveSystem] spawnRoutes 미설정 — 웨이브 시작 취소");
+            return false;
+        }
+        return true;
+    }
+
     private IEnumerator SpawnEnemies(List<EnemyGrade> spawnList)
     {
-        var waypoints = MapTileSystem.Instance.GetFullPath();
-        Debug.Log($"[WaveSystem] SpawnEnemies waypoints={waypoints.Length}");
+        int routeCount = MapTileSystem.Instance.RouteCount;
+        Debug.Log($"[WaveSystem] SpawnEnemies routes={routeCount} enemies={spawnList.Count}");
         int spawnedCount = 0;
-        foreach (var grade in spawnList)
+        for (int i = 0; i < spawnList.Count; i++)
         {
+            var grade = spawnList[i];
             var data = GetDataForGrade(grade);
             if (data == null) { Debug.LogError($"[WaveSystem] EnemyData null for grade={grade}"); yield break; }
+            int routeIndex = i % routeCount;
+            var waypoints = MapTileSystem.Instance.GetFullPath(routeIndex);
             var enemy = ObjectPoolSystem.Instance.Get();
             enemy.Initialize(data, CurrentStage, waypoints, _currentRiftMods);
             spawnedCount++;
-            Debug.Log($"[WaveSystem] Spawned {spawnedCount}/{spawnList.Count} grade={grade}");
+            Debug.Log($"[WaveSystem] Spawned {spawnedCount}/{spawnList.Count} grade={grade} route={routeIndex}");
             yield return new WaitForSeconds(spawnInterval);
         }
     }
