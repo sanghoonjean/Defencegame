@@ -62,6 +62,26 @@ Enemy.MoveAlongPath()                  ← 로직 동일 (Vector2[] 순서 소�
 
 → `WouldSeverPath` 와 `CanPlaceTower` 에 `ignoreCoord` (nullable `Vector2Int?`) 오버로드를 추가해 "연결성 검사 시 이 좌표는 타워가 없다고 간주" 하도록 한다. `TowerPlacer`의 이동 관련 검사(미리보기 `Update()`의 고스트 색상 판정, `TryMove`의 실제 커밋 검사) 양쪽 모두 `CanPlaceTower(coord, ignoreCoord: _moveOriginCoord)` 를 사용한다. 신규 배치(`TryPlace`)는 `ignoreCoord` 없이 기존 `CanPlaceTower(coord)` 그대로.
 
+### 시작 셀은 항상 통과 가능 (Codex #327 지적, 2차 리뷰)
+
+타워를 몬스터가 현재 서 있는 셀에 배치/이동할 수 있다는 전제(`CanPlaceTower`는 몬스터 점유 여부를 검사하지 않으며, 웨이브 진행 중 배치를 막지 않음 — 기존부터 허용되던 동작)를 유지하면, 재계산 시점에 그 몬스터의 "현재 위치 셀"이 방금 막 `IsWalkable == false` 가 되어버린 상태일 수 있다. 이 상태에서 그 셀을 시작점으로 `FindPath`를 돌리면 시작 노드 자체가 walkable 이 아니라서 경로 탐색이 실패(→ 직선 폴백)할 위험이 있다.
+
+→ `AStarPathfinder.FindPath(start, goal, isWalkable)` 는 **`start` 노드 자체는 `isWalkable` 검사 대상에서 제외**하고 항상 진입 가능한 것으로 취급한다 (이웃 노드로 확장할 때만 `isWalkable` 검사). "이미 그 자리에 서 있다"는 사실 자체가 곧 통행 가능성의 증거이므로, 타워가 마침 그 자리에 놓였더라도 그 지점에서 빠져나가는 경로는 항상 계산 가능해야 한다. §3 `AStarPathfinder` 명세에 반영.
+
+### 스폰 경로 vs 실시간 재계산 경로의 모양 구분 (Codex #327 지적, 2차 리뷰)
+
+`ComputePath` 결과를 두 군데(`WaveSystem.SpawnEnemies` → `Enemy.Initialize`, `RecalculateActiveEnemyPaths` → `Enemy.SetPath`)에서 그대로 재사용하려 했으나, 두 소비처의 기대 형태가 다르다:
+- `Enemy.Initialize`: `waypoints[0]`로 순간이동 후 인덱스 1부터 시작 — **시작점(spawnPoint) 포함**된 배열을 기대.
+- `Enemy.SetPath`: 이미 그 자리에 있으므로 인덱스 0부터 시작 — **현재 위치 미포함**된 배열을 기대.
+
+같은 `ComputePath(from, to)` 를 두 곳에 그대로 넘기면 스폰 시 첫 구간이 스킵되거나, 재계산 시 제자리를 향하는 불필요한 웨이포인트가 생긴다.
+
+→ `PathfindingSystem.ComputePath(Vector2 fromWorld, Vector2 toWorld, bool includeStart)` 로 옵션을 명시한다:
+- `WaveSystem.SpawnEnemies` → `ComputePath(spawnPoint, basePoint, includeStart: true)`
+- `RecalculateActiveEnemyPaths` → `ComputePath(currentPos, basePoint, includeStart: false)`
+
+내부적으로 A* 결과(셀 경로)의 첫 원소를 포함시킬지 여부만 다르고, 나머지(스무딩, 오프셋 변환) 로직은 공유한다.
+
 ### 봉쇄 방지 (신규 요구사항)
 
 기존 `CanPlaceTower` 는 좌표가 `Buildable` 이고 비어 있는지만 검사하며 **연결성 검사가 없다**. 지금까지는 타워가 이동을 막지 않았으므로 문제 없었지만, 이제 타워가 실제 장애물이 되므로 유저가 유일한 통로를 막아 게임을 클리어 불가능하게 만들 수 있는 신규 리스크가 생긴다. → `CanPlaceTower(coord)` 에 "이 좌표에 타워를 놓아도 모든 `spawnRoutes[].spawnPoint` → `basePoint` 경로가 여전히 존재하는가" 검사를 추가하고, 실패 시 배치를 거부한다(고스트 프리뷰는 `GhostInvalid` 로 표시).
@@ -86,12 +106,12 @@ Enemy.MoveAlongPath()                  ← 로직 동일 (Vector2[] 순서 소�
 
 ### `MakeDefence/Assets/Scripts/Systems/PathfindingSystem.cs`
 - 실제 경로탐색 책임을 이관받는다 (이름값을 하게 됨):
-  - `Vector2[] ComputePath(Vector2 fromWorld, Vector2 toWorld)` — 월드 좌표 → 셀 변환 → `AStarPathfinder.FindPath(start, goal, MapTileSystem.Instance.IsWalkable)` → 셀 경로를 월드 좌표(+0.5 오프셋)로 변환 → 스무딩 → 반환. 경로 없음(이론상 발생 안 하지만 방어) 시 `Debug.LogError` + 시작/끝 2점짜리 직선 폴백.
-  - `void RecalculateActiveEnemyPaths()` — `Enemy.ActiveEnemies` 순회, 각 enemy 현재 위치 → `basePoint` 로 `ComputePath` 재호출, `enemy.SetPath(newPath)`.
+  - `Vector2[] ComputePath(Vector2 fromWorld, Vector2 toWorld, bool includeStart)` — 월드 좌표 → 셀 변환 → `AStarPathfinder.FindPath(start, goal, MapTileSystem.Instance.IsWalkable)` → `includeStart`가 false면 셀 경로 첫 원소(시작 셀) 제거 → 월드 좌표(+0.5 오프셋)로 변환 → 스무딩 → 반환. 경로 없음(이론상 발생 안 하지만 방어) 시 `Debug.LogError` + 시작/끝 2점짜리 직선 폴백 (Codex #327 지적, 2차 리뷰 — §1 "스폰 경로 vs 실시간 재계산 경로의 모양 구분" 참고).
+  - `void RecalculateActiveEnemyPaths()` — `Enemy.ActiveEnemies` 순회, 각 enemy 현재 위치 → `basePoint` 로 `ComputePath(currentPos, basePoint, includeStart: false)` 재호출, `enemy.SetPath(newPath)`.
 - 기존 `GetFullPath`/`GetWaypoints` 프록시 메서드 삭제 (호출부 없음 확인 필요, §5 R4 참고).
 
 ### `MakeDefence/Assets/Scripts/Systems/WaveSystem.cs`
-- `SpawnEnemies` 176~190라인 부근: `MapTileSystem.Instance.GetFullPath(routeIndex)` 호출을 `PathfindingSystem.Instance.ComputePath(MapTileSystem.Instance.GetSpawnPoint(routeIndex), MapTileSystem.Instance.GetBasePoint())` 로 교체.
+- `SpawnEnemies` 176~190라인 부근: `MapTileSystem.Instance.GetFullPath(routeIndex)` 호출을 `PathfindingSystem.Instance.ComputePath(MapTileSystem.Instance.GetSpawnPoint(routeIndex), MapTileSystem.Instance.GetBasePoint(), includeStart: true)` 로 교체 (Codex #327 지적, 2차 리뷰).
 
 ### `MakeDefence/Assets/Scripts/Gameplay/Enemy/Enemy.cs`
 - 신규 메서드 `public void SetPath(Vector2[] newPath)`:
@@ -102,7 +122,7 @@ Enemy.MoveAlongPath()                  ← 로직 동일 (Vector2[] 순서 소�
       _waypointIndex = 0; // 새 경로는 이미 "현재 위치"를 포함하지 않으므로 0부터 MoveTowards
   }
   ```
-  (`Initialize`의 기존 `_waypointIndex = 1` 스킵 로직은 "0번째 waypoint = 스폰 좌표 = 현재 위치" 라서 존재하던 것. `SetPath`로 들어오는 경로는 "현재 위치"를 0번째로 포함시키지 않고 바로 다음 목표부터 주도록 `PathfindingSystem.ComputePath`가 조립 — 자세한 조립 규칙은 구현 단계에서 결정.)
+  (`Initialize`의 기존 `_waypointIndex = 1` 스킵 로직은 "0번째 waypoint = 스폰 좌표 = 현재 위치" 라서 존재하던 것. `SetPath`로 들어오는 경로는 `ComputePath(..., includeStart: false)` 로 조립되어 "현재 위치"를 포함하지 않고 바로 다음 목표부터 시작 — §1 "스폰 경로 vs 실시간 재계산 경로의 모양 구분" 참고.)
 - `MoveAlongPath` / `ReachBase` 로직은 변경 없음 (여전히 `_waypoints[_waypointIndex]` 순회).
 
 ### `MakeDefence/Assets/Scripts/Gameplay/Tower/TowerPlacer.cs`
@@ -123,7 +143,7 @@ Enemy.MoveAlongPath()                  ← 로직 동일 (Vector2[] 순서 소�
 
 ### `MakeDefence/Assets/Scripts/Systems/AStarPathfinder.cs`
 - MonoBehaviour 아닌 순수 static 유틸리티 클래스.
-- `public static List<Vector2Int> FindPath(Vector2Int start, Vector2Int goal, Func<Vector2Int, bool> isWalkable)` — 8방향 A*, 코너컷 금지, 경로 없으면 `null`.
+- `public static List<Vector2Int> FindPath(Vector2Int start, Vector2Int goal, Func<Vector2Int, bool> isWalkable)` — 8방향 A*, 코너컷 금지, 경로 없으면 `null`. **`start` 노드 자체는 `isWalkable` 검사에서 제외**하고 항상 진입 가능으로 취급(이웃으로 확장할 때만 검사) — 재계산 시점에 시작 셀에 막 타워가 놓인 경우를 대비 (Codex #327 지적, 2차 리뷰, §1 "시작 셀은 항상 통과 가능" 참고).
 - `public static bool IsReachable(Vector2Int start, Vector2Int goal, Func<Vector2Int, bool> isWalkable)` — BFS 기반 연결성만 검사(봉쇄 방지용, `WouldSeverPath`에서 사용). `FindPath`가 null을 반환하는지로 대체 가능하지만 의미를 명확히 하기 위해 별도 메서드로 분리.
 - 순수 C# (Unity API 의존 최소) → EditMode 단위 테스트 용이.
 
@@ -134,8 +154,10 @@ Enemy.MoveAlongPath()                  ← 로직 동일 (Vector2[] 순서 소�
 - [ ] `AStarPathfinder.FindPath`: 중앙에 장애물 1칸 → 경로가 우회하는지, 우회 거리가 최소인지
 - [ ] `AStarPathfinder.FindPath`: 코너컷 금지 확인 (대각선 양쪽이 막힌 코너를 관통하지 않는지)
 - [ ] `AStarPathfinder.FindPath`: 완전히 막힌 경우 `null` 반환
+- [ ] `AStarPathfinder.FindPath`: `start` 좌표 자체가 `isWalkable(start) == false` 인 경우에도 경로를 정상적으로 찾는지 (시작 셀 예외 규칙 검증)
 - [ ] `AStarPathfinder.IsReachable`: 봉쇄/비봉쇄 케이스
 - [ ] `MapTileSystem.WouldSeverPath`: 유일한 통로 타일에 타워를 놓으려 하면 true(=배치 거부되어야 함)
+- [ ] `PathfindingSystem.ComputePath`: `includeStart: true`/`false` 각각 결과 배열에 시작 좌표 포함 여부가 정확한지
 
 ### 수동 (Unity Editor)
 전제: SampleScene, `spawnRoutes` 2개 이상, `basePoint` 설정.
@@ -146,6 +168,8 @@ Enemy.MoveAlongPath()                  ← 로직 동일 (Vector2[] 순서 소�
 - [ ] 타워 삭제/이동으로 통로가 다시 열리면 이후 배치 가능
 - [ ] 다중 스폰 경로 모두 정상적으로 basePoint 합류 (#253 회귀 확인)
 - [ ] 차원석 리프트 웨이브도 동일하게 동작
+- [ ] 몬스터가 밟고 지나가는 셀에 정확히 타워를 배치/이동 → 그 몬스터가 즉시 우회 경로로 전환하는지 (직선 폴백으로 깨지지 않는지)
+- [ ] 신규 스폰 몬스터가 스폰 지점부터 정상적으로 첫 구간을 이동하는지(스킵 없음), 재계산된 몬스터가 제자리 방향으로 튀지 않는지 (includeStart 분기 검증)
 
 ## 5. 위험 요소
 
@@ -172,6 +196,12 @@ Enemy.MoveAlongPath()                  ← 로직 동일 (Vector2[] 순서 소�
 
 ### R8. 타워 삭제 경로가 `TowerPlacer`를 거치지 않음 (Codex #327 지적)
 삭제 확인 팝업(`TowerDeleteConfirmPopup`) → `InventorySystem.DeleteTower` → `Destroy(tower.gameObject)` → `Tower.OnDestroy()` → `MapTileSystem.RemoveTower` 경로는 `TowerPlacer`의 배치/이동 성공 콜백을 전혀 거치지 않는다. 재계산 훅을 `TowerPlacer`에만 넣으면 삭제 시 살아있는 몬스터가 옛 회피 경로를 계속 따라간다. → 재계산 호출을 `TowerPlacer`가 아니라 `MapTileSystem.PlaceTower`/`RemoveTower` 내부로 옮겨 모든 호출 경로(배치/이동/삭제)에서 자동 실행되도록 한다 (§1, §2 참고).
+
+### R9. 몬스터가 서 있는 셀에 타워가 놓이는 경우 (Codex #327 지적, 2차 리뷰)
+`CanPlaceTower`는 몬스터 점유 여부를 검사하지 않고, 웨이브 진행 중 배치 자체는 기존부터 허용되던 동작이라 막지 않는다. 따라서 몬스터 바로 밑에 타워가 놓이면 그 몬스터의 재계산 시작 셀이 순간적으로 `IsWalkable == false` 가 된다. → `AStarPathfinder.FindPath`가 시작 노드를 `isWalkable` 검사에서 제외하도록 해서 항상 탈출 경로를 계산할 수 있게 한다 (§1, §3 참고). 이 규칙이 없으면 해당 몬스터만 직선 폴백(타워 관통)으로 빠지는 시각적 버그가 남는다.
+
+### R10. `ComputePath` 재사용 시 스폰/재계산 경로 모양 불일치 (Codex #327 지적, 2차 리뷰)
+같은 `ComputePath(from, to)` 를 스폰(`Enemy.Initialize`, 시작점 포함 필요)과 실시간 재계산(`Enemy.SetPath`, 시작점 미포함 필요) 양쪽에 그대로 재사용하면 스폰 시 첫 구간이 스킵되거나 재계산 시 제자리 웨이포인트가 남는다. → `includeStart` 파라미터로 호출부별 기대 형태를 명시 (§1, §2 참고).
 
 ## 6. 오픈 이슈 (Plan PR 에서 확정)
 
