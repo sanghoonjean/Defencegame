@@ -60,7 +60,9 @@ Enemy.MoveAlongPath()                  ← 로직 동일 (Vector2[] 순서 소�
 
 `TowerPlacer.TryMove`는 `MapTileSystem.Instance.CanPlaceTower(coord)` 를 **`RemoveTower(_moveOriginCoord)` 호출 이전에** 검사한다. 이 시점엔 원래 타워가 여전히 `_placedTowers`에 남아 있으므로, `CanPlaceTower` 가 내부적으로 `WouldSeverPath(coord)` 를 호출하면 "원위치 타워 + 이동 후보 좌표" **두 칸이 동시에 막힌 것**으로 연결성을 검사하게 된다. 최종 상태(원위치엔 타워 없음, 후보 좌표에만 1개)라면 통과했을 이동이, 두 칸을 동시에 막으면 통로가 끊기는 경우 부당하게 거부될 수 있다.
 
-→ `WouldSeverPath` 와 `CanPlaceTower` 에 `ignoreCoord` (nullable `Vector2Int?`) 오버로드를 추가해 "연결성 검사 시 이 좌표는 타워가 없다고 간주" 하도록 한다. `TowerPlacer`의 이동 관련 검사(미리보기 `Update()`의 고스트 색상 판정, `TryMove`의 실제 커밋 검사) 양쪽 모두 `CanPlaceTower(coord, ignoreCoord: _moveOriginCoord)` 를 사용한다. 신규 배치(`TryPlace`)는 `ignoreCoord` 없이 기존 `CanPlaceTower(coord)` 그대로.
+→ `WouldSeverPath` 와 `CanPlaceTower` 에 `ignoreCoord` (nullable `Vector2Int?`) 오버로드를 추가해 "이 좌표는 타워가 없다고 간주" 하도록 한다. `TowerPlacer`의 이동 관련 검사(미리보기 `Update()`의 고스트 색상 판정, `TryMove`의 실제 커밋 검사) 양쪽 모두 `CanPlaceTower(coord, ignoreCoord: _moveOriginCoord)` 를 사용한다. 신규 배치(`TryPlace`)는 `ignoreCoord` 없이 기존 `CanPlaceTower(coord)` 그대로.
+
+**주의 (Codex #327 지적, 5차 리뷰)**: `ignoreCoord`는 `WouldSeverPath` 연결성 검사뿐 아니라 **점유 여부 검사(`_placedTowers.ContainsKey(coord)`)에도 동일하게 적용**해야 한다. 원위치(`_moveOriginCoord`)는 이 시점에 아직 `_placedTowers`에 남아 있으므로, 점유 검사에 `ignoreCoord`를 안 넘기면 "원래 자리로 다시 옮기기"(사실상 이동 취소) 클릭이 부당하게 거부되는 회귀가 생긴다. 기존 `TryMove`의 `coord == _moveOriginCoord ||` 특례 분기를 별도로 유지하는 대신, `CanPlaceTower` 내부에서 점유 검사 자체를 `!_placedTowers.ContainsKey(coord) || coord == ignoreCoord` 로 작성해 `ignoreCoord`가 점유·연결성 검사 모두에 일관되게 적용되도록 한다.
 
 ### 시작 셀은 항상 통과 가능 (Codex #327 지적, 2차 리뷰)
 
@@ -106,7 +108,7 @@ Enemy.MoveAlongPath()                  ← 로직 동일 (Vector2[] 순서 소�
 - `GetWaypoints()` / `GetFullPath()` (배열 조립 버전) 삭제 — 대신 `PathfindingSystem.ComputePath` 가 그 역할을 대체.
 - 신규: `public bool IsWalkable(Vector2Int cell)` — `GetTileType(cell)`이 `Buildable` 또는 `Path` 이고 `!_placedTowers.ContainsKey(cell)`.
 - 신규: `public bool WouldSeverPath(Vector2Int coord, Vector2Int? ignoreCoord = null)` — `coord`에 가상으로 타워가 있다고 가정하고(단 `ignoreCoord`는 타워가 없는 것으로 간주) 모든 `spawnRoutes[].spawnPoint` → `basePoint` 가 A*로 도달 가능한지 검사 (연결성만 필요하므로 BFS로 충분, `AStarPathfinder` 재사용 가능).
-- `CanPlaceTower(Vector2Int coord, Vector2Int? ignoreCoord = null)` 오버로드 추가, 기존 무인자 호출부는 `ignoreCoord: null`로 위임. 내부적으로 `&& !WouldSeverPath(coord, ignoreCoord)` 조건 추가 (Codex #327 지적 — 이동 검증 시 원위치를 제외해야 하므로 `ignoreCoord` 필요, §1 "이동 검증 시 원위치 제외" 참고).
+- `CanPlaceTower(Vector2Int coord, Vector2Int? ignoreCoord = null)` 오버로드 추가, 기존 무인자 호출부는 `ignoreCoord: null`로 위임. 점유 검사와 연결성 검사 **양쪽 모두**에 `ignoreCoord`를 적용: `GetTileType(coord) == Buildable && (!_placedTowers.ContainsKey(coord) || coord == ignoreCoord) && !WouldSeverPath(coord, ignoreCoord)` (Codex #327 지적, 5차 리뷰 — `ignoreCoord`를 연결성 검사에만 적용하면 원위치로 되돌리는 이동이 점유 검사에서 부당하게 거부됨, §1 "이동 검증 시 원위치 제외" 참고).
 - `GetSpawnPoint(routeIndex)` 는 유지.
 - `PlaceTower` / `RemoveTower` 마지막 줄에 `PathfindingSystem.Instance?.RecalculateActiveEnemyPaths()` 호출 추가 — 배치/이동/삭제 등 호출 경로에 관계없이 이 두 메서드만 거치면 항상 재계산되도록 함 (Codex #327 지적, §1 "재계산 트리거" 참고).
 
@@ -135,7 +137,7 @@ Enemy.MoveAlongPath()                  ← 로직 동일 (Vector2[] 순서 소�
 - 재계산 호출은 §2 `MapTileSystem.PlaceTower`/`RemoveTower`에서 처리하므로 이 파일에는 별도 재계산 훅 불필요.
 - 이동 모드 검증 두 곳을 `ignoreCoord: _moveOriginCoord` 를 넘기도록 수정 (Codex #327 지적):
   - `Update()` 34라인 고스트 색상 판정: `MapTileSystem.Instance.CanPlaceTower(coord, _moveOriginCoord)`
-  - `TryMove` 120라인 커밋 검증: `MapTileSystem.Instance.CanPlaceTower(coord, _moveOriginCoord)`
+  - `TryMove` 120라인 커밋 검증: 기존 `coord == _moveOriginCoord || MapTileSystem.Instance.CanPlaceTower(coord)` 를 `MapTileSystem.Instance.CanPlaceTower(coord, _moveOriginCoord)` **로만** 교체한다. `CanPlaceTower`가 이제 `ignoreCoord`를 점유 검사에도 적용하므로(§2 `MapTileSystem.cs` 참고) 원위치 클릭이 자동으로 허용되며, 별도로 `coord == _moveOriginCoord` 특례 분기를 남겨둘 필요가 없다 (Codex #327 지적, 5차 리뷰 — 특례 분기를 지우면서 점유 검사 쪽에 `ignoreCoord`를 안 넣으면 원위치 복귀가 막히는 회귀가 생기므로 반드시 §2 수정과 함께 적용).
   - `TryPlace`(신규 배치, 107라인)는 그대로 `CanPlaceTower(coord)` (ignoreCoord 없음)
 
 ### `MakeDefence/Assets/Scripts/Gameplay/Tower/Tower.cs`
@@ -178,6 +180,7 @@ Enemy.MoveAlongPath()                  ← 로직 동일 (Vector2[] 순서 소�
 - [ ] 몬스터가 밟고 지나가는 셀에 정확히 타워를 배치/이동 → 그 몬스터가 즉시 우회 경로로 전환하는지 (직선 폴백으로 깨지지 않는지)
 - [ ] 신규 스폰 몬스터가 스폰 지점부터 정상적으로 첫 구간을 이동하는지(스킵 없음), 재계산된 몬스터가 제자리 방향으로 튀지 않는지 (includeStart 분기 검증)
 - [ ] 좁은 길목 모서리에 타워 1개를 놓았을 때, 몬스터가 대각선으로 그 모서리를 스치듯 지나가지 않고 실제로 우회하는지 육안 확인 (코너컷 강화 규칙 검증)
+- [ ] 타워 이동 모드 진입 후 드래그하다가 원래 자리(`_moveOriginCoord`)를 다시 클릭하면 정상적으로 커밋(no-op 이동)되는지 — 고스트가 계속 빨간색으로 남아 거부되지 않는지
 
 ## 5. 위험 요소
 
@@ -216,6 +219,9 @@ Enemy.MoveAlongPath()                  ← 로직 동일 (Vector2[] 순서 소�
 
 ### R12. 느슨한 코너컷 규칙으로 인한 타워 무력화 (Codex #327 지적, 4차 리뷰)
 "대각선 양쪽 직교 셀이 **모두** 막혔을 때만 금지"하는 일반적인 그리드 A* 코너컷 규칙은, 몬스터가 그리드에 스냅되지 않고 셀 중심 사이를 `Vector2.MoveTowards`로 연속 이동하는 이 게임에는 맞지 않는다. 직교 셀 중 하나만 막혀 있어도(=타워 1개) 대각선 이동 궤적이 그 타워의 모서리를 스치며 지나가 사실상 타워를 무력화시킨다. → 코너컷 규칙을 "**둘 중 하나라도** 막혀 있으면 대각선 금지"로 강화한다 (§1, §3 참고). 이 규칙이 없으면 좁은 길목 모서리에 놓인 타워가 몬스터를 전혀 막지 못하는 핵심 기능 결함으로 남는다(선택 사항 아님).
+
+### R13. `ignoreCoord`를 점유 검사에 빠뜨리면 타워 원위치 복귀가 막힘 (Codex #327 지적, 5차 리뷰)
+`TryMove`의 기존 코드는 `coord == _moveOriginCoord || CanPlaceTower(coord)` 로, 원위치 클릭 시 무조건 유효 처리하는 특례 분기가 있다. 이 분기를 지우고 `CanPlaceTower(coord, _moveOriginCoord)` 하나로 교체하려면, `ignoreCoord`가 `WouldSeverPath` 연결성 검사뿐 아니라 `_placedTowers.ContainsKey(coord)` 점유 검사에도 적용돼야 한다. 점유 검사 쪽을 빠뜨리면 원위치 좌표는 이 시점에 여전히 `_placedTowers`에 등록돼 있으므로 "원래 자리로 되돌리기"(사실상 이동 취소) 클릭이 부당하게 거부되는 회귀가 생긴다. → `CanPlaceTower`의 점유 검사를 `!_placedTowers.ContainsKey(coord) || coord == ignoreCoord` 로 작성해 두 검사 모두 `ignoreCoord`를 일관되게 반영한다 (§1, §2 참고).
 
 ## 6. 오픈 이슈 (Plan PR 에서 확정)
 
