@@ -147,6 +147,20 @@ Enemy.MoveAlongPath()                  ← 로직 동일 (Vector2[] 순서 소�
 - `MapTileSystem` 컴포넌트의 `spawnRoutes[].waypoints` 값 폐기됨 (필드 제거) — `spawnPoint`/`basePoint` 는 그대로 유지되므로 데이터 손실 최소.
 - ⚠️ `.unity` 직접 YAML 편집 금지 — UnityMCP `manage_components` 로 수정 ([feedback_unity_asset_edits](../../../../.claude/projects/C--Users-kalon-Documents-GitHub-Defencegame/memory/feedback_unity_asset_edits.md))
 
+### `docs/product-specs/map-system.md` (Codex #327 지적, 6차 리뷰)
+`AGENTS.md` §9 워크플로우("제품 스펙 작성 → 실행 계획 작성")상 이 문서가 실행 계획보다 먼저 갱신돼 있어야 하는 권위 문서인데, 현재 옛 웨이포인트 방식을 그대로 서술하고 있어 이번 변경과 모순된다. 같은 커밋에서 함께 갱신한다:
+- 개요(4~6행) "웨이포인트 경로 데이터를 PathfindingSystem에 제공" → "A* 기반 최단경로를 PathfindingSystem이 실시간 계산해 제공"으로 수정.
+- §4 "주요 지점" 표의 스폰 포인트 설명에서 "웨이포인트" 언급 제거 — route는 이제 `spawnPoint`만 가짐.
+- §5 "웨이포인트 경로" 제목/내용을 "A* 최단경로"로 교체, 다이어그램에서 `waypoints_A/B/N` 표기를 "타워를 피해가는 A* 경로"로 교체.
+- §6 "타워 배치 검증"에 "타워 배치가 유일한 통로를 막지 않는지(연결성) 검사" 항목 추가.
+- 인터페이스 코드 블록에서 `GetWaypoints()`/`GetWaypoints(int)`/`GetFullPath()`/`GetFullPath(int)` 제거, `IsWalkable(Vector2Int)`/`WouldSeverPath(Vector2Int, Vector2Int?)`/`CanPlaceTower(Vector2Int, Vector2Int?)` 추가.
+- 검증 조건의 "웨이포인트 순서 정확히 반환" → "A* 최단경로가 타워를 우회해 정확히 반환" 으로 교체.
+
+### `docs/product-specs/enemy-system.md` (Codex #327 지적, 6차 리뷰)
+- 개요(5행) "웨이포인트를 따라 이동" → "스폰 지점에서 기지까지 타워를 장애물로 피해가는 A* 최단경로로 이동"으로 수정.
+- §4 "이동"의 "PathfindingSystem이 제공하는 웨이포인트 순서대로 이동" → "PathfindingSystem이 실시간 계산한 A* 최단경로를 따라 이동, 타워 배치/이동/삭제 시 살아있는 적의 경로도 재계산"으로 수정.
+- 검증 조건의 "웨이포인트 순서대로 이동" → "A* 최단경로로 이동하며 타워를 회피"로 교체.
+
 ## 3. 신규 클래스 / 파일
 
 ### `MakeDefence/Assets/Scripts/Systems/AStarPathfinder.cs`
@@ -222,6 +236,9 @@ Enemy.MoveAlongPath()                  ← 로직 동일 (Vector2[] 순서 소�
 
 ### R13. `ignoreCoord`를 점유 검사에 빠뜨리면 타워 원위치 복귀가 막힘 (Codex #327 지적, 5차 리뷰)
 `TryMove`의 기존 코드는 `coord == _moveOriginCoord || CanPlaceTower(coord)` 로, 원위치 클릭 시 무조건 유효 처리하는 특례 분기가 있다. 이 분기를 지우고 `CanPlaceTower(coord, _moveOriginCoord)` 하나로 교체하려면, `ignoreCoord`가 `WouldSeverPath` 연결성 검사뿐 아니라 `_placedTowers.ContainsKey(coord)` 점유 검사에도 적용돼야 한다. 점유 검사 쪽을 빠뜨리면 원위치 좌표는 이 시점에 여전히 `_placedTowers`에 등록돼 있으므로 "원래 자리로 되돌리기"(사실상 이동 취소) 클릭이 부당하게 거부되는 회귀가 생긴다. → `CanPlaceTower`의 점유 검사를 `!_placedTowers.ContainsKey(coord) || coord == ignoreCoord` 로 작성해 두 검사 모두 `ignoreCoord`를 일관되게 반영한다 (§1, §2 참고).
+
+### R14. 제품 스펙 문서가 옛 웨이포인트 방식과 모순됨 (Codex #327 지적, 6차 리뷰)
+`AGENTS.md` §9 워크플로우는 "제품 스펙(`docs/product-specs/`) 작성 → 실행 계획(`docs/exec-plans/`) 작성" 순서를 요구하는 권위 문서 체계인데, 현재 `docs/product-specs/map-system.md`와 `enemy-system.md`가 옛 웨이포인트 기반 이동/`GetWaypoints`/`GetFullPath` API를 그대로 서술하고 있어 이번 A* 변경과 정면으로 모순된다. 스펙을 갱신하지 않으면 구현자가 실행 계획 대신 권위 문서(스펙)를 기준으로 삼아 옛 웨이포인트 계약을 유지하거나 그 기준으로 테스트를 작성할 위험이 있다. → 이번 이슈의 같은 변경 범위에 두 스펙 문서 갱신을 포함한다 (§2 참고).
 
 ## 6. 오픈 이슈 (Plan PR 에서 확정)
 
