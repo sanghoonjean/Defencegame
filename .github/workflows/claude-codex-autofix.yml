@@ -1,0 +1,57 @@
+name: Claude Codex Review Auto-Fix
+
+on:
+  pull_request_review_comment:
+    types: [created]
+
+concurrency:
+  group: claude-codex-autofix-${{ github.event.pull_request.number }}
+  cancel-in-progress: false
+
+jobs:
+  auto-fix:
+    if: github.event.comment.user.login == 'chatgpt-codex-connector[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
+
+      - name: Claude review & fix
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          claude_args: "--max-turns 6"
+          prompt: |
+            이 레포는 `docs/exec-plans/`, `CLAUDE.md` 워크플로우를 따르는 Unity(C#) 타워디펜스 프로젝트다.
+            현재 PR(#${{ github.event.pull_request.number }}, 브랜치 `${{ github.event.pull_request.head.ref }}`)에
+            Codex 리뷰 봇(chatgpt-codex-connector)이 아래 코멘트를 남겼다.
+
+            파일: ${{ github.event.comment.path }}
+            라인: ${{ github.event.comment.line }}
+            코멘트 내용:
+            ---
+            ${{ github.event.comment.body }}
+            ---
+
+            해야 할 일:
+            1. 이 지적을 실제 코드/문서(체크아웃된 저장소 전체)와 대조해서 타당한지 직접 검증해라.
+               추측하지 말고 관련 파일을 반드시 읽어서 확인해라.
+            2. 타당한 지적이면:
+               - 해당 파일(코드 또는 `docs/exec-plans/active/` 플랜 문서)을 수정해라.
+               - `CLAUDE.md`의 커밋/브랜치 컨벤션을 따라라 (예: 커밋 메시지에 `Refs #<이슈번호>` 포함,
+                 이슈번호는 브랜치명 `claude/fix-issue-{번호}-...` 패턴에서 추출).
+               - 새 브랜치를 만들지 말고 반드시 현재 체크아웃된 PR 브랜치에 그대로 커밋하고 push해라.
+               - push 후 `gh pr comment ${{ github.event.pull_request.number }} --body "@codex review"` 로
+                 Codex 재리뷰를 요청해라 (레포 컨벤션).
+            3. 타당하지 않은 지적이면 코드를 건드리지 말고, 왜 적용하지 않는지 짧게 설명하는 코멘트를
+               `gh pr comment ${{ github.event.pull_request.number }}` 로 남겨라.
+            4. Plan PR(`[Plan] Issue #...` 제목)은 절대 close/merge 하지 말고, 라벨도 임의로 바꾸지 마라.
+            5. 이미 같은 지적이 이전에 처리되었는지(git log, 기존 커밋 메시지의 "Codex" 언급) 먼저 확인해서
+               중복 작업하지 마라.
