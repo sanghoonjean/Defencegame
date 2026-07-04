@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Tilemaps;
@@ -6,13 +7,22 @@ public enum TileType { Path, Buildable, Decoration }
 
 public class MapTileSystem : MonoBehaviour
 {
+    // 스폰 지점 + basePoint 로 이어지는 웨이포인트 한 쌍.
+    // 필드에 접근 지정자를 생략하면 C# 기본 private 가 되어 Unity 가 각 원소 내부를 저장/노출하지
+    // 못하므로 반드시 public (또는 [SerializeField]) 로 명시.
+    [Serializable]
+    public struct SpawnRoute
+    {
+        public Vector2 spawnPoint;
+        public Vector2[] waypoints;
+    }
+
     public static MapTileSystem Instance { get; private set; }
 
     [SerializeField] private Tilemap buildableTilemap;
     [SerializeField] private Tilemap pathTilemap;
 
-    [SerializeField] private Vector2[] waypoints;
-    [SerializeField] private Vector2 spawnPoint;
+    [SerializeField] private SpawnRoute[] spawnRoutes;
     [SerializeField] private Vector2 basePoint;
 
     private readonly Dictionary<Vector2Int, Tower> _placedTowers = new();
@@ -74,8 +84,24 @@ public class MapTileSystem : MonoBehaviour
         return false;
     }
 
-    public Vector2[] GetWaypoints() => waypoints;
-    public Vector2 GetSpawnPoint() => spawnPoint;
+    public int RouteCount => spawnRoutes != null ? spawnRoutes.Length : 0;
+
+    public Vector2[] GetWaypoints() => GetWaypoints(0);
+    public Vector2[] GetWaypoints(int routeIndex)
+    {
+        if (spawnRoutes == null || routeIndex < 0 || routeIndex >= spawnRoutes.Length)
+            return Array.Empty<Vector2>();
+        return spawnRoutes[routeIndex].waypoints ?? Array.Empty<Vector2>();
+    }
+
+    public Vector2 GetSpawnPoint() => GetSpawnPoint(0);
+    public Vector2 GetSpawnPoint(int routeIndex)
+    {
+        if (spawnRoutes == null || routeIndex < 0 || routeIndex >= spawnRoutes.Length)
+            return Vector2.zero;
+        return spawnRoutes[routeIndex].spawnPoint;
+    }
+
     public Vector2 GetBasePoint() => basePoint;
 
     /// <summary>
@@ -122,12 +148,25 @@ public class MapTileSystem : MonoBehaviour
         return true;
     }
 
-    public Vector2[] GetFullPath()
+    public Vector2[] GetFullPath() => GetFullPath(0);
+
+    /// <summary>
+    /// route i 의 [spawnPoint, ...waypoints, basePoint] 를 조립해 각 좌표에 +0.5 오프셋(타일 중앙 정렬) 을 더해 반환.
+    /// 범위 밖 인덱스는 빈 배열.
+    /// </summary>
+    public Vector2[] GetFullPath(int routeIndex)
     {
-        var full = new Vector2[waypoints.Length + 2];
-        full[0] = spawnPoint + Vector2.one * 0.5f;
-        for (int i = 0; i < waypoints.Length; i++)
-            full[i + 1] = waypoints[i] + Vector2.one * 0.5f;
+        if (spawnRoutes == null || routeIndex < 0 || routeIndex >= spawnRoutes.Length)
+        {
+            Debug.LogError($"[MapTileSystem] GetFullPath: routeIndex={routeIndex} 범위 밖 (RouteCount={RouteCount})");
+            return Array.Empty<Vector2>();
+        }
+        var route = spawnRoutes[routeIndex];
+        var wps = route.waypoints ?? Array.Empty<Vector2>();
+        var full = new Vector2[wps.Length + 2];
+        full[0] = route.spawnPoint + Vector2.one * 0.5f;
+        for (int i = 0; i < wps.Length; i++)
+            full[i + 1] = wps[i] + Vector2.one * 0.5f;
         full[full.Length - 1] = basePoint + Vector2.one * 0.5f;
         return full;
     }

@@ -41,18 +41,16 @@
 
 | 지점 | 위치 |
 |------|------|
-| 스폰 포인트 | 좌상단 |
-| 본진 (기지) | 중상단 |
+| 스폰 포인트 | **여러 개** (`SpawnRoute[]`) — 각 route 마다 별도 스폰 좌표 + 웨이포인트 |
+| 본진 (기지) | 중상단 — 모든 route 가 공유하는 공통 종착점 |
 
 ### 5. 웨이포인트 경로
-적 이동 순서:
+`MapTileSystem` 은 여러 개의 `SpawnRoute` 를 노출한다. 각 route 는 자기 스폰 지점과 웨이포인트를 갖고, 마지막에 공통 `basePoint` 로 합류. `WaveSystem.SpawnEnemies` 는 스폰 순번마다 다음 route 를 라운드로빈으로 사용한다 (총 스폰 수/간격은 route 개수와 무관).
+
 ```
-스폰(좌상단)
-  → 좌측 통로 하강
-  → 하단 통로 우측 이동
-  → 우측 통로 상승
-  → 상단 통로 좌측 이동
-  → 본진(중상단) 도달
+스폰 A ──▶ waypoints_A ──┐
+스폰 B ──▶ waypoints_B ──┼──▶ 본진 (basePoint)
+스폰 N ──▶ waypoints_N ──┘
 ```
 
 ### 6. 타워 배치 검증
@@ -71,9 +69,16 @@ public class MapTileSystem
     public bool CanPlaceTower(Vector2Int coord);
     public bool PlaceTower(Vector2Int coord, Tower tower);
     public void RemoveTower(Vector2Int coord);
-    public Vector2[] GetWaypoints();      // PathfindingSystem 제공용
-    public Vector2 GetSpawnPoint();
-    public Vector2 GetBasePoint();
+
+    // 다중 route 지원
+    public int RouteCount { get; }
+    public Vector2[] GetWaypoints();                    // route 0 (하위 호환)
+    public Vector2[] GetWaypoints(int routeIndex);
+    public Vector2 GetSpawnPoint();                     // route 0 (하위 호환)
+    public Vector2 GetSpawnPoint(int routeIndex);
+    public Vector2 GetBasePoint();                      // 공통 종착점
+    public Vector2[] GetFullPath();                     // route 0 의 spawn+waypoints+base
+    public Vector2[] GetFullPath(int routeIndex);
 }
 
 public enum TileType
