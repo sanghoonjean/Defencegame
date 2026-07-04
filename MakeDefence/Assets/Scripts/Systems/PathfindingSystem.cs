@@ -7,6 +7,11 @@ public class PathfindingSystem : MonoBehaviour
 {
     public static PathfindingSystem Instance { get; private set; }
 
+    // 타워 배치/이동/삭제로 경로가 재계산될 때마다 invoke (RecalculateActiveEnemyPaths 참고).
+    // 살아있는 적이 0명이어도 무조건 invoke — 경로 시각화(MonsterPathVisualizer)는 웨이브
+    // 진행 여부와 무관하게 항상 최신 경로를 반영해야 하므로.
+    public static event Action OnPathsChanged;
+
     private void Awake()
     {
         Instance = this;
@@ -72,6 +77,29 @@ public class PathfindingSystem : MonoBehaviour
             var path = ComputePath(enemy.transform.position, basePoint, includeStart: false);
             enemy.SetPath(path);
         }
+        OnPathsChanged?.Invoke();
+    }
+
+    /// <summary>
+    /// fromWorld → toWorld 사이의 A* 경로를 셀 단위로(스무딩 없이) 그대로 반환한다. 이동에는
+    /// ComputePath(스무딩된 코너 경로)를 쓰고, 이 메서드는 경로 시각화(MonsterPathVisualizer)처럼
+    /// 지나가는 셀 하나하나가 필요한 경우에만 사용한다.
+    /// </summary>
+    public Vector2[] ComputeFullCellPath(Vector2 fromWorld, Vector2 toWorld)
+    {
+        if (MapTileSystem.Instance == null) return Array.Empty<Vector2>();
+
+        var startCell = WorldToCell(fromWorld);
+        var goalCell = WorldToCell(toWorld);
+
+        var cellPath = AStarPathfinder.FindPath(startCell, goalCell, MapTileSystem.Instance.IsWalkable);
+        if (cellPath == null)
+            return new[] { CellCenter(startCell), CellCenter(goalCell) };
+
+        var result = new Vector2[cellPath.Count];
+        for (int i = 0; i < cellPath.Count; i++)
+            result[i] = CellCenter(cellPath[i]);
+        return result;
     }
 
     // 콜리니어(동일 방향 연속) 구간을 병합해 굴절점만 남긴다. 시작/끝 지점은 항상 보존.
