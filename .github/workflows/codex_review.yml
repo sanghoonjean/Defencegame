@@ -1,107 +1,103 @@
 name: Codex Auto Review
 
 on:
-pull_request:
-types:
-- opened
-- synchronize
-- reopened
+  pull_request:
+    types:
+      - opened
+      - synchronize
+      - reopened
 
 jobs:
-codex-review:
-name: Codex Review
-runs-on: ubuntu-latest
+  codex-review:
+    name: Codex Review
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Checkout PR
+        uses: actions/checkout@v5
+        with:
+          ref: refs/pull/${{ github.event.pull_request.number }}/merge
+          fetch-depth: 0
+          persist-credentials: false
 
-```
-permissions:
-  contents: read
-  pull-requests: write
-  issues: write
+      - name: Run Codex Review
+        id: codex
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
 
-steps:
-  - name: Checkout PR
-    uses: actions/checkout@v5
-    with:
-      ref: refs/pull/${{ github.event.pull_request.number }}/merge
-      fetch-depth: 0
-      persist-credentials: false
+          prompt: |
+            당신은 시니어 Unity 게임 개발자다.
 
-  - name: Run Codex Review
-    id: codex
-    uses: openai/codex-action@v1
-    with:
-      openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+            이 Pull Request를 한국어로 리뷰해줘.
 
-      prompt: |
-        당신은 시니어 Unity 게임 개발자다.
+            다음 항목을 최우선으로 검토:
 
-        이 Pull Request를 한국어로 리뷰해줘.
+            ## 아키텍처
+            - 책임 분리
+            - 의존성 방향
+            - 결합도
+            - 확장성
 
-        다음 항목을 최우선으로 검토:
+            ## 안정성
+            - NullReference 위험
+            - Race Condition
+            - 상태 꼬임 가능성
+            - 예외 처리 누락
 
-        ## 아키텍처
-        - 책임 분리
-        - 의존성 방향
-        - 결합도
-        - 확장성
+            ## Unity 특화 검토
+            - Awake / Start / OnEnable 사용 적절성
+            - OnDisable 이벤트 해제 누락
+            - MonoBehaviour 생명주기 문제
+            - Coroutine 누수
+            - Update 남용
 
-        ## 안정성
-        - NullReference 위험
-        - Race Condition
-        - 상태 꼬임 가능성
-        - 예외 처리 누락
+            ## 성능
+            - GC Alloc 발생 가능성
+            - LINQ 남용
+            - GetComponent 반복 호출
+            - FindObjectOfType 사용
+            - 불필요한 Instantiate/Destroy
 
-        ## Unity 특화 검토
-        - Awake / Start / OnEnable 사용 적절성
-        - OnDisable 이벤트 해제 누락
-        - MonoBehaviour 생명주기 문제
-        - Coroutine 누수
-        - Update 남용
+            ## 테스트
+            - 테스트 가능한 구조인지
+            - 단위 테스트 작성 가능 여부
 
-        ## 성능
-        - GC Alloc 발생 가능성
-        - LINQ 남용
-        - GetComponent 반복 호출
-        - FindObjectOfType 사용
-        - 불필요한 Instantiate/Destroy
+            리뷰 형식:
 
-        ## 테스트
-        - 테스트 가능한 구조인지
-        - 단위 테스트 작성 가능 여부
+            ### 심각
+            - 반드시 수정해야 하는 문제
 
-        리뷰 형식:
+            ### 권장
+            - 개선하면 좋은 부분
 
-        ### 심각
-        - 반드시 수정해야 하는 문제
+            ### 좋은 점
+            - 잘 작성된 부분
 
-        ### 권장
-        - 개선하면 좋은 부분
+            코드 스타일보다
+            유지보수성과 게임 시스템 안정성을 우선 검토해줘.
 
-        ### 좋은 점
-        - 잘 작성된 부분
+      - name: Comment Review Result
+        if: always()
+        uses: actions/github-script@v7
+        env:
+          CODEX_REVIEW: ${{ steps.codex.outputs.final-message }}
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const review = process.env.CODEX_REVIEW;
 
-        코드 스타일보다
-        유지보수성과 게임 시스템 안정성을 우선 검토해줘.
+            if (!review || review.trim().length === 0) {
+              console.log("Codex review result is empty.");
+              return;
+            }
 
-  - name: Comment Review Result
-    if: always()
-    uses: actions/github-script@v7
-    env:
-      CODEX_REVIEW: ${{ steps.codex.outputs.final-message }}
-    with:
-      github-token: ${{ github.token }}
-      script: |
-        const review = process.env.CODEX_REVIEW;
-
-        if (!review || review.trim().length === 0) {
-          console.log("Codex review result is empty.");
-          return;
-        }
-
-        await github.rest.issues.createComment({
-          owner: context.repo.owner,
-          repo: context.repo.repo,
-          issue_number: context.payload.pull_request.number,
-          body: review
-        });
-```
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number,
+              body: review
+            });
