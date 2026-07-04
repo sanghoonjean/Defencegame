@@ -16,7 +16,7 @@ public class BuildModeToggleButton : MonoBehaviour
     {
         if (InputManager.Instance == null) return;
         var next = InputManager.Instance.CurrentBuildMode == BuildMode.Tower
-            ? BuildMode.Rift
+            ? BuildMode.None
             : BuildMode.Tower;
         InputManager.Instance.SetBuildMode(next);
 

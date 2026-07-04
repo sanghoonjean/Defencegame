@@ -16,7 +16,6 @@ public class RepeatGenerateToggleButton : MonoBehaviour
     private ColorBlock _originalColors;
     private bool _isActive;
     private DimensionStone _lastEquipped;
-    private RiftGenerator _cachedRift;
 
     private void Awake()
     {
@@ -27,18 +26,23 @@ public class RepeatGenerateToggleButton : MonoBehaviour
 
     private void OnEnable()
     {
-        InventorySystem.OnRiftSelected += HandleRiftSelected;
         WaveSystem.OnWaveStarted       += HandleWaveStarted;
         WaveSystem.OnWaveEnded         += HandleWaveEnded;
         GameStateSystem.OnStateChanged += HandleStateChanged;
         PauseSystem.OnPauseChanged     += HandlePauseChanged;
         ShopSystem.OnInventoryChanged  += Refresh;
+    }
+
+    // Start 는 씬 전체의 Awake 가 모두 끝난 뒤 실행되므로, WaveGeneratorSystem/ShopSystem 의
+    // 초기화(초기 차원석 지급 등)가 이 시점엔 반드시 끝나 있다. OnEnable 에서 곧바로 Refresh 하면
+    // 계층 순서에 따라 이 값들보다 먼저 실행돼 오래된 상태로 굳어질 수 있다.
+    private void Start()
+    {
         Refresh();
     }
 
     private void OnDisable()
     {
-        InventorySystem.OnRiftSelected -= HandleRiftSelected;
         WaveSystem.OnWaveStarted       -= HandleWaveStarted;
         WaveSystem.OnWaveEnded         -= HandleWaveEnded;
         GameStateSystem.OnStateChanged -= HandleStateChanged;
@@ -55,14 +59,13 @@ public class RepeatGenerateToggleButton : MonoBehaviour
 
     private void BeginRepeat()
     {
-        var rift = InventorySystem.Instance?.SelectedRift;
+        var generator = WaveGeneratorSystem.Instance;
         var shop = ShopSystem.Instance;
-        if (rift == null || shop == null || shop.OwnedStones.Count <= 0) return;
+        if (generator == null || shop == null || shop.OwnedStones.Count <= 0) return;
         if (WaveSystem.Instance == null || WaveSystem.Instance.IsWaveActive) return;
         if (GameStateSystem.Current != GameState.Playing) return;
 
-        _isActive   = true;
-        _cachedRift = rift;
+        _isActive = true;
         ApplyActiveColors();
         Refresh();
         TryConsumeNext();
@@ -70,14 +73,14 @@ public class RepeatGenerateToggleButton : MonoBehaviour
 
     private void Stop()
     {
-        if (_lastEquipped != null && _cachedRift != null
-            && _cachedRift.LoadedStone == _lastEquipped)
+        var generator = WaveGeneratorSystem.Instance;
+        if (_lastEquipped != null && generator != null
+            && generator.LoadedStone == _lastEquipped)
         {
-            ShopSystem.Instance?.AddStone(_cachedRift.LoadedStone);
-            _cachedRift.ClearStone();
+            ShopSystem.Instance?.AddStone(generator.LoadedStone);
+            generator.ClearStone();
         }
         _lastEquipped = null;
-        _cachedRift   = null;
         _isActive  = false;
         RestoreColors();
         Refresh();
@@ -87,22 +90,18 @@ public class RepeatGenerateToggleButton : MonoBehaviour
     {
         if (!_isActive) return;
 
+        var generator = WaveGeneratorSystem.Instance;
         var shop = ShopSystem.Instance;
-        if (_cachedRift == null || shop == null) { Stop(); return; }
+        if (generator == null || shop == null) { Stop(); return; }
         if (shop.OwnedStones.Count <= 0) { Stop(); return; }
 
         var stone = shop.OwnedStones[0];
         _lastEquipped = stone;
 
-        InventorySystem.EquipStoneToRift(_cachedRift, stone);
+        InventorySystem.EquipStone(stone);
 
-        bool started = _cachedRift.OpenRift();
+        bool started = generator.OpenRift();
         if (!started) Stop();
-    }
-
-    private void HandleRiftSelected(RiftGenerator rift)
-    {
-        Refresh();
     }
 
     private void HandleWaveStarted(int _) => Refresh();
@@ -142,7 +141,7 @@ public class RepeatGenerateToggleButton : MonoBehaviour
 
         var shop = ShopSystem.Instance;
         _button.interactable =
-            InventorySystem.Instance?.SelectedRift != null
+            WaveGeneratorSystem.Instance != null
             && shop != null && shop.OwnedStones.Count > 0
             && WaveSystem.Instance != null && !WaveSystem.Instance.IsWaveActive
             && GameStateSystem.Current == GameState.Playing

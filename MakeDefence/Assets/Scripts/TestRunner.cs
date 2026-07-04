@@ -53,33 +53,33 @@ public class TestRunner : MonoBehaviour
             GameStateSystem.ResetToPlaying();
         }
 
-        // B: BuildMode 토글 (Tower ↔ Rift)
+        // B: BuildMode 토글 (Tower ↔ None)
         if (Input.GetKeyDown(KeyCode.B))
         {
             if (InputManager.Instance == null) return;
             var next = InputManager.Instance.CurrentBuildMode == BuildMode.Tower
-                ? BuildMode.Rift : BuildMode.Tower;
+                ? BuildMode.None : BuildMode.Tower;
             InputManager.Instance.SetBuildMode(next);
             Debug.Log($"[TestRunner] BuildMode → {next}");
         }
 
-        // O: 선택된 Rift 에 인벤 첫 차원석 자동 장착 + OpenRift
+        // O: WaveGeneratorSystem 에 인벤 첫 차원석 자동 장착 + OpenRift
         if (Input.GetKeyDown(KeyCode.O))
         {
-            var rift = InventorySystem.Instance?.SelectedRift;
-            if (rift == null) { Debug.Log("[TestRunner] O: SelectedRift 없음"); return; }
-            if (rift.LoadedStone == null && ShopSystem.Instance != null && ShopSystem.Instance.OwnedStones.Count > 0)
+            var generator = WaveGeneratorSystem.Instance;
+            if (generator == null) { Debug.Log("[TestRunner] O: WaveGeneratorSystem 없음"); return; }
+            if (generator.LoadedStone == null && ShopSystem.Instance != null && ShopSystem.Instance.OwnedStones.Count > 0)
             {
                 var stone = ShopSystem.Instance.OwnedStones[0];
                 ShopSystem.Instance.RemoveStone(stone);
-                rift.SetStone(stone);
+                generator.SetStone(stone);
                 Debug.Log("[TestRunner] O: 차원석 자동 장착");
             }
-            bool opened = rift.OpenRift();
+            bool opened = generator.OpenRift();
             Debug.Log($"[TestRunner] O: OpenRift → {opened}");
         }
 
-        // 1~5: 선택된 Rift 에 큐브 적용
+        // 1~5: WaveGeneratorSystem 에 큐브 적용
         TryApplyCubeKey(KeyCode.Alpha1, CubeType.Lower);
         TryApplyCubeKey(KeyCode.Alpha2, CubeType.Upper);
         TryApplyCubeKey(KeyCode.Alpha3, CubeType.TopTier);
@@ -90,9 +90,9 @@ public class TestRunner : MonoBehaviour
     private void TryApplyCubeKey(KeyCode key, CubeType cube)
     {
         if (!Input.GetKeyDown(key)) return;
-        var rift = InventorySystem.Instance?.SelectedRift;
-        if (rift == null) return;
-        bool ok = rift.ApplyCube(cube);
+        var generator = WaveGeneratorSystem.Instance;
+        if (generator == null) return;
+        bool ok = generator.ApplyCube(cube);
         Debug.Log($"[TestRunner] {cube} → {ok}");
     }
 }

@@ -2,7 +2,7 @@ using System;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public enum BuildMode { Tower, Rift }
+public enum BuildMode { Tower, None }
 
 /// <summary>
 /// 좌클릭 입력의 단일 진입점.
@@ -14,7 +14,7 @@ public class InputManager : MonoBehaviour
 
     public static event Action<BuildMode> OnBuildModeChanged;
 
-    public BuildMode CurrentBuildMode { get; private set; } = BuildMode.Rift;
+    public BuildMode CurrentBuildMode { get; private set; } = BuildMode.None;
 
     private void Awake() { Instance = this; }
 
@@ -70,23 +70,11 @@ public class InputManager : MonoBehaviour
                 InventorySystem.Instance.SelectTower(tower);
                 return;
             }
-
-            var rift = hit.GetComponent<RiftGenerator>();
-            if (rift != null && InventorySystem.Instance != null)
-            {
-                // 같은 균열을 다시 클릭하면 토글로 닫는다
-                if (InventorySystem.Instance.SelectedRift == rift)
-                    InventorySystem.Instance.Deselect();
-                else
-                    InventorySystem.Instance.SelectRift(rift);
-                return;
-            }
         }
 
         var coord = new Vector2Int(Mathf.FloorToInt(worldPos.x), Mathf.FloorToInt(worldPos.y));
-        bool placed = CurrentBuildMode == BuildMode.Rift
-            ? (RiftGeneratorPlacer.Instance != null && RiftGeneratorPlacer.Instance.TryPlace(coord))
-            : (TowerPlacer.Instance        != null && TowerPlacer.Instance.TryPlace(coord));
+        bool placed = CurrentBuildMode == BuildMode.Tower
+            && TowerPlacer.Instance != null && TowerPlacer.Instance.TryPlace(coord);
 
         if (!placed)
             InventorySystem.Instance?.Deselect();

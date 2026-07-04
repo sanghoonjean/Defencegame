@@ -3,14 +3,13 @@ using UnityEngine.UI;
 
 /// <summary>
 /// 차원석 인벤토리 패널의 "웨이브 생성" 버튼.
-/// 클릭 → SelectedRift.OpenRift() (장착 차원석 소모 + RiftWave 시작).
-/// SelectedRift / LoadedStone / WaveSystem / GameState 변화 → Button.interactable 자동 갱신.
+/// 클릭 → WaveGeneratorSystem.OpenRift() (장착 차원석 소모 + RiftWave 시작).
+/// LoadedStone / WaveSystem / GameState 변화 → Button.interactable 자동 갱신.
 /// </summary>
 [RequireComponent(typeof(Button))]
 public class OpenRiftButton : MonoBehaviour
 {
     private Button _button;
-    private RiftGenerator _current;
 
     private void Awake()
     {
@@ -20,32 +19,25 @@ public class OpenRiftButton : MonoBehaviour
 
     private void OnEnable()
     {
-        InventorySystem.OnRiftSelected   += HandleRiftSelected;
+        WaveGeneratorSystem.OnStoneChanged += Refresh;
         WaveSystem.OnWaveStarted         += HandleWaveStarted;
         WaveSystem.OnWaveEnded           += HandleWaveEnded;
         GameStateSystem.OnStateChanged   += HandleStateChanged;
-        HandleRiftSelected(InventorySystem.Instance?.SelectedRift);
+    }
+
+    // Start 는 씬 전체의 Awake 가 끝난 뒤 실행되므로, 계층 순서와 무관하게
+    // WaveGeneratorSystem.Instance 가 이미 준비된 상태에서 최초 평가가 이뤄진다.
+    private void Start()
+    {
+        Refresh();
     }
 
     private void OnDisable()
     {
-        InventorySystem.OnRiftSelected   -= HandleRiftSelected;
+        WaveGeneratorSystem.OnStoneChanged -= Refresh;
         WaveSystem.OnWaveStarted         -= HandleWaveStarted;
         WaveSystem.OnWaveEnded           -= HandleWaveEnded;
         GameStateSystem.OnStateChanged   -= HandleStateChanged;
-        if (_current != null)
-        {
-            _current.OnStoneChanged -= Refresh;
-            _current = null;
-        }
-    }
-
-    private void HandleRiftSelected(RiftGenerator rift)
-    {
-        if (_current != null) _current.OnStoneChanged -= Refresh;
-        _current = rift;
-        if (_current != null) _current.OnStoneChanged += Refresh;
-        Refresh();
     }
 
     private void HandleWaveStarted(int _) => Refresh();
@@ -55,17 +47,16 @@ public class OpenRiftButton : MonoBehaviour
     private void Refresh()
     {
         if (_button == null) return;
+        var generator = WaveGeneratorSystem.Instance;
         _button.interactable =
-            _current != null
-            && _current.LoadedStone != null
+            generator != null
+            && generator.LoadedStone != null
             && WaveSystem.Instance != null && !WaveSystem.Instance.IsWaveActive
             && GameStateSystem.Current == GameState.Playing;
     }
 
     private void OnClick()
     {
-        var rift = InventorySystem.Instance?.SelectedRift;
-        if (rift == null) return;
-        rift.OpenRift();
+        WaveGeneratorSystem.Instance?.OpenRift();
     }
 }

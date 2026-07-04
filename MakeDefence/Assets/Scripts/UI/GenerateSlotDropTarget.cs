@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 /// <summary>
 /// GenerateSlot 에 부착. 두 가지 역할:
-/// - 드롭 존: 인벤 슬롯(Stone 페이로드) 드래그를 받아 SelectedRift 에 swap 장착
+/// - 드롭 존: 인벤 슬롯(Stone 페이로드) 드래그를 받아 WaveGeneratorSystem 에 swap 장착
 /// - 드래그 소스: 이미 장착된 stone 을 인벤토리 영역으로 끌어 회수
 ///
 /// 시각화: 자식 ICON Image 에 sprite + 색을 채워 표시. sprite 는 드롭한 슬롯에서 이어받아 캐시.
@@ -26,7 +26,6 @@ public class GenerateSlotDropTarget : MonoBehaviour,
     [Tooltip("드래그 ghost 의 크기.")]
     [SerializeField] private Vector2 dragGhostSize = new(60f, 60f);
 
-    private RiftGenerator _current;
     private Sprite _cachedSprite;
 
     private Canvas _rootCanvas;
@@ -51,32 +50,26 @@ public class GenerateSlotDropTarget : MonoBehaviour,
 
     private void OnEnable()
     {
-        InventorySystem.OnRiftSelected += HandleRiftSelected;
-        HandleRiftSelected(InventorySystem.Instance?.SelectedRift);
+        WaveGeneratorSystem.OnStoneChanged += Refresh;
     }
 
     private void OnDisable()
     {
-        InventorySystem.OnRiftSelected -= HandleRiftSelected;
-        if (_current != null)
-        {
-            _current.OnStoneChanged -= Refresh;
-            _current = null;
-        }
+        WaveGeneratorSystem.OnStoneChanged -= Refresh;
     }
 
-    private void HandleRiftSelected(RiftGenerator rift)
+    // Start 는 씬 전체의 Awake 가 끝난 뒤 실행되므로, 계층 순서와 무관하게
+    // WaveGeneratorSystem.Instance 가 이미 준비된 상태에서 최초 평가가 이뤄진다.
+    private void Start()
     {
-        if (_current != null) _current.OnStoneChanged -= Refresh;
-        _current = rift;
-        if (_current != null) _current.OnStoneChanged += Refresh;
         Refresh();
     }
 
     private void Refresh()
     {
         if (iconImage == null) return;
-        var stone = _current != null ? _current.LoadedStone : null;
+        var generator = WaveGeneratorSystem.Instance;
+        var stone = generator != null ? generator.LoadedStone : null;
         if (stone != null)
         {
             if (_cachedSprite != null) iconImage.sprite = _cachedSprite;
@@ -99,25 +92,24 @@ public class GenerateSlotDropTarget : MonoBehaviour,
 
         var stone = source.Stone;
 
-        var rift = InventorySystem.Instance?.SelectedRift;
-        if (rift == null)
+        if (WaveGeneratorSystem.Instance == null)
         {
-            Debug.Log("[GenerateSlotDropTarget] SelectedRift 없음 — 드롭 무시");
+            Debug.Log("[GenerateSlotDropTarget] WaveGeneratorSystem 없음 — 드롭 무시");
             return;
         }
 
         var srcSprite = source.Icon;
         if (srcSprite != null) _cachedSprite = srcSprite;
 
-        InventorySystem.EquipStoneToRift(rift, stone);
+        InventorySystem.EquipStone(stone);
     }
 
     // --- Drag (GenerateSlot → 인벤 패널 회수) ---
 
     public void OnBeginDrag(PointerEventData eventData)
     {
-        var rift = InventorySystem.Instance?.SelectedRift;
-        if (rift == null || rift.LoadedStone == null) { eventData.pointerDrag = null; return; }
+        var generator = WaveGeneratorSystem.Instance;
+        if (generator == null || generator.LoadedStone == null) { eventData.pointerDrag = null; return; }
 
         if (_rootCanvas == null)
         {
@@ -126,7 +118,7 @@ public class GenerateSlotDropTarget : MonoBehaviour,
         }
         if (_rootCanvas == null) { eventData.pointerDrag = null; return; }
 
-        _draggingStone = rift.LoadedStone;
+        _draggingStone = generator.LoadedStone;
 
         var go = new GameObject("DimensionStoneDragGhost");
         go.transform.SetParent(_rootCanvas.transform, false);
