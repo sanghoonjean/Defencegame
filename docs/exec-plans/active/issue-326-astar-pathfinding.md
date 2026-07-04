@@ -45,7 +45,7 @@ Enemy.MoveAlongPath()                  ← 로직 동일 (Vector2[] 순서 소�
 
 - **Walkable = `GetTileType(cell)` 가 `Path` 또는 `Buildable`, AND 해당 셀에 배치된 타워가 없음.** `Decoration` 타일/타일맵 범위 밖은 항상 이동 불가.
   - 근거: 유저 요청이 "생성된 곳에서 목표 지점까지 최단 거리"이므로 더 이상 `Path` 타일에만 국한되지 않고 맵 전체(Buildable 포함)를 활보하다가 유일한 장애물인 타워만 피해야 자연스럽다.
-- **8방향 이동 + 코너 컷 금지**: 대각선 이동 허용(체감상 "직선"에 가까운 최단경로), 단 대각선의 양쪽 직교 인접 셀이 모두 막혀 있으면 그 대각선 이동은 금지(장애물이 1개뿐이라도 일반적인 A* 코너-컷 방지 규칙을 그대로 적용해 코드 재사용성 유지).
+- **8방향 이동 + 코너 컷 금지**: 대각선 이동 허용(체감상 "직선"에 가까운 최단경로), 단 대각선의 **양쪽 직교 인접 셀 중 하나라도 막혀 있으면** 그 대각선 이동은 금지한다 (Codex #327 지적, 4차 리뷰 — 둘 다 막힌 경우에만 금지하는 "느슨한" 규칙은 여기서 틀리다. 몬스터는 그리드에 스냅되지 않고 `Vector2.MoveTowards`로 셀 중심-중심을 잇는 연속 이동을 하므로, 직교 셀 중 하나만 막혀 있어도(=타워 1개만 있어도) 대각선 이동 궤적이 그 타워의 모서리를 스치듯 통과해 사실상 타워를 무시하고 지나가게 된다. 타워가 실제 장애물이 되어야 한다는 이번 이슈의 목적과 충돌하므로 더 엄격한 규칙을 쓴다).
 - **경로 스무딩**: A* 결과(셀 단위 촘촘한 경로)를 콜리니어(동일 방향 연속) 구간 병합으로 축소한 뒤 `Enemy` 에 넘긴다. `Enemy.MoveAlongPath` 는 `Vector2.MoveTowards` 기반 연속 이동이라 몇 개의 굴절점만 있으면 충분하고, 기존 손으로 배치한 waypoints와 동일한 소비 방식을 유지할 수 있다.
 
 ### 재계산 트리거
@@ -149,7 +149,7 @@ Enemy.MoveAlongPath()                  ← 로직 동일 (Vector2[] 순서 소�
 
 ### `MakeDefence/Assets/Scripts/Systems/AStarPathfinder.cs`
 - MonoBehaviour 아닌 순수 static 유틸리티 클래스.
-- `public static List<Vector2Int> FindPath(Vector2Int start, Vector2Int goal, Func<Vector2Int, bool> isWalkable)` — 8방향 A*, 코너컷 금지, 경로 없으면 `null`. **`start` 노드 자체는 `isWalkable` 검사에서 제외**하고 항상 진입 가능으로 취급(이웃으로 확장할 때만 검사) — 재계산 시점에 시작 셀에 막 타워가 놓인 경우를 대비 (Codex #327 지적, 2차 리뷰, §1 "시작 셀은 항상 통과 가능" 참고).
+- `public static List<Vector2Int> FindPath(Vector2Int start, Vector2Int goal, Func<Vector2Int, bool> isWalkable)` — 8방향 A*, 경로 없으면 `null`. **`start` 노드 자체는 `isWalkable` 검사에서 제외**하고 항상 진입 가능으로 취급(이웃으로 확장할 때만 검사) — 재계산 시점에 시작 셀에 막 타워가 놓인 경우를 대비 (Codex #327 지적, 2차 리뷰, §1 "시작 셀은 항상 통과 가능" 참고). **코너컷 규칙: 대각선 이동 시 인접한 두 직교 셀 중 하나라도 막혀 있으면 금지** (둘 다 막힌 경우에만 금지하는 느슨한 규칙 아님 — Codex #327 지적, 4차 리뷰, §1 "8방향 이동 + 코너 컷 금지" 참고).
 - `public static bool IsReachable(Vector2Int start, Vector2Int goal, Func<Vector2Int, bool> isWalkable)` — BFS 기반 연결성만 검사(봉쇄 방지용, `WouldSeverPath`에서 사용). `FindPath`가 null을 반환하는지로 대체 가능하지만 의미를 명확히 하기 위해 별도 메서드로 분리.
 - 순수 C# (Unity API 의존 최소) → EditMode 단위 테스트 용이.
 
@@ -158,7 +158,7 @@ Enemy.MoveAlongPath()                  ← 로직 동일 (Vector2[] 순서 소�
 ### EditMode 단위 테스트 (신규)
 - [ ] `AStarPathfinder.FindPath`: 빈 그리드에서 직선/대각선 경로가 최단인지 (노드 수, 총 이동 거리)
 - [ ] `AStarPathfinder.FindPath`: 중앙에 장애물 1칸 → 경로가 우회하는지, 우회 거리가 최소인지
-- [ ] `AStarPathfinder.FindPath`: 코너컷 금지 확인 (대각선 양쪽이 막힌 코너를 관통하지 않는지)
+- [ ] `AStarPathfinder.FindPath`: 코너컷 금지 확인 — 대각선 양쪽 직교 셀 중 **하나만** 막혀 있어도 그 대각선 이동이 금지되는지 (둘 다 막힌 경우만 금지하는 느슨한 구현이 되지 않았는지 명시적으로 검증, Codex #327 4차 리뷰)
 - [ ] `AStarPathfinder.FindPath`: 완전히 막힌 경우 `null` 반환
 - [ ] `AStarPathfinder.FindPath`: `start` 좌표 자체가 `isWalkable(start) == false` 인 경우에도 경로를 정상적으로 찾는지 (시작 셀 예외 규칙 검증)
 - [ ] `AStarPathfinder.IsReachable`: 봉쇄/비봉쇄 케이스
@@ -177,6 +177,7 @@ Enemy.MoveAlongPath()                  ← 로직 동일 (Vector2[] 순서 소�
 - [ ] 차원석 리프트 웨이브도 동일하게 동작
 - [ ] 몬스터가 밟고 지나가는 셀에 정확히 타워를 배치/이동 → 그 몬스터가 즉시 우회 경로로 전환하는지 (직선 폴백으로 깨지지 않는지)
 - [ ] 신규 스폰 몬스터가 스폰 지점부터 정상적으로 첫 구간을 이동하는지(스킵 없음), 재계산된 몬스터가 제자리 방향으로 튀지 않는지 (includeStart 분기 검증)
+- [ ] 좁은 길목 모서리에 타워 1개를 놓았을 때, 몬스터가 대각선으로 그 모서리를 스치듯 지나가지 않고 실제로 우회하는지 육안 확인 (코너컷 강화 규칙 검증)
 
 ## 5. 위험 요소
 
@@ -212,6 +213,9 @@ Enemy.MoveAlongPath()                  ← 로직 동일 (Vector2[] 순서 소�
 
 ### R11. 시작=목표 셀일 때 재계산 결과가 빈 배열이 되는 문제 (Codex #327 지적, 3차 리뷰)
 몬스터가 이미 `basePoint`와 같은 셀 안에 있지만 `ReachBase` 판정 거리(0.05f)보다는 아직 먼 상태에서 재계산이 발생하면, A*는 셀 1개짜리 경로를 반환한다. `includeStart: false`가 이 유일한 원소까지 제거해버리면 `Enemy.MoveAlongPath`가 빈 배열을 받아 즉시 return하고 `ReachBase()`가 영원히 안 불려 웨이브가 stuck된다 (#253에서 겪은 것과 동일 유형). → `ComputePath`는 `start == goal`이면 `includeStart`와 무관하게 목표 좌표 1개짜리 배열을 반환해야 한다 (§1, §2 참고). 이 케이스를 놓치면 이번 이슈는 완료로 볼 수 없음(선택 사항 아님, R1과 동급의 필수 안전장치).
+
+### R12. 느슨한 코너컷 규칙으로 인한 타워 무력화 (Codex #327 지적, 4차 리뷰)
+"대각선 양쪽 직교 셀이 **모두** 막혔을 때만 금지"하는 일반적인 그리드 A* 코너컷 규칙은, 몬스터가 그리드에 스냅되지 않고 셀 중심 사이를 `Vector2.MoveTowards`로 연속 이동하는 이 게임에는 맞지 않는다. 직교 셀 중 하나만 막혀 있어도(=타워 1개) 대각선 이동 궤적이 그 타워의 모서리를 스치며 지나가 사실상 타워를 무력화시킨다. → 코너컷 규칙을 "**둘 중 하나라도** 막혀 있으면 대각선 금지"로 강화한다 (§1, §3 참고). 이 규칙이 없으면 좁은 길목 모서리에 놓인 타워가 몬스터를 전혀 막지 못하는 핵심 기능 결함으로 남는다(선택 사항 아님).
 
 ## 6. 오픈 이슈 (Plan PR 에서 확정)
 
