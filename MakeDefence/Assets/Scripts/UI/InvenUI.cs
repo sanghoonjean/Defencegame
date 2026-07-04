@@ -107,7 +107,7 @@ public class InvenUI : MonoBehaviour
 
             if (!hasItem) continue;
 
-            // 클릭 장착: 스킬은 SelectedTower 에, 차원석은 SelectedRift 에.
+            // 클릭 장착: 스킬은 SelectedTower 에, 차원석은 WaveGeneratorSystem 에.
             // 서포트는 슬롯 인덱스가 필요해 클릭 장착 미지원.
             if (item.Kind == InventoryItemKind.Skill)
             {
@@ -128,9 +128,8 @@ public class InvenUI : MonoBehaviour
                 var stone = item.Stone;
                 _slots[i].button.onClick.AddListener(() =>
                 {
-                    var rift = InventorySystem.Instance?.SelectedRift;
-                    if (rift == null || stone == null) return;
-                    InventorySystem.EquipStoneToRift(rift, stone);
+                    if (WaveGeneratorSystem.Instance == null || stone == null) return;
+                    InventorySystem.EquipStone(stone);
                 });
             }
         }

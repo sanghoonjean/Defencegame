@@ -7,11 +7,11 @@ public class InvenDropHandler : MonoBehaviour, IDropHandler
     {
         if (eventData.pointerDrag == null) return;
 
-        // GenerateSlot (Rift 장착 stone) → 인벤: 회수
+        // GenerateSlot (장착된 stone) → 인벤: 회수
         var generate = eventData.pointerDrag.GetComponent<GenerateSlotDropTarget>();
         if (generate != null)
         {
-            InventorySystem.TryUnloadStoneFromRift(generate);
+            InventorySystem.TryUnloadStone(generate);
             return;
         }
 

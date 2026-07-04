@@ -48,7 +48,7 @@ public class TowerPlacer : MonoBehaviour
             if (!MapTileSystem.Instance.HasVacantBuildableTile(existing.TileCoord))
             {
                 // 옮길 곳이 없으면 이동 모드 진입 자체를 취소한다.
-                InputManager.Instance?.SetBuildMode(BuildMode.Rift);
+                InputManager.Instance?.SetBuildMode(BuildMode.None);
                 return;
             }
 
@@ -97,7 +97,7 @@ public class TowerPlacer : MonoBehaviour
         }
 
         ClearMoveState();
-        InputManager.Instance?.SetBuildMode(BuildMode.Rift);
+        InputManager.Instance?.SetBuildMode(BuildMode.None);
     }
 
     public bool TryPlace(Vector2Int coord)

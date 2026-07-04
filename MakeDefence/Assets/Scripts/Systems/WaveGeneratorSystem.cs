@@ -1,26 +1,20 @@
 using System;
 using UnityEngine;
 
-public class RiftGenerator : MonoBehaviour
+/// <summary>
+/// 차원석 장착 + 큐브 적용 + 웨이브 오픈 상태를 보유하는 싱글톤.
+/// 기존 RiftGenerator(월드 배치/선택 오브젝트)의 상태/로직을 이식 — Rift 개념 제거 후
+/// WaveGeneraterbtn 이 여는 DimesionStoneInventoryUI 패널이 직접 참조한다.
+/// </summary>
+public class WaveGeneratorSystem : MonoBehaviour
 {
-    public static event Action<RiftGenerator> OnRiftPlaced;
-    public static event Action<RiftGenerator> OnRiftOpened;
+    public static WaveGeneratorSystem Instance { get; private set; }
 
-    public Vector2Int TileCoord { get; private set; }
     public DimensionStone LoadedStone { get; private set; }
 
     public event Action OnStoneChanged;
 
-    public void Place(Vector2Int coord)
-    {
-        TileCoord = coord;
-        OnRiftPlaced?.Invoke(this);
-    }
-
-    private void OnDestroy()
-    {
-        MapTileSystem.Instance?.RemoveRift(TileCoord);
-    }
+    private void Awake() { Instance = this; }
 
     public void SetStone(DimensionStone stone)
     {
@@ -89,17 +83,17 @@ public class RiftGenerator : MonoBehaviour
     }
 
     /// <summary>
-    /// 균열 개방 — 차원석 1개 소모 + WaveSystem.StartRiftWave 호출.
+    /// 웨이브 개방 — 차원석 1개 소모 + WaveSystem.StartRiftWave 호출.
     /// </summary>
     public bool OpenRift()
     {
-        if (LoadedStone == null) { Debug.Log("[RiftGenerator] 차원석 미장착"); return false; }
+        if (LoadedStone == null) { Debug.Log("[WaveGeneratorSystem] 차원석 미장착"); return false; }
         if (WaveSystem.Instance == null) return false;
-        if (WaveSystem.Instance.IsWaveActive) { Debug.Log("[RiftGenerator] 웨이브 진행 중 — 균열 개방 불가"); return false; }
+        if (WaveSystem.Instance.IsWaveActive) { Debug.Log("[WaveGeneratorSystem] 웨이브 진행 중 — 개방 불가"); return false; }
         // WaveResult/Defeat 등 비-Playing 상태에서 개방하면 EndWave 가 조기 return 되어 IsWaveActive 가 stuck.
         if (GameStateSystem.Current != GameState.Playing)
         {
-            Debug.Log($"[RiftGenerator] GameState={GameStateSystem.Current} — Playing 아니면 개방 불가");
+            Debug.Log($"[WaveGeneratorSystem] GameState={GameStateSystem.Current} — Playing 아니면 개방 불가");
             return false;
         }
 
@@ -107,10 +101,9 @@ public class RiftGenerator : MonoBehaviour
         bool started = WaveSystem.Instance.StartRiftWave(mods);
         if (!started) return false;
 
-        // LoadedStone 은 이미 EquipStoneToRift 시점에 인벤에서 제거됨 (소비만 처리).
+        // LoadedStone 은 이미 EquipStone 시점에 인벤에서 제거됨 (소비만 처리).
         LoadedStone = null;
         OnStoneChanged?.Invoke();
-        OnRiftOpened?.Invoke(this);
         return true;
     }
 }

@@ -79,12 +79,12 @@ public class InvenSlotDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandl
         // 여기서 드롭 처리를 그대로 두면 장착 메인 스킬을 서포트 슬롯에 떨어뜨릴 때 의도치 않은 unequip 이 발생한다.
         if (SourceDisplayIndex < 0) return;
 
-        // GenerateSlot (Rift 장착 stone) → 인벤 슬롯: 회수.
+        // GenerateSlot (장착된 stone) → 인벤 슬롯: 회수.
         // 인벤 슬롯이 IDropHandler 라 panel-level InvenDropHandler 까지 안 가므로 여기서도 처리.
         var generate = eventData.pointerDrag.GetComponent<GenerateSlotDropTarget>();
         if (generate != null)
         {
-            InventorySystem.TryUnloadStoneFromRift(generate);
+            InventorySystem.TryUnloadStone(generate);
             return;
         }
 
