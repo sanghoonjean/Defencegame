@@ -82,6 +82,12 @@ Enemy.MoveAlongPath()                  ← 로직 동일 (Vector2[] 순서 소�
 
 내부적으로 A* 결과(셀 경로)의 첫 원소를 포함시킬지 여부만 다르고, 나머지(스무딩, 오프셋 변환) 로직은 공유한다.
 
+### 시작 셀 == 목표 셀일 때 base 웨이포인트 보존 (Codex #327 지적, 3차 리뷰)
+
+`RecalculateActiveEnemyPaths`가 이미 `basePoint`와 같은 셀 안에 들어와 있지만(`ReachBase` 판정 거리 0.05f보다는 아직 먼) 몬스터에 대해 실행되면, `AStarPathfinder.FindPath`는 시작=목표인 셀 1개짜리 경로를 반환한다. 여기에 `includeStart: false`를 그대로 적용해 그 유일한 원소(시작 셀)를 제거하면 **빈 배열**이 나온다. `Enemy.MoveAlongPath`는 `_waypoints.Length == 0`이면 `_waypointIndex(0) >= Length(0)`이 참이 되어 즉시 return — `ReachBase()`가 영원히 호출되지 않고 그 몬스터가 그 자리에 멈춰버린다(#253에서 겪은 것과 같은 유형의 "웨이브 stuck" 버그).
+
+→ `ComputePath`는 **`start`와 `goal`이 같은 셀이면 `includeStart` 값과 무관하게 목표 좌표(`basePoint`) 1개짜리 배열을 반환**한다 (제거할 "시작점"과 "목표점"이 사실상 같은 지점이므로 완전히 비우지 않고 목표 웨이포인트는 항상 보존). 이렇게 하면 `SetPath` 이후에도 `MoveAlongPath`가 그 한 지점을 향해 이동을 계속하다 `ReachBase()`를 정상적으로 호출한다.
+
 ### 봉쇄 방지 (신규 요구사항)
 
 기존 `CanPlaceTower` 는 좌표가 `Buildable` 이고 비어 있는지만 검사하며 **연결성 검사가 없다**. 지금까지는 타워가 이동을 막지 않았으므로 문제 없었지만, 이제 타워가 실제 장애물이 되므로 유저가 유일한 통로를 막아 게임을 클리어 불가능하게 만들 수 있는 신규 리스크가 생긴다. → `CanPlaceTower(coord)` 에 "이 좌표에 타워를 놓아도 모든 `spawnRoutes[].spawnPoint` → `basePoint` 경로가 여전히 존재하는가" 검사를 추가하고, 실패 시 배치를 거부한다(고스트 프리뷰는 `GhostInvalid` 로 표시).
@@ -106,7 +112,7 @@ Enemy.MoveAlongPath()                  ← 로직 동일 (Vector2[] 순서 소�
 
 ### `MakeDefence/Assets/Scripts/Systems/PathfindingSystem.cs`
 - 실제 경로탐색 책임을 이관받는다 (이름값을 하게 됨):
-  - `Vector2[] ComputePath(Vector2 fromWorld, Vector2 toWorld, bool includeStart)` — 월드 좌표 → 셀 변환 → `AStarPathfinder.FindPath(start, goal, MapTileSystem.Instance.IsWalkable)` → `includeStart`가 false면 셀 경로 첫 원소(시작 셀) 제거 → 월드 좌표(+0.5 오프셋)로 변환 → 스무딩 → 반환. 경로 없음(이론상 발생 안 하지만 방어) 시 `Debug.LogError` + 시작/끝 2점짜리 직선 폴백 (Codex #327 지적, 2차 리뷰 — §1 "스폰 경로 vs 실시간 재계산 경로의 모양 구분" 참고).
+  - `Vector2[] ComputePath(Vector2 fromWorld, Vector2 toWorld, bool includeStart)` — 월드 좌표 → 셀 변환 → `AStarPathfinder.FindPath(start, goal, MapTileSystem.Instance.IsWalkable)` → `includeStart`가 false면 셀 경로 첫 원소(시작 셀) 제거하되 **`start == goal`이면 제거하지 않고 목표 좌표 1개짜리 배열 그대로 반환** (Codex #327 지적, 3차 리뷰 — §1 "시작 셀 == 목표 셀일 때 base 웨이포인트 보존" 참고) → 월드 좌표(+0.5 오프셋)로 변환 → 스무딩 → 반환. 경로 없음(이론상 발생 안 하지만 방어) 시 `Debug.LogError` + 시작/끝 2점짜리 직선 폴백 (Codex #327 지적, 2차 리뷰 — §1 "스폰 경로 vs 실시간 재계산 경로의 모양 구분" 참고).
   - `void RecalculateActiveEnemyPaths()` — `Enemy.ActiveEnemies` 순회, 각 enemy 현재 위치 → `basePoint` 로 `ComputePath(currentPos, basePoint, includeStart: false)` 재호출, `enemy.SetPath(newPath)`.
 - 기존 `GetFullPath`/`GetWaypoints` 프록시 메서드 삭제 (호출부 없음 확인 필요, §5 R4 참고).
 
@@ -158,6 +164,7 @@ Enemy.MoveAlongPath()                  ← 로직 동일 (Vector2[] 순서 소�
 - [ ] `AStarPathfinder.IsReachable`: 봉쇄/비봉쇄 케이스
 - [ ] `MapTileSystem.WouldSeverPath`: 유일한 통로 타일에 타워를 놓으려 하면 true(=배치 거부되어야 함)
 - [ ] `PathfindingSystem.ComputePath`: `includeStart: true`/`false` 각각 결과 배열에 시작 좌표 포함 여부가 정확한지
+- [ ] `PathfindingSystem.ComputePath`: `fromWorld`와 `toWorld`가 같은 셀일 때 `includeStart: false`여도 빈 배열이 아니라 목표 좌표 1개짜리 배열을 반환하는지
 
 ### 수동 (Unity Editor)
 전제: SampleScene, `spawnRoutes` 2개 이상, `basePoint` 설정.
@@ -202,6 +209,9 @@ Enemy.MoveAlongPath()                  ← 로직 동일 (Vector2[] 순서 소�
 
 ### R10. `ComputePath` 재사용 시 스폰/재계산 경로 모양 불일치 (Codex #327 지적, 2차 리뷰)
 같은 `ComputePath(from, to)` 를 스폰(`Enemy.Initialize`, 시작점 포함 필요)과 실시간 재계산(`Enemy.SetPath`, 시작점 미포함 필요) 양쪽에 그대로 재사용하면 스폰 시 첫 구간이 스킵되거나 재계산 시 제자리 웨이포인트가 남는다. → `includeStart` 파라미터로 호출부별 기대 형태를 명시 (§1, §2 참고).
+
+### R11. 시작=목표 셀일 때 재계산 결과가 빈 배열이 되는 문제 (Codex #327 지적, 3차 리뷰)
+몬스터가 이미 `basePoint`와 같은 셀 안에 있지만 `ReachBase` 판정 거리(0.05f)보다는 아직 먼 상태에서 재계산이 발생하면, A*는 셀 1개짜리 경로를 반환한다. `includeStart: false`가 이 유일한 원소까지 제거해버리면 `Enemy.MoveAlongPath`가 빈 배열을 받아 즉시 return하고 `ReachBase()`가 영원히 안 불려 웨이브가 stuck된다 (#253에서 겪은 것과 동일 유형). → `ComputePath`는 `start == goal`이면 `includeStart`와 무관하게 목표 좌표 1개짜리 배열을 반환해야 한다 (§1, §2 참고). 이 케이스를 놓치면 이번 이슈는 완료로 볼 수 없음(선택 사항 아님, R1과 동급의 필수 안전장치).
 
 ## 6. 오픈 이슈 (Plan PR 에서 확정)
 
