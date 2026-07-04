@@ -51,8 +51,16 @@ Enemy.MoveAlongPath()                  ← 로직 동일 (Vector2[] 순서 소�
 ### 재계산 트리거
 
 - 스폰 시점: `WaveSystem.SpawnEnemies` 가 각 몬스터 생성 직전 `PathfindingSystem.ComputePath(route.spawnPoint, basePoint)` 호출.
-- 타워 배치/이동/제거 커밋 시점(`TowerPlacer.TryPlace` 성공, `TryMove` 성공, `ExitPlacementMode`의 이동 취소 후 원위치 복귀 포함): `PathfindingSystem.RecalculateActiveEnemyPaths()` 를 호출해 `Enemy.ActiveEnemies` 전원의 **현재 위치 → basePoint** 경로를 재계산하고 `enemy.SetPath(...)` 로 교체. 드래그 중(고스트 미리보기, `Update()` 틱마다)에는 호출하지 않음 — 실제 배치/이동이 커밋된 순간에만 1회.
-- 타워는 항상 0~1개이므로 재계산 빈도는 "유저가 배치 버튼을 누른 순간"뿐이며 프레임당 비용 문제 없음.
+- 타워 배치/이동/제거가 **실제로 커밋되는 지점은 `TowerPlacer.TryPlace` 성공, `TryMove` 성공, `ExitPlacementMode`의 이동 취소 후 원위치 복귀뿐만이 아니다** — 삭제 확인 팝업(`TowerDeleteConfirmPopup` → `InventorySystem.DeleteTower` → `Destroy(tower.gameObject)` → `Tower.OnDestroy()` → `MapTileSystem.RemoveTower`)도 `TowerPlacer`를 거치지 않고 독립적으로 타워를 제거한다 (Codex #327 지적). 따라서 재계산 호출은 `TowerPlacer`가 아니라 **`MapTileSystem.PlaceTower` / `RemoveTower` 자체의 마지막 줄**에 넣어, 어느 경로로 호출되든(배치/이동/삭제) 한 곳에서 빠짐없이 `PathfindingSystem.RecalculateActiveEnemyPaths()` 가 실행되도록 한다.
+  - `TryMove`는 `RemoveTower(origin)` → `PlaceTower(dest)` 두 번 호출하므로 재계산이 한 번의 이동에 2회 실행되지만, 재계산은 유저 조작 시점에만 발생하는 드문 이벤트라 비용 문제 없음(중복 실행 자체를 최적화하지 않음).
+- `Enemy.ActiveEnemies` 전원의 **현재 위치 → basePoint** 경로를 재계산하고 `enemy.SetPath(...)` 로 교체. 드래그 중(고스트 미리보기, `Update()` 틱마다)에는 호출하지 않음 — `PlaceTower`/`RemoveTower`가 실제로 호출되는 커밋 순간에만 실행됨.
+- 타워는 항상 0~1개이므로 재계산 빈도는 "유저가 배치/이동/삭제를 확정한 순간"뿐이며 프레임당 비용 문제 없음.
+
+### 이동(Move) 검증 시 원위치 제외 (Codex #327 지적)
+
+`TowerPlacer.TryMove`는 `MapTileSystem.Instance.CanPlaceTower(coord)` 를 **`RemoveTower(_moveOriginCoord)` 호출 이전에** 검사한다. 이 시점엔 원래 타워가 여전히 `_placedTowers`에 남아 있으므로, `CanPlaceTower` 가 내부적으로 `WouldSeverPath(coord)` 를 호출하면 "원위치 타워 + 이동 후보 좌표" **두 칸이 동시에 막힌 것**으로 연결성을 검사하게 된다. 최종 상태(원위치엔 타워 없음, 후보 좌표에만 1개)라면 통과했을 이동이, 두 칸을 동시에 막으면 통로가 끊기는 경우 부당하게 거부될 수 있다.
+
+→ `WouldSeverPath` 와 `CanPlaceTower` 에 `ignoreCoord` (nullable `Vector2Int?`) 오버로드를 추가해 "연결성 검사 시 이 좌표는 타워가 없다고 간주" 하도록 한다. `TowerPlacer`의 이동 관련 검사(미리보기 `Update()`의 고스트 색상 판정, `TryMove`의 실제 커밋 검사) 양쪽 모두 `CanPlaceTower(coord, ignoreCoord: _moveOriginCoord)` 를 사용한다. 신규 배치(`TryPlace`)는 `ignoreCoord` 없이 기존 `CanPlaceTower(coord)` 그대로.
 
 ### 봉쇄 방지 (신규 요구사항)
 
@@ -71,9 +79,10 @@ Enemy.MoveAlongPath()                  ← 로직 동일 (Vector2[] 순서 소�
   ```
 - `GetWaypoints()` / `GetFullPath()` (배열 조립 버전) 삭제 — 대신 `PathfindingSystem.ComputePath` 가 그 역할을 대체.
 - 신규: `public bool IsWalkable(Vector2Int cell)` — `GetTileType(cell)`이 `Buildable` 또는 `Path` 이고 `!_placedTowers.ContainsKey(cell)`.
-- 신규: `public bool WouldSeverPath(Vector2Int coord)` — `coord`에 가상으로 타워가 있다고 가정하고 모든 `spawnRoutes[].spawnPoint` → `basePoint` 가 A*로 도달 가능한지 검사 (연결성만 필요하므로 BFS로 충분, `AStarPathfinder` 재사용 가능).
-- `CanPlaceTower(coord)` 에 `&& !WouldSeverPath(coord)` 조건 추가.
+- 신규: `public bool WouldSeverPath(Vector2Int coord, Vector2Int? ignoreCoord = null)` — `coord`에 가상으로 타워가 있다고 가정하고(단 `ignoreCoord`는 타워가 없는 것으로 간주) 모든 `spawnRoutes[].spawnPoint` → `basePoint` 가 A*로 도달 가능한지 검사 (연결성만 필요하므로 BFS로 충분, `AStarPathfinder` 재사용 가능).
+- `CanPlaceTower(Vector2Int coord, Vector2Int? ignoreCoord = null)` 오버로드 추가, 기존 무인자 호출부는 `ignoreCoord: null`로 위임. 내부적으로 `&& !WouldSeverPath(coord, ignoreCoord)` 조건 추가 (Codex #327 지적 — 이동 검증 시 원위치를 제외해야 하므로 `ignoreCoord` 필요, §1 "이동 검증 시 원위치 제외" 참고).
 - `GetSpawnPoint(routeIndex)` 는 유지.
+- `PlaceTower` / `RemoveTower` 마지막 줄에 `PathfindingSystem.Instance?.RecalculateActiveEnemyPaths()` 호출 추가 — 배치/이동/삭제 등 호출 경로에 관계없이 이 두 메서드만 거치면 항상 재계산되도록 함 (Codex #327 지적, §1 "재계산 트리거" 참고).
 
 ### `MakeDefence/Assets/Scripts/Systems/PathfindingSystem.cs`
 - 실제 경로탐색 책임을 이관받는다 (이름값을 하게 됨):
@@ -97,7 +106,14 @@ Enemy.MoveAlongPath()                  ← 로직 동일 (Vector2[] 순서 소�
 - `MoveAlongPath` / `ReachBase` 로직은 변경 없음 (여전히 `_waypoints[_waypointIndex]` 순회).
 
 ### `MakeDefence/Assets/Scripts/Gameplay/Tower/TowerPlacer.cs`
-- `TryPlace` 성공 직후, `TryMove` 성공 직후, `ExitPlacementMode`의 이동-취소 후 원위치 복귀(`_movingTower.MoveTo(_moveOriginCoord)`) 직후 — 각 지점에서 `PathfindingSystem.Instance.RecalculateActiveEnemyPaths()` 호출.
+- 재계산 호출은 §2 `MapTileSystem.PlaceTower`/`RemoveTower`에서 처리하므로 이 파일에는 별도 재계산 훅 불필요.
+- 이동 모드 검증 두 곳을 `ignoreCoord: _moveOriginCoord` 를 넘기도록 수정 (Codex #327 지적):
+  - `Update()` 34라인 고스트 색상 판정: `MapTileSystem.Instance.CanPlaceTower(coord, _moveOriginCoord)`
+  - `TryMove` 120라인 커밋 검증: `MapTileSystem.Instance.CanPlaceTower(coord, _moveOriginCoord)`
+  - `TryPlace`(신규 배치, 107라인)는 그대로 `CanPlaceTower(coord)` (ignoreCoord 없음)
+
+### `MakeDefence/Assets/Scripts/Gameplay/Tower/Tower.cs`
+- 변경 없음 — `OnDestroy()`가 호출하는 `MapTileSystem.RemoveTower(TileCoord)`가 위 §2 변경으로 자동 재계산을 트리거하게 됨. 이 경로(삭제 확인 팝업 → `InventorySystem.DeleteTower` → `Destroy` → `OnDestroy`)가 `TowerPlacer`를 거치지 않아 기존 초안에서 누락됐던 지점 (Codex #327 지적).
 
 ### `MakeDefence/Assets/Scenes/SampleScene.unity`
 - `MapTileSystem` 컴포넌트의 `spawnRoutes[].waypoints` 값 폐기됨 (필드 제거) — `spawnPoint`/`basePoint` 는 그대로 유지되므로 데이터 손실 최소.
@@ -150,6 +166,12 @@ Enemy.MoveAlongPath()                  ← 로직 동일 (Vector2[] 순서 소�
 
 ### R6. 코너컷 금지 규칙과 "장애물 1개" 전제
 장애물이 항상 최대 1개라는 전제가 깨지는 미래 변경(예: 다중 타워 지원)이 생기면 코너컷 로직의 중요성이 커짐 — 지금은 낮은 리스크지만 `AStarPathfinder`를 일반적인 그리드 A*로 작성해두면 향후 확장에도 그대로 재사용 가능.
+
+### R7. 타워 이동 검증 시 원위치 이중 차단 (Codex #327 지적)
+`TowerPlacer.TryMove`는 `RemoveTower(_moveOriginCoord)` 호출 **이전에** `CanPlaceTower(coord)`를 검사한다. `WouldSeverPath`가 원위치 타워를 여전히 장애물로 간주한 채 연결성을 검사하면, 원위치+이동후보 두 칸이 동시에 막혔을 때만 끊기는 통로를 "이동 불가"로 오판할 수 있다. → `CanPlaceTower`/`WouldSeverPath`에 `ignoreCoord` 파라미터를 추가해 이동 관련 검증(고스트 미리보기, `TryMove` 커밋)엔 항상 `_moveOriginCoord`를 제외하고 검사한다 (§1, §2 참고).
+
+### R8. 타워 삭제 경로가 `TowerPlacer`를 거치지 않음 (Codex #327 지적)
+삭제 확인 팝업(`TowerDeleteConfirmPopup`) → `InventorySystem.DeleteTower` → `Destroy(tower.gameObject)` → `Tower.OnDestroy()` → `MapTileSystem.RemoveTower` 경로는 `TowerPlacer`의 배치/이동 성공 콜백을 전혀 거치지 않는다. 재계산 훅을 `TowerPlacer`에만 넣으면 삭제 시 살아있는 몬스터가 옛 회피 경로를 계속 따라간다. → 재계산 호출을 `TowerPlacer`가 아니라 `MapTileSystem.PlaceTower`/`RemoveTower` 내부로 옮겨 모든 호출 경로(배치/이동/삭제)에서 자동 실행되도록 한다 (§1, §2 참고).
 
 ## 6. 오픈 이슈 (Plan PR 에서 확정)
 
