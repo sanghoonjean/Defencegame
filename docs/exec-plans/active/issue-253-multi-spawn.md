@@ -63,7 +63,15 @@ Enemy 는 이미 `Initialize(EnemyData, int, Vector2[], RiftWaveModifiers)` 시�
 ## 2. 수정 파일
 
 ### `MakeDefence/Assets/Scripts/Systems/MapTileSystem.cs`
-- 내부에 `[Serializable] struct SpawnRoute { Vector2 spawnPoint; Vector2[] waypoints; }` 추가
+- 내부에 다음 nested 타입 추가 — **필드에 반드시 `[SerializeField]` 명시** (또는 `public`). 접근 지정자를 생략하면 C# 기본값이 `private` 이라 struct 자체는 배열로 직렬화돼도 안의 필드들이 Inspector 에 나오지 않고 저장/로드되지 않아 SampleScene 마이그레이션이 빈 원소로 채워짐 (Codex #323 line 66 지적):
+  ```csharp
+  [Serializable]
+  public struct SpawnRoute
+  {
+      [SerializeField] public Vector2 spawnPoint;
+      [SerializeField] public Vector2[] waypoints;
+  }
+  ```
 - `[SerializeField] Vector2 spawnPoint` / `[SerializeField] Vector2[] waypoints` → `[SerializeField] SpawnRoute[] spawnRoutes` 로 대체
 - `GetSpawnPoint()`, `GetWaypoints()`, `GetFullPath()` → 인덱스 오버로드 추가
   - `int RouteCount { get; }`
@@ -78,9 +86,24 @@ Enemy 는 이미 `Initialize(EnemyData, int, Vector2[], RiftWaveModifiers)` 시�
   - `Vector2[] GetFullPath(int routeIndex)`
 
 ### `MakeDefence/Assets/Scripts/Systems/WaveSystem.cs`
+- **빈 route guard 는 `StartWave` / `StartRiftWave` 진입부** 에서 조기 return 으로 처리 (Codex #323 line 94 지적):
+  - 현재 흐름은 `IsWaveActive = true` → `_aliveCount = spawnList.Count` → `StartCoroutine(SpawnEnemies)` 순서. `SpawnEnemies` 안에서 `yield break` 만 하면 `_aliveCount` 가 감소할 계기가 없어 `EndWave` 도 못 불려 웨이브가 **stuck**.
+  - 따라서 아래 순서로 방어:
+    ```csharp
+    public void StartWave() {
+        if (IsWaveActive) return;
+        if (MapTileSystem.Instance == null || MapTileSystem.Instance.RouteCount == 0) {
+            Debug.LogError("[WaveSystem] spawnRoutes 미설정 — 웨이브 시작 취소");
+            return; // IsWaveActive = false 유지, _aliveCount 손대지 않음
+        }
+        IsWaveActive = true;
+        // ... 기존 로직
+    }
+    ```
+  - `StartRiftWave` 도 동일하게 앞단에서 방어. `SpawnEnemies` 내부는 이 시점에서 `RouteCount >= 1` 이 보장된 상태로 진입.
 - `SpawnEnemies` 를 라운드로빈으로 수정:
   ```csharp
-  int routeCount = MapTileSystem.Instance.RouteCount;
+  int routeCount = MapTileSystem.Instance.RouteCount; // >=1 보장
   int r = 0;
   foreach (var grade in spawnList) {
       var wp = MapTileSystem.Instance.GetFullPath(r % routeCount);
@@ -91,7 +114,6 @@ Enemy 는 이미 `Initialize(EnemyData, int, Vector2[], RiftWaveModifiers)` 시�
   }
   ```
 - 리프트 웨이브 경로는 별도로 두지 않음 — 같은 `spawnRoutes` 재사용
-- `routeCount == 0` 방어: 에러 로그 + `yield break`
 
 ### `MakeDefence/Assets/Scenes/SampleScene.unity`
 - `MapTileSystem` 컴포넌트에서
@@ -148,6 +170,12 @@ Enemy 는 이미 `Initialize(EnemyData, int, Vector2[], RiftWaveModifiers)` 시�
 
 ### R6. Object pool 재사용
 `ObjectPoolSystem.Get()` 이 반환하는 재활용 Enemy 는 이전 웨이포인트를 여전히 필드에 갖고 있을 수 있는데, `Initialize` 에서 `_waypoints = waypoints; _waypointIndex = 0` 로 항상 덮어쓰므로 문제 없음 (확인 완료).
+
+### R7. `SpawnRoute` 필드 직렬화 (Codex #323 line 66)
+struct 필드에 접근 지정자를 생략하면 C# 기본값이 `private` 이라 Unity 가 각 원소 내부를 저장/노출하지 않는다. → 배열은 유지되지만 안이 항상 빈 채로 남아 Inspector 에서 채울 수 없다. **반드시 `public` 또는 `[SerializeField]`** 를 명시 (§2 코드 스니펫 참조).
+
+### R8. 빈 `spawnRoutes` guard 위치 (Codex #323 line 94)
+`StartWave` / `StartRiftWave` 는 `IsWaveActive = true` + `_aliveCount = spawnList.Count` 를 세팅한 뒤 `SpawnEnemies` 를 실행한다. 빈 route 방어를 `SpawnEnemies` 내부에서 `yield break` 로만 처리하면 `_aliveCount` 가 감소할 계기가 없어 `EndWave` 도 호출되지 않아 **웨이브가 stuck**. → 방어는 반드시 `StartWave` / `StartRiftWave` **진입부** 에서 `IsWaveActive` / `_aliveCount` 를 세팅하기 전에 조기 return 한다 (§2 코드 스니펫 참조).
 
 ## 6. 오픈 이슈 (Plan PR 에서 확정)
 
