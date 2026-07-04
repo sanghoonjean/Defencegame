@@ -67,6 +67,19 @@ public class AStarPathfinderTests
     }
 
     [Test]
+    public void FindPath_GoalCellNotWalkable_StillFindsPath()
+    {
+        // spawnPoint/basePoint는 손으로 배치한 고정 좌표라 Path/Buildable 타일 위에 있다는 보장이
+        // 없다(실제로 Decoration 타일 위에 있는 씬에서 재현된 버그) — 목표 셀도 시작 셀처럼
+        // isWalkable 검사에서 제외돼야 한다.
+        var blocked = new HashSet<Vector2Int> { new Vector2Int(2, 2) };
+        var path = AStarPathfinder.FindPath(new Vector2Int(0, 0), new Vector2Int(2, 2), Grid(3, 3, blocked));
+
+        Assert.IsNotNull(path, "목표 셀 자체가 walkable이 아니어도 경로를 찾아야 한다");
+        Assert.AreEqual(new Vector2Int(2, 2), path[^1]);
+    }
+
+    [Test]
     public void FindPath_StartEqualsGoal_ReturnsSingleElementPath()
     {
         var path = AStarPathfinder.FindPath(new Vector2Int(2, 2), new Vector2Int(2, 2), Grid(5, 5));
@@ -87,5 +100,12 @@ public class AStarPathfinderTests
     {
         var blocked = new HashSet<Vector2Int> { new Vector2Int(1, 0) };
         Assert.IsFalse(AStarPathfinder.IsReachable(new Vector2Int(0, 0), new Vector2Int(2, 0), Grid(3, 1, blocked)));
+    }
+
+    [Test]
+    public void IsReachable_GoalCellNotWalkable_StillReturnsTrue()
+    {
+        var blocked = new HashSet<Vector2Int> { new Vector2Int(4, 4) };
+        Assert.IsTrue(AStarPathfinder.IsReachable(new Vector2Int(0, 0), new Vector2Int(4, 4), Grid(5, 5, blocked)));
     }
 }

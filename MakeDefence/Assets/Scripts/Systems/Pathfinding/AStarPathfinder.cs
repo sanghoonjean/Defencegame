@@ -25,9 +25,12 @@ public static class AStarPathfinder
     }
 
     /// <summary>
-    /// start에서 goal까지 8방향 최단경로를 찾는다. start 노드 자체는 isWalkable 검사에서 제외하고
-    /// 항상 진입 가능으로 취급한다(이웃으로 확장할 때만 검사) — 재계산 시점에 시작 셀에 막 타워가
-    /// 놓인 경우에도 항상 탈출 경로를 계산할 수 있어야 하기 때문.
+    /// start에서 goal까지 8방향 최단경로를 찾는다. start와 goal 노드 자체는 isWalkable 검사에서
+    /// 제외하고 항상 진입/도달 가능으로 취급한다(이웃으로 확장할 때만 검사).
+    /// - start 제외 이유: 재계산 시점에 시작 셀에 막 타워가 놓인 경우에도 항상 탈출 경로를 계산할 수 있어야 함.
+    /// - goal 제외 이유: 스폰 지점/본진(basePoint)은 손으로 배치한 고정 좌표라 Path/Buildable 타일 위에
+    ///   있으리라는 보장이 없음(예: Decoration 타일 위에 있는 경우) — 목적지 자체는 타일 분류와 무관하게
+    ///   항상 도달 가능해야 한다.
     /// 대각선 이동은 인접한 두 직교 셀 중 하나라도 막혀 있으면 금지한다(코너컷 금지).
     /// 반환 경로는 start를 포함한다. 경로가 없으면 null.
     /// </summary>
@@ -71,11 +74,11 @@ public static class AStarPathfinder
                 {
                     var side1 = current.Position + new Vector2Int(dir.x, 0);
                     var side2 = current.Position + new Vector2Int(0, dir.y);
-                    if (!IsWalkableOrStart(side1, start, isWalkable) || !IsWalkableOrStart(side2, start, isWalkable))
+                    if (!IsWalkableOrEndpoint(side1, start, goal, isWalkable) || !IsWalkableOrEndpoint(side2, start, goal, isWalkable))
                         continue;
                 }
 
-                if (!IsWalkableOrStart(neighborPos, start, isWalkable)) continue;
+                if (!IsWalkableOrEndpoint(neighborPos, start, goal, isWalkable)) continue;
 
                 float tentativeG = current.G + (isDiagonal ? DiagonalCost : StraightCost);
 
@@ -106,8 +109,8 @@ public static class AStarPathfinder
     }
 
     /// <summary>
-    /// start에서 goal로 도달 가능한지만 검사한다(BFS). FindPath와 동일한 코너컷/시작셀 규칙을 적용해
-    /// 실제 이동 가능성과 일치하는 결과를 보장한다. 봉쇄 방지(WouldSeverPath) 용도.
+    /// start에서 goal로 도달 가능한지만 검사한다(BFS). FindPath와 동일한 코너컷/시작·목표셀 예외
+    /// 규칙을 적용해 실제 이동 가능성과 일치하는 결과를 보장한다. 봉쇄 방지(WouldSeverPath) 용도.
     /// </summary>
     public static bool IsReachable(Vector2Int start, Vector2Int goal, Func<Vector2Int, bool> isWalkable)
     {
@@ -133,11 +136,11 @@ public static class AStarPathfinder
                 {
                     var side1 = current + new Vector2Int(dir.x, 0);
                     var side2 = current + new Vector2Int(0, dir.y);
-                    if (!IsWalkableOrStart(side1, start, isWalkable) || !IsWalkableOrStart(side2, start, isWalkable))
+                    if (!IsWalkableOrEndpoint(side1, start, goal, isWalkable) || !IsWalkableOrEndpoint(side2, start, goal, isWalkable))
                         continue;
                 }
 
-                if (!IsWalkableOrStart(neighbor, start, isWalkable)) continue;
+                if (!IsWalkableOrEndpoint(neighbor, start, goal, isWalkable)) continue;
                 if (neighbor == goal) return true;
 
                 visited.Add(neighbor);
@@ -148,8 +151,10 @@ public static class AStarPathfinder
         return false;
     }
 
-    private static bool IsWalkableOrStart(Vector2Int pos, Vector2Int start, Func<Vector2Int, bool> isWalkable)
-        => pos == start || isWalkable(pos);
+    // start/goal 노드 자체는 isWalkable 검사 대상에서 제외한다(둘 다 손으로 배치한 고정 좌표라
+    // 타일 분류와 무관하게 항상 진입/도달 가능해야 함). 이웃으로 확장할 때만 실제 검사한다.
+    private static bool IsWalkableOrEndpoint(Vector2Int pos, Vector2Int start, Vector2Int goal, Func<Vector2Int, bool> isWalkable)
+        => pos == start || pos == goal || isWalkable(pos);
 
     // Octile distance — 8방향 이동에서 admissible한 휴리스틱.
     private static float Heuristic(Vector2Int a, Vector2Int b)
