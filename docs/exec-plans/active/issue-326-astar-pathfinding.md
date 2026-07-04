@@ -35,11 +35,13 @@ PathfindingSystem.ComputePath(fromWorld, toWorld) → Vector2[]   ★ 신규 —
         │
         ▼
 WaveSystem.SpawnEnemies()  → enemy.Initialize(data, stage, path, mods)
-TowerPlacer (배치/이동/제거 커밋 시) → PathfindingSystem.RecalculateActiveEnemyPaths() → 살아있는 모든 Enemy.SetPath(newPath)
+MapTileSystem.PlaceTower/RemoveTower (배치·이동·삭제 등 모든 경로가 공통으로 거침) → PathfindingSystem.RecalculateActiveEnemyPaths() → 살아있는 모든 Enemy.SetPath(newPath)
         │
         ▼
 Enemy.MoveAlongPath()                  ← 로직 동일 (Vector2[] 순서 소비), SetPath로 배열 교체만 추가
 ```
+
+(재계산 트리거를 `TowerPlacer`가 아니라 `MapTileSystem.PlaceTower`/`RemoveTower` 자체에 두는 이유는 §1 "재계산 트리거"·R8 참고 — 삭제 확인 팝업 경로는 `TowerPlacer`를 거치지 않기 때문. Codex #327 지적, 7차 리뷰 — 이 상단 다이어그램이 여전히 `TowerPlacer`를 트리거로 표기해 아래 상세 섹션과 모순되던 것을 수정.)
 
 ### 그리드 정의 (핵심 결정)
 
