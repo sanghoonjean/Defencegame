@@ -4,7 +4,8 @@
     "references": [
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
-        "MakeDefence.Rift.Core"
+        "MakeDefence.Rift.Core",
+        "MakeDefence.Pathfinding"
     ],
     "includePlatforms": [
         "Editor"

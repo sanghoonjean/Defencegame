@@ -7,14 +7,13 @@ public enum TileType { Path, Buildable, Decoration }
 
 public class MapTileSystem : MonoBehaviour
 {
-    // 스폰 지점 + basePoint 로 이어지는 웨이포인트 한 쌍.
+    // 스폰 지점. 중간 경유점은 더 이상 손으로 배치하지 않고 A*(PathfindingSystem)가 계산한다.
     // 필드에 접근 지정자를 생략하면 C# 기본 private 가 되어 Unity 가 각 원소 내부를 저장/노출하지
     // 못하므로 반드시 public (또는 [SerializeField]) 로 명시.
     [Serializable]
     public struct SpawnRoute
     {
         public Vector2 spawnPoint;
-        public Vector2[] waypoints;
     }
 
     public static MapTileSystem Instance { get; private set; }
@@ -40,23 +39,70 @@ public class MapTileSystem : MonoBehaviour
         return TileType.Decoration;
     }
 
-    public bool CanPlaceTower(Vector2Int coord)
+    /// 해당 셀이 몬스터가 지나갈 수 있는 셀인지: Path/Buildable 타일이고 타워가 없어야 한다.
+    public bool IsWalkable(Vector2Int cell)
+    {
+        var tileType = GetTileType(cell);
+        return (tileType == TileType.Buildable || tileType == TileType.Path)
+            && !_placedTowers.ContainsKey(cell);
+    }
+
+    public bool CanPlaceTower(Vector2Int coord) => CanPlaceTower(coord, null);
+
+    /// <summary>
+    /// coord에 타워를 놓을 수 있는지 검사한다. ignoreCoord가 지정되면 그 좌표는 점유·연결성
+    /// 검사 양쪽 모두에서 "타워 없음"으로 간주한다 — 타워 이동 시 원위치를 제외하기 위함
+    /// (아직 RemoveTower가 호출되지 않은 시점에도 원위치로 되돌리는 이동이 막히지 않도록).
+    /// </summary>
+    public bool CanPlaceTower(Vector2Int coord, Vector2Int? ignoreCoord)
     {
         return GetTileType(coord) == TileType.Buildable
-            && !_placedTowers.ContainsKey(coord);
+            && (!_placedTowers.ContainsKey(coord) || coord == ignoreCoord)
+            && !WouldSeverPath(coord, ignoreCoord);
+    }
+
+    /// <summary>
+    /// coord에 타워가 있다고 가정했을 때(단 ignoreCoord는 타워가 없다고 간주) 모든
+    /// spawnRoutes[].spawnPoint 에서 basePoint 까지 여전히 도달 가능한지 검사한다.
+    /// 도달 불가능한 route가 하나라도 있으면 true(=봉쇄됨).
+    /// </summary>
+    public bool WouldSeverPath(Vector2Int coord, Vector2Int? ignoreCoord = null)
+    {
+        if (spawnRoutes == null || spawnRoutes.Length == 0) return false;
+
+        bool HypotheticalWalkable(Vector2Int cell)
+        {
+            if (cell == coord) return false;
+            if (ignoreCoord.HasValue && cell == ignoreCoord.Value) return true;
+            return IsWalkable(cell);
+        }
+
+        var baseCell = WorldToCell(basePoint);
+        foreach (var route in spawnRoutes)
+        {
+            var spawnCell = WorldToCell(route.spawnPoint);
+            if (!AStarPathfinder.IsReachable(spawnCell, baseCell, HypotheticalWalkable))
+                return true;
+        }
+        return false;
     }
 
     public bool PlaceTower(Vector2Int coord, Tower tower)
     {
         if (!CanPlaceTower(coord)) return false;
         _placedTowers[coord] = tower;
+        PathfindingSystem.Instance?.RecalculateActiveEnemyPaths();
         return true;
     }
 
     public void RemoveTower(Vector2Int coord)
     {
         _placedTowers.Remove(coord);
+        PathfindingSystem.Instance?.RecalculateActiveEnemyPaths();
     }
+
+    private static Vector2Int WorldToCell(Vector2 point)
+        => new Vector2Int(Mathf.FloorToInt(point.x), Mathf.FloorToInt(point.y));
 
     /// 현재 배치된 타워(설계상 항상 최대 1개)를 반환. 없으면 null.
     public Tower GetPlacedTower()
@@ -85,14 +131,6 @@ public class MapTileSystem : MonoBehaviour
     }
 
     public int RouteCount => spawnRoutes != null ? spawnRoutes.Length : 0;
-
-    public Vector2[] GetWaypoints() => GetWaypoints(0);
-    public Vector2[] GetWaypoints(int routeIndex)
-    {
-        if (spawnRoutes == null || routeIndex < 0 || routeIndex >= spawnRoutes.Length)
-            return Array.Empty<Vector2>();
-        return spawnRoutes[routeIndex].waypoints ?? Array.Empty<Vector2>();
-    }
 
     public Vector2 GetSpawnPoint() => GetSpawnPoint(0);
     public Vector2 GetSpawnPoint(int routeIndex)
@@ -146,28 +184,5 @@ public class MapTileSystem : MonoBehaviour
         Vector3 worldMax = tm.CellToWorld(cellBounds.max);
         worldBounds = new Bounds((worldMin + worldMax) * 0.5f, worldMax - worldMin);
         return true;
-    }
-
-    public Vector2[] GetFullPath() => GetFullPath(0);
-
-    /// <summary>
-    /// route i 의 [spawnPoint, ...waypoints, basePoint] 를 조립해 각 좌표에 +0.5 오프셋(타일 중앙 정렬) 을 더해 반환.
-    /// 범위 밖 인덱스는 빈 배열.
-    /// </summary>
-    public Vector2[] GetFullPath(int routeIndex)
-    {
-        if (spawnRoutes == null || routeIndex < 0 || routeIndex >= spawnRoutes.Length)
-        {
-            Debug.LogError($"[MapTileSystem] GetFullPath: routeIndex={routeIndex} 범위 밖 (RouteCount={RouteCount})");
-            return Array.Empty<Vector2>();
-        }
-        var route = spawnRoutes[routeIndex];
-        var wps = route.waypoints ?? Array.Empty<Vector2>();
-        var full = new Vector2[wps.Length + 2];
-        full[0] = route.spawnPoint + Vector2.one * 0.5f;
-        for (int i = 0; i < wps.Length; i++)
-            full[i + 1] = wps[i] + Vector2.one * 0.5f;
-        full[full.Length - 1] = basePoint + Vector2.one * 0.5f;
-        return full;
     }
 }

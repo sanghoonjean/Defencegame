@@ -184,9 +184,12 @@ public class WaveSystem : MonoBehaviour
             var data = GetDataForGrade(grade);
             if (data == null) { Debug.LogError($"[WaveSystem] EnemyData null for grade={grade}"); yield break; }
             int routeIndex = i % routeCount;
-            var waypoints = MapTileSystem.Instance.GetFullPath(routeIndex);
+            var path = PathfindingSystem.Instance.ComputePath(
+                MapTileSystem.Instance.GetSpawnPoint(routeIndex),
+                MapTileSystem.Instance.GetBasePoint(),
+                includeStart: true);
             var enemy = ObjectPoolSystem.Instance.Get();
-            enemy.Initialize(data, CurrentStage, waypoints, _currentRiftMods);
+            enemy.Initialize(data, CurrentStage, path, _currentRiftMods);
             spawnedCount++;
             Debug.Log($"[WaveSystem] Spawned {spawnedCount}/{spawnList.Count} grade={grade} route={routeIndex}");
             yield return new WaitForSeconds(spawnInterval);

@@ -104,6 +104,16 @@ public class Enemy : MonoBehaviour
         MoveAlongPath();
     }
 
+    /// <summary>
+    /// 타워 배치/이동/삭제로 인해 실시간 재계산된 경로로 교체한다. 이 경로는 이미
+    /// "현재 위치"를 포함하지 않고 바로 다음 목표부터 담고 있으므로 인덱스 0부터 시작한다.
+    /// </summary>
+    public void SetPath(Vector2[] newPath)
+    {
+        _waypoints = newPath;
+        _waypointIndex = 0;
+    }
+
     public void ApplyStun(float duration)
     {
         _stunTimer = Mathf.Max(_stunTimer, duration);

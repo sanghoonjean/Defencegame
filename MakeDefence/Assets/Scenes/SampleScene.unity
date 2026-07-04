@@ -26085,23 +26085,7 @@ MonoBehaviour:
   pathTilemap: {fileID: 723370577}
   spawnRoutes:
   - spawnPoint: {x: -9, y: 5}
-    waypoints:
-    - {x: -9, y: 0}
-    - {x: 3, y: 0}
-    - {x: 3, y: 4}
-    - {x: -1, y: 4}
-    - {x: -1, y: -8}
-    - {x: 3, y: -8}
-    - {x: 3, y: -4}
-    - {x: -9, y: -4}
-    - {x: -9, y: -8}
-    - {x: -5, y: -8}
   - spawnPoint: {x: 3, y: -8}
-    waypoints:
-    - {x: 3, y: -4}
-    - {x: -9, y: -4}
-    - {x: -9, y: -8}
-    - {x: -5, y: -8}
   basePoint: {x: -5, y: 5}
 --- !u!4 &2033898674
 Transform:

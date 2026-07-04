@@ -29,9 +29,8 @@ public class TowerPlacer : MonoBehaviour
         var coord = new Vector2Int(Mathf.FloorToInt(worldPos.x), Mathf.FloorToInt(worldPos.y));
         _ghost.transform.position = new Vector3(coord.x + 0.5f, coord.y + 0.5f, -1f);
 
-        bool canPlace = _isMoving && coord == _moveOriginCoord;
-        if (!canPlace)
-            canPlace = MapTileSystem.Instance != null && MapTileSystem.Instance.CanPlaceTower(coord);
+        bool canPlace = MapTileSystem.Instance != null
+            && MapTileSystem.Instance.CanPlaceTower(coord, _isMoving ? _moveOriginCoord : (Vector2Int?)null);
         SetGhostColor(canPlace ? GhostValid : GhostInvalid);
 
         if (Input.GetMouseButtonDown(1) || Input.GetKeyDown(KeyCode.Escape))
@@ -117,8 +116,7 @@ public class TowerPlacer : MonoBehaviour
         // 뒤이어 호출되는 ExitPlacementMode()가 나머지 상태 정리를 담당한다.
         if (_movingTower == null) return false;
 
-        bool valid = coord == _moveOriginCoord || MapTileSystem.Instance.CanPlaceTower(coord);
-        if (!valid) return false;
+        if (!MapTileSystem.Instance.CanPlaceTower(coord, _moveOriginCoord)) return false;
 
         MapTileSystem.Instance.RemoveTower(_moveOriginCoord);
         _movingTower.MoveTo(coord);
