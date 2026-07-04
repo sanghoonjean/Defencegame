@@ -3,7 +3,7 @@
 ## 개요
 60x33 타일 기반의 단일 고정 맵을 관리한다.
 타일 종류(경로/배치가능/장식)를 구분하고,
-웨이포인트 경로 데이터를 PathfindingSystem에 제공한다.
+A* 기반 최단경로를 PathfindingSystem이 실시간 계산해 제공한다 (#326).
 
 ---
 
@@ -41,21 +41,22 @@
 
 | 지점 | 위치 |
 |------|------|
-| 스폰 포인트 | **여러 개** (`SpawnRoute[]`) — 각 route 마다 별도 스폰 좌표 + 웨이포인트 |
+| 스폰 포인트 | **여러 개** (`SpawnRoute[]`) — 각 route 마다 별도 스폰 좌표 |
 | 본진 (기지) | 중상단 — 모든 route 가 공유하는 공통 종착점 |
 
-### 5. 웨이포인트 경로
-`MapTileSystem` 은 여러 개의 `SpawnRoute` 를 노출한다. 각 route 는 자기 스폰 지점과 웨이포인트를 갖고, 마지막에 공통 `basePoint` 로 합류. `WaveSystem.SpawnEnemies` 는 스폰 순번마다 다음 route 를 라운드로빈으로 사용한다 (총 스폰 수/간격은 route 개수와 무관).
+### 5. A* 최단경로 (#326)
+각 route 는 자기 스폰 지점만 갖고, `PathfindingSystem`이 스폰 지점 → 공통 `basePoint` 사이를 8방향 A*로 실시간 계산한다(타워를 장애물로 회피, 코너컷 금지). `WaveSystem.SpawnEnemies` 는 스폰 순번마다 다음 route 를 라운드로빈으로 사용한다 (총 스폰 수/간격은 route 개수와 무관). 타워가 배치·이동·삭제될 때마다 살아있는 적의 경로도 현재 위치 기준으로 재계산된다.
 
 ```
-스폰 A ──▶ waypoints_A ──┐
-스폰 B ──▶ waypoints_B ──┼──▶ 본진 (basePoint)
-스폰 N ──▶ waypoints_N ──┘
+스폰 A ──▶ A* 최단경로 (타워 회피) ──┐
+스폰 B ──▶ A* 최단경로 (타워 회피) ──┼──▶ 본진 (basePoint)
+스폰 N ──▶ A* 최단경로 (타워 회피) ──┘
 ```
 
 ### 6. 타워 배치 검증
 - 타워 배치 시 해당 타일이 `Buildable` 인지 확인
 - 이미 타워가 있는 타일에는 중복 배치 불가
+- 타워 배치가 모든 route의 스폰 지점 → 본진 연결성을 끊지 않는지 검사 (유일한 통로를 막는 배치는 거부) (#326)
 - 배치 성공/실패 결과 반환
 
 ---
@@ -66,19 +67,19 @@
 public class MapTileSystem
 {
     public TileType GetTileType(Vector2Int coord);
-    public bool CanPlaceTower(Vector2Int coord);
     public bool PlaceTower(Vector2Int coord, Tower tower);
     public void RemoveTower(Vector2Int coord);
 
     // 다중 route 지원
     public int RouteCount { get; }
-    public Vector2[] GetWaypoints();                    // route 0 (하위 호환)
-    public Vector2[] GetWaypoints(int routeIndex);
     public Vector2 GetSpawnPoint();                     // route 0 (하위 호환)
     public Vector2 GetSpawnPoint(int routeIndex);
     public Vector2 GetBasePoint();                      // 공통 종착점
-    public Vector2[] GetFullPath();                     // route 0 의 spawn+waypoints+base
-    public Vector2[] GetFullPath(int routeIndex);
+
+    // A* 경로탐색 (#326)
+    public bool IsWalkable(Vector2Int cell);
+    public bool WouldSeverPath(Vector2Int coord, Vector2Int? ignoreCoord = null);
+    public bool CanPlaceTower(Vector2Int coord, Vector2Int? ignoreCoord = null);
 }
 
 public enum TileType
@@ -93,6 +94,6 @@ public enum TileType
 - [ ] 60x33 타일 맵 정상 로드
 - [ ] 구역 내부 타일 Buildable 확인
 - [ ] 경로 타일 배치 불가 확인
-- [ ] 웨이포인트 순서 정확히 반환
+- [ ] A* 최단경로가 타워를 우회해 정확히 반환 (#326)
 - [ ] 스폰/기지 위치 정확히 반환
 - [ ] 중복 배치 방지
