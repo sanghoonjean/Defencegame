@@ -22240,7 +22240,7 @@ GameObject:
   - component: {fileID: 2035325813}
   - component: {fileID: 2035325812}
   m_Layer: 5
-  m_Name: PendingDropDisplay
+  m_Name: GameDisplay
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
