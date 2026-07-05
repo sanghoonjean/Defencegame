@@ -30,16 +30,63 @@ UnitSpawnButton.OnClick()
 `Tower_Unit1~4.prefab`)로 이루어져 있다. 따라서 "타입별 기본 스킬"은 프리팹마다
 Inspector에서 지정하는 `[SerializeField]` 필드로 표현하는 것이 기존 패턴과 일치한다.
 
+### 기본 스킬 vs 보유 스킬 구분 (Codex 리뷰 반영)
+
+`EquippedSkill` 슬롯은 "플레이어가 상점에서 구매/보유한 스킬"과 "설치 시 무료로 지급된
+기본 스킬"을 구분하지 않는다. 그런데 기존 코드는 `tower.EquippedSkill != null`인 경우
+이를 항상 "보유 스킬이 장착된 것"으로 간주하고 아래 지점에서 인벤토리로 되돌리거나
+판매 보상(하급 큐브 1개)을 지급한다.
+
+- `InventorySystem.DeleteTower()` (`Systems/InventorySystem.cs:96-97`) — 타워 삭제 시 `ShopSystem.ReturnSkill(target.EquippedSkill)`
+- `InvenDropHandler.cs:24-26` — 장착 슬롯 → 인벤 드래그 시 unequip 후 `ReturnSkill`
+- `InvenSlotDragHandler.cs:96-98` — 위와 동일 경로(다른 드래그 핸들러)
+- `InvenUI.cs:120-123` — 인벤 스킬 클릭 교체 시, 기존 장착 스킬을 `ReturnSkill` 후 새 스킬 장착
+- `SkillSlotUI.cs:56-64` — 스킬 슬롯에 드래그로 교체 시 기존 장착 스킬을 `ReturnSkill`
+- `SellConfirmPopup.cs:109-115, 126` — 장착 스킬 판매 확인 시 `UnequipSkill()` 후 무조건 하급 큐브 1개 지급
+- `ShopDropHandler.cs:47-48` — 판매 팝업이 없을 때 폴백 경로, 역시 무조건 큐브 1개 지급
+
+기본 스킬을 그대로 `EquipSkill(defaultSkill)`로 지급하면, 위 6개 지점 중 어디로든
+"삭제/해제/교체/판매"만 하면 무료 스킬이 보유 목록에 추가되거나 큐브로 환전되어
+반복 악용(스킬 복제, 큐브 무한 생성)이 가능해진다.
+
+**해결 설계** — `Tower`에 장착 스킬의 출처를 구분하는 마커를 추가한다.
+
+- `Tower.EquipSkill(SkillData skill, bool isDefault = false)`로 시그니처 확장
+  (기존 호출부는 전부 `isDefault` 생략 → 동작 변화 없음).
+- `public bool IsDefaultSkillEquipped { get; private set; }` 추가. `EquipSkill` 호출 시
+  `isDefault` 값으로 갱신, `UnequipSkill()` 호출 시 `false`로 리셋.
+- `Place(Vector2Int coord)`에서는 `EquipSkill(defaultSkill, isDefault: true)`로 호출.
+- 위 6개 지점에서 "보유 목록 반환" 또는 "판매 보상 지급" 직전에
+  `if (!tower.IsDefaultSkillEquipped)` 가드를 추가해, 기본 스킬인 경우 반환/보상 없이
+  그냥 슬롯만 비운다.
+
 ## 2. 수정 파일
 
 - `MakeDefence/Assets/Scripts/Gameplay/Tower/Tower.cs`
   - `[SerializeField] private SkillData defaultSkill;` 필드 추가
+  - `public bool IsDefaultSkillEquipped { get; private set; }` 추가
+  - `EquipSkill(SkillData skill, bool isDefault = false)`로 시그니처 확장, `UnequipSkill()`에서
+    플래그 리셋
   - `Place(Vector2Int coord)`에서 `EquippedSkill == null`이고 `defaultSkill != null`인 경우
-    `EquipSkill(defaultSkill)` 호출 추가
+    `EquipSkill(defaultSkill, isDefault: true)` 호출 추가
+- `MakeDefence/Assets/Scripts/Systems/InventorySystem.cs`
+  - `DeleteTower()`: `ReturnSkill` 호출 전 `!target.IsDefaultSkillEquipped` 가드 추가
+- `MakeDefence/Assets/Scripts/UI/InvenDropHandler.cs`
+  - `ReturnSkill` 호출 전 `!tower.IsDefaultSkillEquipped` 가드 추가
+- `MakeDefence/Assets/Scripts/UI/InvenSlotDragHandler.cs`
+  - 동일 가드 추가
+- `MakeDefence/Assets/Scripts/UI/InvenUI.cs`
+  - 인벤 스킬 교체 시 기존 장착 스킬 `ReturnSkill` 호출 전 가드 추가
+- `MakeDefence/Assets/Scripts/UI/SkillSlotUI.cs`
+  - 동일 가드 추가
+- `MakeDefence/Assets/Scripts/UI/SellConfirmPopup.cs`
+  - 장착 스킬 판매 확인(`OnConfirm`) 시, 기본 스킬이면 큐브 보상 지급 생략
+- `MakeDefence/Assets/Scripts/UI/ShopDropHandler.cs`
+  - 판매 팝업 폴백 경로(`SellEquippedSkill`)에서 동일 가드 추가
 
 ## 3. 신규 클래스 / 파일
 
-없음. 기존 `Tower`/`SkillData` 구조 재사용.
+없음. 기존 `Tower`/`SkillData` 구조 재사용 (마커 필드만 추가).
 
 ## 4. 테스트 계획
 
@@ -52,15 +99,29 @@ Inspector에서 지정하는 `[SerializeField]` 필드로 표현하는 것이 �
         중복 실행되지 않는지 확인
   - [ ] 인벤토리 UI에서 기본 스킬을 해제(`UnequipSkill`) 후 다른 스킬로 교체가 정상 동작하는지 확인
   - [ ] `defaultSkill`이 비어있는(null) 프리팹은 기존과 동일하게 미장착 상태로 유지되는지 확인
+  - [ ] **(신규)** 기본 스킬이 장착된 타워를 삭제해도 `ShopSystem` 보유 스킬 목록에 추가되지 않는지 확인
+  - [ ] **(신규)** 기본 스킬을 드래그로 인벤에 반환/해제해도 보유 목록에 추가되지 않는지 확인
+  - [ ] **(신규)** 인벤 스킬 클릭/드래그로 기본 스킬을 다른 스킬로 교체해도 기본 스킬이 보유 목록에
+        추가되지 않는지 확인
+  - [ ] **(신규)** 기본 스킬을 판매 시도 시 큐브 보상이 지급되지 않는지 확인 (판매 팝업 경로 + 폴백 경로 모두)
+  - [ ] **(신규)** 기본 스킬 해제 후 플레이어가 직접 다른 스킬을 장착하면 `IsDefaultSkillEquipped`가
+        `false`로 정상 리셋되어, 이후 그 스킬은 정상적으로 반환/판매되는지 확인
 
 ## 5. 위험 요소
 
 - **유닛 타입 ↔ 기본 스킬 매핑은 게임 디자인 결정 사항** — 어떤 유닛에 어떤 스킬을 기본 지급할지는
   코드에서 유추 불가. 코드 구현 후 각 프리팹의 `defaultSkill` 필드를 Unity Editor에서 실제 값으로
   채우는 별도 데이터 작업이 필요하다 (플랜 PR 리뷰 시 확인 필요).
-- `EquipSkill`은 `ShopSystem._ownedSkills` 보유 목록과 무관하게 동작하므로, 기본 스킬은 플레이어의
-  "보유 스킬" 목록에는 잡히지 않는다 (상점에서 판매/교체 대상 아님). 이 스킬을 인벤토리 UI 상 보유
-  스킬처럼 취급해야 하는지 여부는 별도 확인 필요.
+- ~~`EquipSkill`은 `ShopSystem._ownedSkills` 보유 목록과 무관하게 동작하므로...~~ →
+  **(Codex 리뷰로 확인/해결)** 이 점이 정확히 문제였다. `EquippedSkill != null`을 "보유 스킬 장착
+  중"으로 간주하는 6개 지점(`InventorySystem.DeleteTower`, `InvenDropHandler`,
+  `InvenSlotDragHandler`, `InvenUI`, `SkillSlotUI`, `SellConfirmPopup`/`ShopDropHandler`)에서
+  기본 스킬을 삭제/해제/교체/판매하면 무료 스킬이 보유 목록에 편입되거나 큐브로 환전되어 반복
+  악용이 가능했다. `Tower.IsDefaultSkillEquipped` 마커 + 6개 지점 가드로 해결 (위 1절 참고).
 - 기존에 `EquippedSkill == null`을 "미장착" 상태로 가정하는 로직(`Tower.Update()`,
   `OwnedSkillsListUI` 등)이 있는지 재확인 — 기본 스킬 지급으로 인해 항상 non-null이 되는 유닛이
   생기면 해당 가정에 의존하는 UI/로직에 영향이 없는지 확인 필요.
+- 마커 가드를 6개 지점에 개별적으로 추가하는 방식은 향후 "장착 스킬을 보유 목록으로 반환"하는
+  새 코드 경로가 추가될 때 가드를 빠뜨릴 위험이 있다 (구현 PR 리뷰 시 유의). 장기적으로는
+  `InventorySystem`에 `ReturnEquippedSkillIfOwned(Tower)` 같은 단일 헬퍼로 응집하는 리팩터링을
+  고려할 수 있으나, 이번 이슈 범위에서는 기존 산재 패턴을 유지한 채 가드만 추가한다.
