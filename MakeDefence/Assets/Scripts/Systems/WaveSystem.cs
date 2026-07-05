@@ -120,8 +120,14 @@ public class WaveSystem : MonoBehaviour
     public void StopWave()
     {
         if (_spawnCoroutine != null) StopCoroutine(_spawnCoroutine);
+        bool wasActive = IsWaveActive;
         IsWaveActive = false;
         IsRiftWaveActive = false;
+
+        // StopCoroutine 은 코루틴을 즉시 중단시켜 SpawnEnemies 내부의 종료 처리가 실행되지 않으므로,
+        // 웨이브 취소를 구독자(MonsterPathVisualizer 등)에게 여기서 직접 알린다.
+        if (wasActive)
+            OnWaveEnded?.Invoke(false);
     }
 
     private List<EnemyGrade> BuildSpawnList(int stage)
@@ -222,7 +228,6 @@ public class WaveSystem : MonoBehaviour
     {
         StopWave();
         GameStateSystem.SetState(GameState.Defeat);
-        OnWaveEnded?.Invoke(false);
     }
 
     private void EndWave()

@@ -40,7 +40,7 @@ MonsterPathVisualizer
 - `public bool IsSpawning { get; private set; }` 제거.
 - `public static event Action<bool> OnSpawningStateChanged;` 제거.
 - `SpawnEnemies()` 내부의 `IsSpawning = true/false; OnSpawningStateChanged?.Invoke(...)` 호출부 전부 제거 (코루틴 진입부, 마지막 스폰 직후, `data == null` 가드 분기).
-- `StopWave()`의 `if (IsSpawning) { IsSpawning = false; OnSpawningStateChanged?.Invoke(false); }` 블록 제거 (더 이상 필요 없음 — 마커 숨김은 `OnWaveEnded`가 담당).
+- `StopWave()`: `IsSpawning` 관련 블록은 제거하되, `IsWaveActive`가 `true`였던 경우에만 `OnWaveEnded?.Invoke(false)`를 직접 invoke하도록 유지한다 — `TestRunner`의 R키 리셋처럼 `HandlePlayerDied`를 거치지 않고 `StopWave()`를 직접 호출하는 경로(Codex 리뷰 지적, P2)에서도 구독자가 웨이브 취소를 통지받아야 하기 때문. `HandlePlayerDied()`에서 중복으로 invoke하던 `OnWaveEnded?.Invoke(false)`는 제거해 이중 호출을 피한다.
 - 그 외 웨이브 시작/종료/aliveCount 로직은 변경 없음.
 
 ### `MakeDefence/Assets/Scripts/Systems/MonsterPathVisualizer.cs`
