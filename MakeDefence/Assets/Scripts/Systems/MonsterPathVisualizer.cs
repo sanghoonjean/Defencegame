@@ -61,6 +61,13 @@ public class MonsterPathVisualizer : MonoBehaviour
 
     private void HandleWaveEnded(bool cleared)
     {
+        // 웨이브 연속 생성(RepeatGenerateToggleButton) 중에는 같은 OnWaveEnded 디스패치 안에서
+        // 그보다 먼저 구독된 다른 컴포넌트가 이미 다음 웨이브를 동기적으로 시작시켜(OnWaveStarted
+        // → HandleWaveStarted 선호출) _isWaveActive/_activeRoutes가 새 웨이브 기준으로 세팅돼
+        // 있을 수 있다. 구독 순서에 상관없이 정확히 동작하도록 실제 WaveSystem 상태를 다시 확인해,
+        // 이미 새 웨이브가 시작된 상태라면 그 상태를 지우지 않는다.
+        if (WaveSystem.Instance != null && WaveSystem.Instance.IsWaveActive) return;
+
         _isWaveActive = false;
         _activeRoutes.Clear();
         ClearMarkers();
