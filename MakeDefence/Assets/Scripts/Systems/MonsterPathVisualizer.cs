@@ -1,9 +1,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// 모든 스폰 루트의 스폰 지점 → 본진 경로를 셀 단위로 표시한다. WaveSystem 의 스폰 코루틴이
-// 진행 중일 때만 표시되며, 그 사이 타워 배치/이동/삭제로 경로가 바뀌면
-// PathfindingSystem.OnPathsChanged 를 통해 자동 갱신된다.
+// 모든 스폰 루트의 스폰 지점 → 본진 경로를 셀 단위로 표시한다. WaveSystem 의 웨이브가
+// 진행 중일 때만 표시되며, route 하나하나는 그 route에 스폰된 몬스터가 모두 죽거나
+// 본진에 도달해 사라질 때(WaveSystem.OnRouteCleared) 개별적으로 숨겨진다 — 다른 route에
+// 몬스터가 남아있으면 웨이브 전체가 끝날 때(OnWaveEnded)까지 그 route의 경로만 계속 표시된다.
+// 그 사이 타워 배치/이동/삭제로 경로가 바뀌면 PathfindingSystem.OnPathsChanged 를 통해
+// 자동 갱신된다.
 public class MonsterPathVisualizer : MonoBehaviour
 {
     [SerializeField] private Color markerColor = new Color(1f, 1f, 1f, 0.35f);
@@ -13,18 +16,24 @@ public class MonsterPathVisualizer : MonoBehaviour
     [SerializeField] private int sortingOrder = 5;
 
     private readonly List<GameObject> _markers = new();
+    private readonly HashSet<int> _activeRoutes = new();
     private Sprite _circleSprite;
-    private bool _isSpawning;
+    private bool _isWaveActive;
 
     private void Start()
     {
         _circleSprite = BuildCircleSprite();
         PathfindingSystem.OnPathsChanged += HandlePathsChanged;
-        WaveSystem.OnSpawningStateChanged += HandleSpawningStateChanged;
+        WaveSystem.OnWaveStarted += HandleWaveStarted;
+        WaveSystem.OnWaveEnded += HandleWaveEnded;
+        WaveSystem.OnRouteCleared += HandleRouteCleared;
 
-        if (WaveSystem.Instance != null && WaveSystem.Instance.IsSpawning)
+        if (WaveSystem.Instance != null && WaveSystem.Instance.IsWaveActive && MapTileSystem.Instance != null)
         {
-            _isSpawning = true;
+            _isWaveActive = true;
+            int routeCount = MapTileSystem.Instance.RouteCount;
+            for (int i = 0; i < routeCount; i++)
+                if (WaveSystem.Instance.IsRouteActive(i)) _activeRoutes.Add(i);
             RefreshMarkers();
         }
     }
@@ -32,21 +41,40 @@ public class MonsterPathVisualizer : MonoBehaviour
     private void OnDestroy()
     {
         PathfindingSystem.OnPathsChanged -= HandlePathsChanged;
-        WaveSystem.OnSpawningStateChanged -= HandleSpawningStateChanged;
+        WaveSystem.OnWaveStarted -= HandleWaveStarted;
+        WaveSystem.OnWaveEnded -= HandleWaveEnded;
+        WaveSystem.OnRouteCleared -= HandleRouteCleared;
     }
 
-    private void HandleSpawningStateChanged(bool spawning)
+    private void HandleWaveStarted(int stage)
     {
-        _isSpawning = spawning;
-        if (spawning)
-            RefreshMarkers();
-        else
-            ClearMarkers();
+        _isWaveActive = true;
+        _activeRoutes.Clear();
+        if (MapTileSystem.Instance != null)
+        {
+            int routeCount = MapTileSystem.Instance.RouteCount;
+            for (int i = 0; i < routeCount; i++)
+                _activeRoutes.Add(i);
+        }
+        RefreshMarkers();
+    }
+
+    private void HandleWaveEnded(bool cleared)
+    {
+        _isWaveActive = false;
+        _activeRoutes.Clear();
+        ClearMarkers();
+    }
+
+    private void HandleRouteCleared(int routeIndex)
+    {
+        _activeRoutes.Remove(routeIndex);
+        RefreshMarkers();
     }
 
     private void HandlePathsChanged()
     {
-        if (_isSpawning) RefreshMarkers();
+        if (_isWaveActive) RefreshMarkers();
     }
 
     private void ClearMarkers()
@@ -64,10 +92,9 @@ public class MonsterPathVisualizer : MonoBehaviour
 
         var basePoint = MapTileSystem.Instance.GetBasePoint();
         var placed = new HashSet<Vector2>();
-        int routeCount = MapTileSystem.Instance.RouteCount;
-        for (int i = 0; i < routeCount; i++)
+        foreach (var routeIndex in _activeRoutes)
         {
-            var path = PathfindingSystem.Instance.ComputeFullCellPath(MapTileSystem.Instance.GetSpawnPoint(i), basePoint);
+            var path = PathfindingSystem.Instance.ComputeFullCellPath(MapTileSystem.Instance.GetSpawnPoint(routeIndex), basePoint);
             foreach (var point in path)
             {
                 if (!placed.Add(point)) continue;

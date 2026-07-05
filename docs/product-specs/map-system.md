@@ -60,7 +60,7 @@ A* 기반 최단경로를 PathfindingSystem이 실시간 계산해 제공한다 
 - 배치 성공/실패 결과 반환
 
 ### 7. 경로 시각화 (#331, #335)
-`MonsterPathVisualizer`가 모든 route의 스폰 지점 → 본진 경로를 **스무딩 이전 셀 단위 전체 경로**(`PathfindingSystem.ComputeFullCellPath`)로 조회해, 각 셀에 작은 원 오브젝트를 표시한다. `WaveSystem`이 몬스터를 순차 생성하는 스폰 코루틴 진행 중(`WaveSystem.OnSpawningStateChanged`)에만 표시되며, 스폰이 끝나면(마지막 몬스터 생성 직후) 곧바로 숨겨진다 — 이전에 스폰된 몬스터가 아직 이동/전투 중이어도 마커는 표시되지 않는다. 스폰이 진행되는 동안 타워가 배치·이동·삭제될 때(`PathfindingSystem.OnPathsChanged`)마다 마커도 함께 갱신된다.
+`MonsterPathVisualizer`가 활성 route의 스폰 지점 → 본진 경로를 **스무딩 이전 셀 단위 전체 경로**(`PathfindingSystem.ComputeFullCellPath`)로 조회해, 각 셀에 작은 원 오브젝트를 표시한다. `WaveSystem`의 웨이브가 진행 중(`WaveSystem.OnWaveStarted` ~ `WaveSystem.OnWaveEnded`)일 때만 표시되며, route별로도 개별 관리된다 — 특정 route에 스폰된 몬스터가 모두 죽거나 본진에 도달해 사라지면(`WaveSystem.OnRouteCleared`) 그 route의 경로만 먼저 숨겨지고, 다른 route에 몬스터가 남아있으면 그 route의 경로는 웨이브 전체가 끝날 때까지 계속 표시된다. 마지막 몬스터가 "생성"된 시점이 아니라 실제로 화면에서 사라지는 시점에 숨겨진다. 웨이브가 진행되는 동안 타워가 배치·이동·삭제될 때(`PathfindingSystem.OnPathsChanged`)마다 마커도 함께 갱신된다.
 
 ---
 
@@ -94,9 +94,14 @@ public class PathfindingSystem
 
 public class WaveSystem
 {
-    // 경로 시각화 표시 트리거 (#335) — 스폰 코루틴 진행 중일 때만 true
-    public bool IsSpawning { get; }
-    public static event Action<bool> OnSpawningStateChanged;
+    // 경로 시각화 표시 트리거 (#335) — 스폰 시작 ~ 스폰된 마지막 몬스터 소멸까지 true
+    public bool IsWaveActive { get; }
+    public static event Action<int> OnWaveStarted;
+    public static event Action<bool> OnWaveEnded;  // true = 클리어
+
+    // route별 경로 시각화 트리거 (#335) — 해당 route에 스폰된 몬스터가 아직 남아있는지
+    public bool IsRouteActive(int routeIndex);
+    public static event Action<int> OnRouteCleared;  // 해당 route의 몬스터가 모두 사라짐
 }
 
 public enum TileType

@@ -10,11 +10,10 @@ public class WaveSystem : MonoBehaviour
     public static event Action<int> OnWaveStarted;
     public static event Action<bool> OnWaveEnded;  // true = 클리어
     public static event Action<int> OnRiftRewardGranted;  // 균열 클리어 시 추가 큐브 수
-    public static event Action<bool> OnSpawningStateChanged;  // true = 스폰 코루틴 진행 중
+    public static event Action<int> OnRouteCleared;  // 해당 route에 스폰된 몬스터가 모두 사라짐
 
     public bool IsWaveActive { get; private set; }
     public bool IsRiftWaveActive { get; private set; }
-    public bool IsSpawning { get; private set; }
     public int CurrentStage { get; private set; } = 1;
     public int UnlockedStage { get; private set; } = 1;
 
@@ -31,6 +30,7 @@ public class WaveSystem : MonoBehaviour
 
     private bool _autoWave;
     private int _aliveCount;
+    private int[] _aliveCountByRoute;
     private Coroutine _spawnCoroutine;
     private RiftWaveModifiers _currentRiftMods = RiftWaveModifiers.Default;
 
@@ -61,6 +61,11 @@ public class WaveSystem : MonoBehaviour
 
     public void SetAutoWave(bool enabled) => _autoWave = enabled;
 
+    // 경로 시각화 (#335) — route별로 스폰된 몬스터가 아직 남아있는지 (늦은 구독 시 초기 상태 복원용)
+    public bool IsRouteActive(int routeIndex) =>
+        _aliveCountByRoute != null && routeIndex >= 0 && routeIndex < _aliveCountByRoute.Length
+        && _aliveCountByRoute[routeIndex] > 0;
+
     public void StartWave()
     {
         if (IsWaveActive) { Debug.Log("[WaveSystem] StartWave: already active"); return; }
@@ -82,9 +87,15 @@ public class WaveSystem : MonoBehaviour
         var spawnList = BuildSpawnList(CurrentStage);
         Debug.Log($"[WaveSystem] spawnList count={spawnList.Count}");
         _aliveCount = spawnList.Count;
+        InitAliveCountByRoute(spawnList.Count);
         _spawnCoroutine = StartCoroutine(SpawnEnemies(spawnList));
 
-        OnWaveStarted?.Invoke(CurrentStage);
+        // StartCoroutine 은 첫 yield 전까지 동기적으로 실행되므로, 첫 몬스터의 EnemyData 가
+        // null이면 위 코루틴 안에서 StopWave() 가 이미 호출되어 IsWaveActive 가 false 로
+        // 바뀌어 있을 수 있다. 그 경우 OnWaveStarted 를 invoke하면 구독자가 이미 끝난 웨이브를
+        // 여전히 진행 중으로 오인해 마커가 영구히 걸린다 (Codex 리뷰 지적, P2).
+        if (IsWaveActive)
+            OnWaveStarted?.Invoke(CurrentStage);
     }
 
     /// <summary>
@@ -113,24 +124,35 @@ public class WaveSystem : MonoBehaviour
         for (int i = 0; i < modifiers.ExtraCount; i++)
             spawnList.Add(EnemyGrade.Normal);
         _aliveCount = spawnList.Count;
+        InitAliveCountByRoute(spawnList.Count);
         _spawnCoroutine = StartCoroutine(SpawnEnemies(spawnList));
 
-        OnWaveStarted?.Invoke(CurrentStage);
+        // StartWave() 와 동일한 이유로 IsWaveActive 가 이미 false로 꺼졌을 수 있으므로 가드한다.
+        if (IsWaveActive)
+            OnWaveStarted?.Invoke(CurrentStage);
         return true;
+    }
+
+    // routeIndex = i % routeCount 분배 규칙(SpawnEnemies)과 동일하게 route별 스폰 예정 수를 계산한다.
+    private void InitAliveCountByRoute(int spawnCount)
+    {
+        int routeCount = MapTileSystem.Instance.RouteCount;
+        _aliveCountByRoute = new int[routeCount];
+        for (int i = 0; i < spawnCount; i++)
+            _aliveCountByRoute[i % routeCount]++;
     }
 
     public void StopWave()
     {
         if (_spawnCoroutine != null) StopCoroutine(_spawnCoroutine);
+        bool wasActive = IsWaveActive;
         IsWaveActive = false;
         IsRiftWaveActive = false;
 
-        // StopCoroutine 은 코루틴을 즉시 중단시켜 SpawnEnemies 내부의 종료 처리가 실행되지 않으므로 여기서 직접 정리한다.
-        if (IsSpawning)
-        {
-            IsSpawning = false;
-            OnSpawningStateChanged?.Invoke(false);
-        }
+        // StopCoroutine 은 코루틴을 즉시 중단시켜 SpawnEnemies 내부의 종료 처리가 실행되지 않으므로,
+        // 웨이브 취소를 구독자(MonsterPathVisualizer 등)에게 여기서 직접 알린다.
+        if (wasActive)
+            OnWaveEnded?.Invoke(false);
     }
 
     private List<EnemyGrade> BuildSpawnList(int stage)
@@ -186,8 +208,6 @@ public class WaveSystem : MonoBehaviour
     {
         int routeCount = MapTileSystem.Instance.RouteCount;
         Debug.Log($"[WaveSystem] SpawnEnemies routes={routeCount} enemies={spawnList.Count}");
-        IsSpawning = true;
-        OnSpawningStateChanged?.Invoke(true);
 
         int spawnedCount = 0;
         for (int i = 0; i < spawnList.Count; i++)
@@ -197,8 +217,7 @@ public class WaveSystem : MonoBehaviour
             if (data == null)
             {
                 Debug.LogError($"[WaveSystem] EnemyData null for grade={grade}");
-                IsSpawning = false;
-                OnSpawningStateChanged?.Invoke(false);
+                StopWave();
                 yield break;
             }
             int routeIndex = i % routeCount;
@@ -207,16 +226,10 @@ public class WaveSystem : MonoBehaviour
                 MapTileSystem.Instance.GetBasePoint(),
                 includeStart: true);
             var enemy = ObjectPoolSystem.Instance.Get();
-            enemy.Initialize(data, CurrentStage, path, _currentRiftMods);
+            enemy.Initialize(data, CurrentStage, path, routeIndex, _currentRiftMods);
             spawnedCount++;
             Debug.Log($"[WaveSystem] Spawned {spawnedCount}/{spawnList.Count} grade={grade} route={routeIndex}");
 
-            // 마지막 몬스터 생성 직후 곧바로 스폰 종료 처리 — 이후의 대기 시간만큼 마커 숨김이 늦어지지 않도록.
-            if (i == spawnList.Count - 1)
-            {
-                IsSpawning = false;
-                OnSpawningStateChanged?.Invoke(false);
-            }
             yield return new WaitForSeconds(spawnInterval);
         }
     }
@@ -229,10 +242,19 @@ public class WaveSystem : MonoBehaviour
         _ => normalData
     };
 
-    private void HandleEnemyRemoved(Enemy _)
+    private void HandleEnemyRemoved(Enemy enemy)
     {
         if (!IsWaveActive) return;
         _aliveCount--;
+
+        int routeIndex = enemy.RouteIndex;
+        if (_aliveCountByRoute != null && routeIndex >= 0 && routeIndex < _aliveCountByRoute.Length)
+        {
+            _aliveCountByRoute[routeIndex]--;
+            if (_aliveCountByRoute[routeIndex] <= 0)
+                OnRouteCleared?.Invoke(routeIndex);
+        }
+
         if (_aliveCount <= 0)
             EndWave();
     }
@@ -241,7 +263,6 @@ public class WaveSystem : MonoBehaviour
     {
         StopWave();
         GameStateSystem.SetState(GameState.Defeat);
-        OnWaveEnded?.Invoke(false);
     }
 
     private void EndWave()

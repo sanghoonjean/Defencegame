@@ -34,22 +34,58 @@ MonsterPathVisualizer
 
 `IsSpawning`/`OnSpawningStateChanged`는 `MonsterPathVisualizer`가 유일한 소비자였으므로(grep 확인 완료), 더 이상 필요한 상태 전이가 아니면 `WaveSystem`에서 제거한다. "스폰 코루틴이 도는 중"이라는 개념 자체가 이번 요구사항에는 불필요하고, `IsWaveActive`/`OnWaveStarted`/`OnWaveEnded`만으로 정확히 원하는 구간을 표현할 수 있다.
 
+### 추가 발견: 멀티 루트(스폰 지점 복수) 환경에서의 부분 소멸
+
+구현 후 수동 테스트 중 다음 문제가 발견됨: 스폰 루트가 2개 이상일 때, 스폰 1의 몬스터가 아직 살아있고 스폰 2의 몬스터만 먼저 전부 사라진 경우에도 **스폰 2의 경로까지** 계속 표시된다. 이는 `IsWaveActive`/`OnWaveEnded`가 전체 웨이브 단위(`_aliveCount` 합계)로만 정의되어 있어, `MonsterPathVisualizer`가 모든 route를 하나로 묶어 표시/숨김을 결정하기 때문이다.
+
+요구사항을 route 단위까지 정확히 만족시키려면 "route별 생존 카운트"가 필요하다:
+
+```
+WaveSystem
+ ├─ StartWave/StartRiftWave: route별 스폰 예정 수를 세어 _aliveCountByRoute[route] 초기화
+ ├─ HandleEnemyRemoved(enemy): 전체 _aliveCount-- 뿐 아니라 _aliveCountByRoute[enemy.RouteIndex]-- 도 수행
+ │    └─ 특정 route의 카운트가 0이 되면 OnRouteCleared(route) invoke      ★ 신규
+ └─ (전체 _aliveCount<=0 이면 기존과 동일하게 EndWave() → OnWaveEnded)
+        ▼
+MonsterPathVisualizer
+ └─ 활성 route 집합(_activeRoutes)을 웨이브 시작 시 전체 route로 채우고,
+    OnRouteCleared 수신 시 해당 route만 집합에서 제거 후 RefreshMarkers()
+    (마커는 _activeRoutes 에 속한 route들의 경로만 합쳐 그린다 — 특정 route가 끝나도
+     다른 route와 겹치는 셀은 그 route가 살아있는 한 계속 표시됨)
+ └─ OnWaveEnded 수신 시에는 (강제 취소 경로 포함) _activeRoutes 를 통째로 비우고 ClearMarkers()
+```
+
+Enemy는 현재 자신이 어느 route에서 스폰됐는지 정보가 없으므로(`Enemy.Initialize`에 route 정보 없음), `Enemy.RouteIndex` 프로퍼티를 추가하고 `WaveSystem.SpawnEnemies()`에서 스폰 시 채워준다.
+
 ## 2. 수정 파일
+
+### `MakeDefence/Assets/Scripts/Gameplay/Enemy/Enemy.cs`
+- `public int RouteIndex { get; private set; }` 추가.
+- `Initialize(EnemyData, int, Vector2[])` / `Initialize(EnemyData, int, Vector2[], RiftWaveModifiers)` 양쪽에 `int routeIndex` 매개변수를 추가해 `RouteIndex`를 설정한다.
 
 ### `MakeDefence/Assets/Scripts/Systems/WaveSystem.cs`
 - `public bool IsSpawning { get; private set; }` 제거.
 - `public static event Action<bool> OnSpawningStateChanged;` 제거.
 - `SpawnEnemies()` 내부의 `IsSpawning = true/false; OnSpawningStateChanged?.Invoke(...)` 호출부 전부 제거 (코루틴 진입부, 마지막 스폰 직후, `data == null` 가드 분기).
-- `StopWave()`의 `if (IsSpawning) { IsSpawning = false; OnSpawningStateChanged?.Invoke(false); }` 블록 제거 (더 이상 필요 없음 — 마커 숨김은 `OnWaveEnded`가 담당).
+- `StopWave()`: `IsSpawning` 관련 블록은 제거하되, `IsWaveActive`가 `true`였던 경우에만 `OnWaveEnded?.Invoke(false)`를 직접 invoke하도록 유지한다 — `TestRunner`의 R키 리셋처럼 `HandlePlayerDied`를 거치지 않고 `StopWave()`를 직접 호출하는 경로(Codex 리뷰 지적, P2)에서도 구독자가 웨이브 취소를 통지받아야 하기 때문. `HandlePlayerDied()`에서 중복으로 invoke하던 `OnWaveEnded?.Invoke(false)`는 제거해 이중 호출을 피한다.
+- `SpawnEnemies()`의 `data == null` 가드에서도 `yield break` 전에 `StopWave()`를 호출해 동일한 취소 경로(`OnWaveEnded(false)`)를 타도록 한다 (Codex 리뷰 지적, P2 — 안 그러면 `_aliveCount`가 0에 도달할 계기가 없어 웨이브/마커가 영구히 걸림).
+- `private int[] _aliveCountByRoute;` 필드 추가. `StartWave()`/`StartRiftWave()`에서 spawnList 확정 직후, `routeIndex = i % routeCount` 분배 규칙에 맞춰 route별 스폰 예정 수를 계산해 초기화한다.
+- `public static event Action<int> OnRouteCleared;` 추가 — 특정 route의 `_aliveCountByRoute[route]`가 0이 되는 순간 invoke.
+- `public bool IsRouteActive(int routeIndex)` 추가 — `MonsterPathVisualizer`가 늦게 구독(Start 시점에 이미 웨이브 진행 중)할 때 route별 초기 상태를 정확히 복원하기 위함.
+- `SpawnEnemies()`: `enemy.Initialize(...)` 호출 시 `routeIndex`를 함께 전달.
+- `HandleEnemyRemoved(Enemy enemy)`: 기존 `_aliveCount--` 로직에 더해 `_aliveCountByRoute[enemy.RouteIndex]--` 수행, 0이 되면 `OnRouteCleared?.Invoke(enemy.RouteIndex)` invoke. 이후 기존과 동일하게 전체 `_aliveCount<=0` 체크로 `EndWave()` 호출.
 - 그 외 웨이브 시작/종료/aliveCount 로직은 변경 없음.
 
 ### `MakeDefence/Assets/Scripts/Systems/MonsterPathVisualizer.cs`
-- `WaveSystem.OnSpawningStateChanged += HandleSpawningStateChanged` 구독을 `WaveSystem.OnWaveStarted += HandleWaveStarted` / `WaveSystem.OnWaveEnded += HandleWaveEnded` 두 개 구독으로 교체. `OnDestroy()`에서도 동일하게 해제.
+- `WaveSystem.OnSpawningStateChanged += HandleSpawningStateChanged` 구독을 `WaveSystem.OnWaveStarted += HandleWaveStarted` / `WaveSystem.OnWaveEnded += HandleWaveEnded` / `WaveSystem.OnRouteCleared += HandleRouteCleared` 세 개 구독으로 교체. `OnDestroy()`에서도 동일하게 해제.
 - `_isSpawning` 필드를 `_isWaveActive`로 이름 변경(의미상 "스폰 중"이 아니라 "웨이브 진행 중"이므로).
-- `Start()`의 초기 상태 체크: `WaveSystem.Instance.IsSpawning` → `WaveSystem.Instance.IsWaveActive`.
-- 신규 `HandleWaveStarted(int stage)`: `_isWaveActive = true; RefreshMarkers();` (기존 `HandleSpawningStateChanged(true)`와 동일한 동작, 시그니처만 `OnWaveStarted`에 맞춤).
-- 신규 `HandleWaveEnded(bool cleared)`: `_isWaveActive = false; ClearMarkers();` (cleared 값과 무관하게 항상 숨김).
-- `HandlePathsChanged()`의 가드를 `if (_isWaveActive) RefreshMarkers();`로 변경.
+- `private readonly HashSet<int> _activeRoutes = new();` 필드 추가 — 아직 스폰된 몬스터가 남아있는 route 집합.
+- `Start()`의 초기 상태 체크: `WaveSystem.Instance.IsWaveActive`이면 `_isWaveActive = true`로 설정하고, `MapTileSystem.Instance.RouteCount`만큼 순회하며 `WaveSystem.Instance.IsRouteActive(r)`가 true인 route만 `_activeRoutes`에 채운 뒤 `RefreshMarkers()`.
+- 신규 `HandleWaveStarted(int stage)`: `_isWaveActive = true;` 설정 후 `_activeRoutes`를 `MapTileSystem.Instance.RouteCount` 전체로 채우고 `RefreshMarkers()`.
+- 신규 `HandleWaveEnded(bool cleared)`: `_isWaveActive = false; _activeRoutes.Clear(); ClearMarkers();` (cleared 값과 무관하게 항상 전체 숨김 — 정상 종료/강제 취소 공통 안전망).
+- 신규 `HandleRouteCleared(int routeIndex)`: `_activeRoutes.Remove(routeIndex); RefreshMarkers();` (웨이브가 끝나지 않은 상태에서만 의미 있게 호출됨 — `WaveSystem.HandleEnemyRemoved`가 `IsWaveActive` false일 때는 애초에 invoke하지 않음).
+- `RefreshMarkers()`: 기존에는 `MapTileSystem.Instance.RouteCount` 전체를 순회했지만, 이제 `_activeRoutes`에 포함된 route만 순회해 경로를 그린다 (다른 route와 겹치는 셀은 dedup 로직 그대로 유지되므로 자연히 계속 표시됨).
+- `HandlePathsChanged()`의 가드를 `if (_isWaveActive) RefreshMarkers();`로 변경 (기존 유지, `_activeRoutes` 기준으로 다시 그림).
 - 기존 `HandleSpawningStateChanged` 메서드는 삭제.
 
 ### `docs/product-specs/map-system.md`
@@ -70,6 +106,8 @@ MonsterPathVisualizer
 - [ ] 웨이브 도중 플레이어가 사망(`StopWave`)할 때 마커가 즉시 사라지는지 (살아있는 몬스터가 남아있어도 게임이 종료되므로 즉시 숨김이 맞는 동작)
 - [ ] `StartRiftWave` (균열 웨이브)도 동일하게 동작하는지
 - [ ] 오토웨이브(`_autoWave`)로 웨이브가 연속 시작될 때 `OnWaveEnded(true)` → `OnWaveStarted` 재호출 사이에 마커가 깜빡이지 않고 자연스럽게 갱신되는지
+- [ ] (사용자 리포트, 2건 코드리뷰 이후 발견) 스폰 루트가 2개 이상인 맵에서, 스폰 1의 몬스터가 아직 살아있는 상태로 스폰 2의 몬스터만 먼저 전부 사라지면 스폰 2의 경로만 즉시 사라지고 스폰 1의 경로는 계속 표시되는지 — 이후 스폰 1의 몬스터도 마저 사라지면 전체 경로가 사라지는지
+- [ ] TestRunner R키로 리셋할 때 route별 상태(`_activeRoutes`)도 함께 초기화되어, 다음 웨이브 시작 시 모든 route가 정상적으로 다시 표시되는지
 
 ## 5. 위험 요소
 
