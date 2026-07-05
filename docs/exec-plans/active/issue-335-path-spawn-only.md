@@ -22,7 +22,7 @@ WaveSystem
         │  StopWave() 로 중도 중단 시에도 false 로 invoke (플레이어 사망 등)
         ▼
 MonsterPathVisualizer
- └─ OnEnable: WaveSystem.OnSpawningStateChanged 구독
+ └─ Start: WaveSystem.OnSpawningStateChanged 구독 (기존 OnPathsChanged 구독과 동일하게 Start/OnDestroy 쌍으로 관리)
  └─ isSpawning=true  → RefreshMarkers() (마커 생성/갱신)
  └─ isSpawning=false → ClearMarkers()   (마커 전부 제거, 재생성 없음)
  └─ PathfindingSystem.OnPathsChanged 구독은 유지하되, 현재 스폰 중일 때만 RefreshMarkers() 실행
@@ -37,13 +37,14 @@ MonsterPathVisualizer
 - `public bool IsSpawning { get; private set; }` 추가.
 - `public static event Action<bool> OnSpawningStateChanged;` 추가.
 - `SpawnEnemies()` 코루틴 최상단에서 `IsSpawning = true; OnSpawningStateChanged?.Invoke(true);` 실행.
-- `SpawnEnemies()` 코루틴이 `spawnList`를 모두 순회한 뒤(정상 종료) `IsSpawning = false; OnSpawningStateChanged?.Invoke(false);` 실행.
-  - 기존 `data == null` 가드의 `yield break` 경로도 스폰 중단이므로 같은 정리 로직을 타도록 처리 (early return 없이 흐름이 끝에 도달하게 하거나, 해당 분기에도 동일하게 상태를 false로 되돌림).
+- `SpawnEnemies()` 루프에서 **마지막 몬스터(`i == spawnList.Count - 1`)를 스폰한 직후, 그 뒤의 `yield return new WaitForSeconds(spawnInterval)`를 기다리기 전에** `IsSpawning = false; OnSpawningStateChanged?.Invoke(false);`를 실행한다.
+  - 기존 루프는 스폰마다(마지막 포함) 항상 `WaitForSeconds`를 거치므로, 코루틴이 완전히 끝난 뒤에 상태를 false로 바꾸면 마지막 몬스터가 이미 등장한 후에도 `spawnInterval` 만큼 마커가 한 박자 늦게 사라진다. "생성이 끝나는 즉시 숨김"이라는 요구사항을 지키려면 상태 전환을 마지막 스폰 직후 지점으로 옮겨야 한다 (Codex 리뷰 지적 반영).
+  - 기존 `data == null` 가드의 `yield break` 경로도 스폰 중단이므로, `yield break` 직전에 동일하게 `IsSpawning = false; OnSpawningStateChanged?.Invoke(false);`를 실행한다.
 - `StopWave()`: `StopCoroutine`은 코루틴을 즉시 중단시켜 코루틴 내부의 종료 처리 코드가 실행되지 않으므로, `StopWave()` 안에서도 `IsSpawning`이 true였다면 `IsSpawning = false; OnSpawningStateChanged?.Invoke(false);`를 명시적으로 호출.
 
 ### `MakeDefence/Assets/Scripts/Systems/MonsterPathVisualizer.cs`
 - `Start()`: 무조건 `RefreshMarkers()` 호출하던 부분 제거. 대신 `WaveSystem.Instance`가 이미 스폰 중이면(늦은 구독 등 엣지 케이스 대비) 초기 상태를 맞춰준다.
-- `OnEnable`/`Start`에서 `WaveSystem.OnSpawningStateChanged += HandleSpawningStateChanged` 구독, `OnDestroy`에서 해제.
+- `Start()`에서 `WaveSystem.OnSpawningStateChanged += HandleSpawningStateChanged` 구독, `OnDestroy()`에서 해제 — 기존 `PathfindingSystem.OnPathsChanged` 구독과 동일하게 `Start`/`OnDestroy` 쌍으로만 관리한다 (`OnEnable`/`OnDisable`을 함께 쓰면 비활성화-재활성화 시 중복 구독되어 스폰 상태 전환마다 마커 갱신이 중복 실행될 수 있음 — Codex 리뷰 지적 반영).
 - `PathfindingSystem.OnPathsChanged` 콜백(`RefreshMarkers`)은 `_isSpawning`이 true일 때만 실제로 마커를 다시 그리도록 가드 추가.
 - 신규 `HandleSpawningStateChanged(bool spawning)`:
   - `spawning == true` → `_isSpawning = true; RefreshMarkers();`
@@ -61,7 +62,7 @@ MonsterPathVisualizer
 ### 수동 (Unity Editor)
 - [ ] Play 모드 진입 직후, 웨이브 시작 전에는 마커가 보이지 않는지
 - [ ] 웨이브 시작(`StartWave`) 직후 첫 몬스터가 스폰되는 순간부터 마커가 보이는지
-- [ ] 스폰 리스트의 마지막 몬스터가 생성된 직후(코루틴 종료) 마커가 사라지는지 — 이때 이전에 스폰된 몬스터들이 아직 이동/전투 중이어도 마커는 숨겨져야 함
+- [ ] 스폰 리스트의 마지막 몬스터가 생성된 직후 마커가 곧바로 사라지는지 — `spawnInterval` 만큼 지연되지 않고 마지막 몬스터 등장 시점에 바로 숨겨져야 함 (이전에 스폰된 몬스터들이 아직 이동/전투 중이어도 무관)
 - [ ] 스폰 진행 중 타워를 배치해 경로를 막으면 마커가 새 경로로 즉시 갱신되는지 (기존 #331 동작 유지)
 - [ ] 스폰이 끝난 뒤(마커 숨김 상태) 타워를 배치/삭제해도 에러 없이 조용히 무시되는지
 - [ ] 웨이브 도중 플레이어가 사망해 `StopWave()`가 스폰 중간에 호출될 때 마커가 즉시 사라지고 `IsSpawning`이 false로 남는지 (다음 웨이브 시작 시 정상 표시되는지)
@@ -81,3 +82,6 @@ MonsterPathVisualizer
 
 ### R4. 이벤트 구독/해제 누락
 `OnPathsChanged`와 마찬가지로 `OnSpawningStateChanged`도 정적 이벤트이므로 `OnDestroy()`에서 반드시 구독 해제해야 씬 전환 후 `MissingReferenceException`을 방지할 수 있다 (#331 R4와 동일한 패턴).
+
+### R5. 마지막 스폰 이후 대기 시간만큼 상태 전환이 늦어지는 문제
+`SpawnEnemies()` 루프가 스폰마다(마지막 포함) `WaitForSeconds(spawnInterval)`을 거치는 구조이므로, `IsSpawning = false` 전환 지점을 코루틴이 완전히 끝난 뒤로 두면 마지막 몬스터가 실제로 등장한 시점보다 `spawnInterval`만큼 늦게 마커가 사라진다. `spawnInterval`이 클수록 체감 지연이 커지므로, §2에서 명시한 대로 마지막 스폰 직후(대기 전)에 상태를 false로 전환해야 한다.
