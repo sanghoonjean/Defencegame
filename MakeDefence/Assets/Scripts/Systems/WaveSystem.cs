@@ -90,7 +90,12 @@ public class WaveSystem : MonoBehaviour
         InitAliveCountByRoute(spawnList.Count);
         _spawnCoroutine = StartCoroutine(SpawnEnemies(spawnList));
 
-        OnWaveStarted?.Invoke(CurrentStage);
+        // StartCoroutine 은 첫 yield 전까지 동기적으로 실행되므로, 첫 몬스터의 EnemyData 가
+        // null이면 위 코루틴 안에서 StopWave() 가 이미 호출되어 IsWaveActive 가 false 로
+        // 바뀌어 있을 수 있다. 그 경우 OnWaveStarted 를 invoke하면 구독자가 이미 끝난 웨이브를
+        // 여전히 진행 중으로 오인해 마커가 영구히 걸린다 (Codex 리뷰 지적, P2).
+        if (IsWaveActive)
+            OnWaveStarted?.Invoke(CurrentStage);
     }
 
     /// <summary>
@@ -122,7 +127,9 @@ public class WaveSystem : MonoBehaviour
         InitAliveCountByRoute(spawnList.Count);
         _spawnCoroutine = StartCoroutine(SpawnEnemies(spawnList));
 
-        OnWaveStarted?.Invoke(CurrentStage);
+        // StartWave() 와 동일한 이유로 IsWaveActive 가 이미 false로 꺼졌을 수 있으므로 가드한다.
+        if (IsWaveActive)
+            OnWaveStarted?.Invoke(CurrentStage);
         return true;
     }
 
