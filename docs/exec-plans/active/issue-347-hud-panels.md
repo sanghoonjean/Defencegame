@@ -58,6 +58,7 @@ private void HandleEnemyRemoved(Enemy enemy)
 ### `MakeDefence/Assets/Scripts/Systems/WaveSystem.cs`
 - 신규 정적 이벤트 `public static event Action<int, int> OnAliveCountChanged;` (alive, total) 추가.
 - `_totalCount` private 필드 추가 (현재 웨이브에 스폰 예정인 총 마리 수 — `_aliveCount`는 처치되며 줄어들지만 total은 고정값으로 별도 보관 필요).
+- `public int AliveCount => _aliveCount;` / `public int TotalCount => _totalCount;` 읽기 전용 프로퍼티 추가 — 웨이브 도중에 `EnemyPanelController`가 나중에 `OnEnable`되는 경우(패널 토글, 씬 재진입 등) 다음 카운트 변화 이벤트를 기다리지 않고 현재 값을 즉시 읽어 초기 텍스트를 세팅하기 위함 (Codex 리뷰 지적 — 기존 계획은 이벤트만 추가하고 현재값 조회 수단이 없어 늦게 활성화된 패널이 다음 감소 이벤트 전까지 기본 텍스트에 멈춰있는 문제가 있었음).
 - `StartWave()`/`StartRiftWave()`에서 `_aliveCount = spawnList.Count;` 직후 `_totalCount = _aliveCount;`를 설정하고, 기존 `OnWaveStarted?.Invoke(...)` 가드(`if (IsWaveActive)`) 바로 아래에 `OnAliveCountChanged?.Invoke(_aliveCount, _totalCount);`를 함께 invoke (같은 가드 조건 재사용).
 - `HandleEnemyRemoved(Enemy enemy)`: 기존 최상단 가드 `if (!IsWaveActive) return;`를 `if (_aliveCount <= 0) return;`로 교체하고, `_aliveCount--` 및 route 처리 뒤에 `OnAliveCountChanged?.Invoke(_aliveCount, _totalCount);`를 추가. 웨이브 종료 트리거(`EndWave()`)만 `if (IsWaveActive && _aliveCount <= 0)`로 별도 가드 (위 "주의" 항목 참고 — 기지 도달이 곧 사망인 경우에도 카운트가 정확히 반영되도록).
 
@@ -65,7 +66,7 @@ private void HandleEnemyRemoved(Enemy enemy)
 
 ### `MakeDefence/Assets/Scripts/UI/EnemyPanelController.cs`
 - `[SerializeField] private TMPro.TMP_Text countText;`
-- `OnEnable`: `WaveSystem.OnAliveCountChanged += OnAliveCountChanged;` 구독. `WaveSystem.Instance`가 있으면 현재 상태로 초기 텍스트 세팅(없으면 웨이브 시작 전까지 Inspector 기본 텍스트 유지).
+- `OnEnable`: `WaveSystem.OnAliveCountChanged += OnAliveCountChanged;` 구독. `WaveSystem.Instance`가 있으면 `OnAliveCountChanged(WaveSystem.Instance.AliveCount, WaveSystem.Instance.TotalCount)`로 즉시 1회 초기화(없으면 웨이브 시작 전까지 Inspector 기본 텍스트 유지).
 - `OnDisable`: 구독 해제.
 - `OnAliveCountChanged(int alive, int total)`: `countText.text = $"{alive} / {total}";`
 
