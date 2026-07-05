@@ -164,7 +164,14 @@ public class WaveSystem : MonoBehaviour
         // StopCoroutine 은 코루틴을 즉시 중단시켜 SpawnEnemies 내부의 종료 처리가 실행되지 않으므로,
         // 웨이브 취소를 구독자(MonsterPathVisualizer 등)에게 여기서 직접 알린다.
         if (wasActive)
+        {
+            // 스폰 도중 취소되면 아직 스폰되지 않은 몬스터는 앞으로도 HandleEnemyRemoved를
+            // 호출할 계기가 없어 _aliveCount가 그 수만큼 남은 채로 멈춘다 (Codex 리뷰 지적) —
+            // 웨이브가 끝났으니 0으로 확정해 HUD가 마지막 값에 멈춰있지 않도록 한다.
+            _aliveCount = 0;
             OnWaveEnded?.Invoke(false);
+            OnAliveCountChanged?.Invoke(_aliveCount, _totalCount);
+        }
     }
 
     private List<EnemyGrade> BuildSpawnList(int stage)
