@@ -112,14 +112,6 @@ public class MapTileSystem : MonoBehaviour
     private static Vector2Int WorldToCell(Vector2 point)
         => new Vector2Int(Mathf.FloorToInt(point.x), Mathf.FloorToInt(point.y));
 
-    /// 현재 배치된 타워(설계상 항상 최대 1개)를 반환. 없으면 null.
-    public Tower GetPlacedTower()
-    {
-        foreach (var kv in _placedTowers)
-            return kv.Value;
-        return null;
-    }
-
     /// excludeCoord를 제외하고 비어있는 Buildable 타일이 하나라도 있으면 true.
     public bool HasVacantBuildableTile(Vector2Int excludeCoord)
     {
