@@ -10,6 +10,7 @@ public class WaveSystem : MonoBehaviour
     public static event Action<int> OnWaveStarted;
     public static event Action<bool> OnWaveEnded;  // true = 클리어
     public static event Action<int> OnRiftRewardGranted;  // 균열 클리어 시 추가 큐브 수
+    public static event Action<int> OnRouteCleared;  // 해당 route에 스폰된 몬스터가 모두 사라짐
 
     public bool IsWaveActive { get; private set; }
     public bool IsRiftWaveActive { get; private set; }
@@ -29,6 +30,7 @@ public class WaveSystem : MonoBehaviour
 
     private bool _autoWave;
     private int _aliveCount;
+    private int[] _aliveCountByRoute;
     private Coroutine _spawnCoroutine;
     private RiftWaveModifiers _currentRiftMods = RiftWaveModifiers.Default;
 
@@ -59,6 +61,11 @@ public class WaveSystem : MonoBehaviour
 
     public void SetAutoWave(bool enabled) => _autoWave = enabled;
 
+    // 경로 시각화 (#335) — route별로 스폰된 몬스터가 아직 남아있는지 (늦은 구독 시 초기 상태 복원용)
+    public bool IsRouteActive(int routeIndex) =>
+        _aliveCountByRoute != null && routeIndex >= 0 && routeIndex < _aliveCountByRoute.Length
+        && _aliveCountByRoute[routeIndex] > 0;
+
     public void StartWave()
     {
         if (IsWaveActive) { Debug.Log("[WaveSystem] StartWave: already active"); return; }
@@ -80,6 +87,7 @@ public class WaveSystem : MonoBehaviour
         var spawnList = BuildSpawnList(CurrentStage);
         Debug.Log($"[WaveSystem] spawnList count={spawnList.Count}");
         _aliveCount = spawnList.Count;
+        InitAliveCountByRoute(spawnList.Count);
         _spawnCoroutine = StartCoroutine(SpawnEnemies(spawnList));
 
         OnWaveStarted?.Invoke(CurrentStage);
@@ -111,10 +119,20 @@ public class WaveSystem : MonoBehaviour
         for (int i = 0; i < modifiers.ExtraCount; i++)
             spawnList.Add(EnemyGrade.Normal);
         _aliveCount = spawnList.Count;
+        InitAliveCountByRoute(spawnList.Count);
         _spawnCoroutine = StartCoroutine(SpawnEnemies(spawnList));
 
         OnWaveStarted?.Invoke(CurrentStage);
         return true;
+    }
+
+    // routeIndex = i % routeCount 분배 규칙(SpawnEnemies)과 동일하게 route별 스폰 예정 수를 계산한다.
+    private void InitAliveCountByRoute(int spawnCount)
+    {
+        int routeCount = MapTileSystem.Instance.RouteCount;
+        _aliveCountByRoute = new int[routeCount];
+        for (int i = 0; i < spawnCount; i++)
+            _aliveCountByRoute[i % routeCount]++;
     }
 
     public void StopWave()
@@ -201,7 +219,7 @@ public class WaveSystem : MonoBehaviour
                 MapTileSystem.Instance.GetBasePoint(),
                 includeStart: true);
             var enemy = ObjectPoolSystem.Instance.Get();
-            enemy.Initialize(data, CurrentStage, path, _currentRiftMods);
+            enemy.Initialize(data, CurrentStage, path, routeIndex, _currentRiftMods);
             spawnedCount++;
             Debug.Log($"[WaveSystem] Spawned {spawnedCount}/{spawnList.Count} grade={grade} route={routeIndex}");
 
@@ -217,10 +235,19 @@ public class WaveSystem : MonoBehaviour
         _ => normalData
     };
 
-    private void HandleEnemyRemoved(Enemy _)
+    private void HandleEnemyRemoved(Enemy enemy)
     {
         if (!IsWaveActive) return;
         _aliveCount--;
+
+        int routeIndex = enemy.RouteIndex;
+        if (_aliveCountByRoute != null && routeIndex >= 0 && routeIndex < _aliveCountByRoute.Length)
+        {
+            _aliveCountByRoute[routeIndex]--;
+            if (_aliveCountByRoute[routeIndex] <= 0)
+                OnRouteCleared?.Invoke(routeIndex);
+        }
+
         if (_aliveCount <= 0)
             EndWave();
     }

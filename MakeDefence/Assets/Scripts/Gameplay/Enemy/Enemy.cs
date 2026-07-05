@@ -14,6 +14,7 @@ public class Enemy : MonoBehaviour
     public EnemyGrade Grade { get; private set; }
     public float MaxHp     { get; private set; }
     public float CurrentHp { get; private set; }
+    public int RouteIndex  { get; private set; }
 
     // transform.position에서 스프라이트 상단까지의 월드 단위 거리 (HP 바를 머리 위에 배치하는 데 사용)
     // 스프라이트 pivot이 중앙이 아닐 수 있어 bounds.extents가 아닌 실제 위치 차이로 계산
@@ -53,12 +54,13 @@ public class Enemy : MonoBehaviour
         _currentBurnDps = 0f;
     }
 
-    public void Initialize(EnemyData data, int stage, Vector2[] waypoints)
-        => Initialize(data, stage, waypoints, RiftWaveModifiers.Default);
+    public void Initialize(EnemyData data, int stage, Vector2[] waypoints, int routeIndex)
+        => Initialize(data, stage, waypoints, routeIndex, RiftWaveModifiers.Default);
 
-    public void Initialize(EnemyData data, int stage, Vector2[] waypoints, RiftWaveModifiers riftMods)
+    public void Initialize(EnemyData data, int stage, Vector2[] waypoints, int routeIndex, RiftWaveModifiers riftMods)
     {
         Grade = data.grade;
+        RouteIndex = routeIndex;
         _waypoints = waypoints;
         _waypointIndex = 0;
         _playerDamage = Mathf.Max(1, Mathf.RoundToInt(data.playerDamage * riftMods.DamageMult));
