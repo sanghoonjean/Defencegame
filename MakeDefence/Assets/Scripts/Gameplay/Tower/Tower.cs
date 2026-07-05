@@ -6,6 +6,9 @@ public class Tower : MonoBehaviour
 {
     public static event Action<Tower> OnTowerPlaced;
 
+    /// 이 타워 인스턴스가 삭제될 때 발생. 스폰 버튼이 자신의 배치 상태를 초기화하는 데 사용.
+    public event Action OnRemoved;
+
     // 기본 스탯 (tech-debt: 수치 미확정 — Inspector에서 조정)
     [SerializeField] private float baseAttackDamage   = 20f;
     [SerializeField] private float baseAttackSpeed = 1f;
@@ -101,6 +104,7 @@ public class Tower : MonoBehaviour
         if (IsGhost) return;
         ItemSystem.Instance?.UnregisterTower(this);
         MapTileSystem.Instance?.RemoveTower(TileCoord);
+        OnRemoved?.Invoke();
     }
 
     public void EquipSkill(SkillData skill)

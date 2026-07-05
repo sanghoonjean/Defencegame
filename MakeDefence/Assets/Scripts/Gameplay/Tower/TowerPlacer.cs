@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public class TowerPlacer : MonoBehaviour
@@ -13,6 +14,9 @@ public class TowerPlacer : MonoBehaviour
     private bool _isMoving;
     private Tower _movingTower;
     private Vector2Int _moveOriginCoord;
+
+    private Tower _pendingPrefab;
+    private Action<Tower> _pendingOnPlaced;
 
     public bool IsPlacingTower { get; private set; }
 
@@ -37,41 +41,50 @@ public class TowerPlacer : MonoBehaviour
             ExitPlacementMode();
     }
 
-    public void EnterPlacementMode()
+    /// 디버그 전용 진입점. 기본 프리팹(towerPrefab)으로 신규 배치 모드에 들어간다.
+    public void EnterPlacementMode() => EnterPlacementMode(towerPrefab, null);
+
+    /// 지정된 프리팹으로 신규 배치 모드에 들어간다. 기존에 배치된 타워 유무와 무관하게
+    /// 항상 새 유닛을 만든다 — "이동"은 EnterMoveMode()로만 진입한다.
+    public void EnterPlacementMode(Tower prefab, Action<Tower> onPlaced)
     {
         if (IsPlacingTower) return;
 
-        Tower existing = MapTileSystem.Instance != null ? MapTileSystem.Instance.GetPlacedTower() : null;
-        if (existing != null)
+        IsPlacingTower = true;
+        _pendingPrefab = prefab;
+        _pendingOnPlaced = onPlaced;
+
+        Tower ghostTower = Instantiate(prefab);
+        ghostTower.InitAsGhost();
+        _ghost = ghostTower.gameObject;
+        _ghostRenderers = _ghost.GetComponentsInChildren<SpriteRenderer>();
+        SetGhostColor(GhostInvalid);
+    }
+
+    /// 이미 배치된 특정 타워를 다른 칸으로 옮기는 이동 모드에 들어간다.
+    public void EnterMoveMode(Tower existingTower)
+    {
+        if (IsPlacingTower || existingTower == null) return;
+
+        if (!MapTileSystem.Instance.HasVacantBuildableTile(existingTower.TileCoord))
         {
-            if (!MapTileSystem.Instance.HasVacantBuildableTile(existing.TileCoord))
-            {
-                // 옮길 곳이 없으면 이동 모드 진입 자체를 취소한다.
-                InputManager.Instance?.SetBuildMode(BuildMode.None);
-                return;
-            }
-
-            IsPlacingTower = true;
-            _isMoving = true;
-            _movingTower = existing;
-            _moveOriginCoord = existing.TileCoord;
-
-            _ghost = existing.gameObject;
-            _ghostRenderers = _ghost.GetComponentsInChildren<SpriteRenderer>();
-            _originalColors = new Color[_ghostRenderers.Length];
-            for (int i = 0; i < _ghostRenderers.Length; i++)
-                _originalColors[i] = _ghostRenderers[i].color;
-
-            existing.SetGhostVisual(true);
-            SetGhostColor(GhostInvalid);
+            // 옮길 곳이 없으면 이동 모드 진입 자체를 취소한다.
+            InputManager.Instance?.SetBuildMode(BuildMode.None);
             return;
         }
 
         IsPlacingTower = true;
-        Tower ghostTower = Instantiate(towerPrefab);
-        ghostTower.InitAsGhost();
-        _ghost = ghostTower.gameObject;
+        _isMoving = true;
+        _movingTower = existingTower;
+        _moveOriginCoord = existingTower.TileCoord;
+
+        _ghost = existingTower.gameObject;
         _ghostRenderers = _ghost.GetComponentsInChildren<SpriteRenderer>();
+        _originalColors = new Color[_ghostRenderers.Length];
+        for (int i = 0; i < _ghostRenderers.Length; i++)
+            _originalColors[i] = _ghostRenderers[i].color;
+
+        existingTower.SetGhostVisual(true);
         SetGhostColor(GhostInvalid);
     }
 
@@ -131,9 +144,10 @@ public class TowerPlacer : MonoBehaviour
     private void PlaceTower(Vector2Int coord)
     {
         Vector3 worldCenter = new Vector3(coord.x + 0.5f, coord.y + 0.5f, -1f);
-        Tower tower = Instantiate(towerPrefab, worldCenter, Quaternion.identity);
+        Tower tower = Instantiate(_pendingPrefab, worldCenter, Quaternion.identity);
         tower.Place(coord);
         MapTileSystem.Instance.PlaceTower(coord, tower);
+        _pendingOnPlaced?.Invoke(tower);
     }
 
     private void ClearMoveState()
@@ -143,6 +157,8 @@ public class TowerPlacer : MonoBehaviour
         _ghost = null;
         _ghostRenderers = null;
         _originalColors = null;
+        _pendingPrefab = null;
+        _pendingOnPlaced = null;
     }
 
     private void RestoreGhostColors()

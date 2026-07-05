@@ -60,6 +60,10 @@ public class TestRunner : MonoBehaviour
             var next = InputManager.Instance.CurrentBuildMode == BuildMode.Tower
                 ? BuildMode.None : BuildMode.Tower;
             InputManager.Instance.SetBuildMode(next);
+            if (next == BuildMode.Tower)
+                TowerPlacer.Instance?.EnterPlacementMode();
+            else
+                TowerPlacer.Instance?.ExitPlacementMode();
             Debug.Log($"[TestRunner] BuildMode → {next}");
         }
 

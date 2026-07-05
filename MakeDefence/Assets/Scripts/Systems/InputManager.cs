@@ -18,15 +18,14 @@ public class InputManager : MonoBehaviour
 
     private void Awake() { Instance = this; }
 
+    /// 배치 모드가 어떤 프리팹을 쓸지, 어떤 타워를 이동할지는 호출부(버튼 등)만 아는 정보이므로
+    /// 이 메서드는 상태 갱신/이벤트 발행만 담당한다. TowerPlacer.Enter/ExitPlacementMode()는
+    /// 호출부가 직접 호출해야 한다.
     public void SetBuildMode(BuildMode mode)
     {
         if (CurrentBuildMode == mode) return;
         CurrentBuildMode = mode;
         OnBuildModeChanged?.Invoke(mode);
-        if (mode == BuildMode.Tower)
-            TowerPlacer.Instance?.EnterPlacementMode();
-        else
-            TowerPlacer.Instance?.ExitPlacementMode();
     }
 
     private void Update()
