@@ -43,10 +43,11 @@ Unitbtn{N}  (신규 UnitSpawnButton, 각자 고유 unitPrefab 보유)
 - `[SerializeField] private Tower towerPrefab;`은 "기본/디버그용" 프리팹으로 유지 (TestRunner의 B키 디버그 토글이 계속 동작하도록).
 - `EnterPlacementMode()` (인자 없음, 기존 동작 유지 — 기본 프리팹으로 신규 배치, 디버그 전용)와 `EnterPlacementMode(Tower prefab, Action<Tower> onPlaced = null)` (신규 오버로드) 두 개로 분리.
   - 신규 오버로드는 `MapTileSystem.GetPlacedTower()` 호출/이동 분기를 하지 않는다 — 항상 `prefab`으로 ghost를 만들어 신규 배치 모드로만 진입한다.
-  - `_pendingOnPlaced` 필드를 추가해 `TryPlace()`가 신규 배치를 성공시켰을 때 호출한다.
+  - `_pendingPrefab` 필드를 추가해 이번 배치에 사용할 프리팹을 기억한다(인자 없는 오버로드는 `towerPrefab`을, 신규 오버로드는 전달받은 `prefab`을 대입). `_pendingOnPlaced` 필드도 추가해 `TryPlace()`가 신규 배치를 성공시켰을 때 호출한다.
 - 신규 `public void EnterMoveMode(Tower existingTower)` 추가 — 기존 `EnterPlacementMode()`의 "existing != null" 분기(옮길 곳 없으면 취소, ghost 비주얼 전환 등)를 그대로 옮긴다. `MapTileSystem.GetPlacedTower()` 대신 인자로 받은 타워를 사용.
+- `PlaceTower(coord)`: 현재는 `Instantiate(towerPrefab, ...)`으로 필드에 고정된 기본 프리팹만 생성한다 (Codex 리뷰 지적) — `_pendingPrefab`을 인스턴스화하도록 변경해, 버튼이 넘긴 프리팹이 ghost뿐 아니라 실제 배치 결과물에도 반영되게 한다.
 - `TryPlace(coord)`: 이동 분기(`_isMoving`)는 변경 없음. 신규 배치 분기에서 `PlaceTower(coord)`가 만든 `Tower`를 `_pendingOnPlaced?.Invoke(tower)`로 콜백.
-- `ExitPlacementMode()`: `_pendingOnPlaced`도 함께 초기화(`ClearMoveState()` 또는 별도 클리어)해 다음 배치에 이전 콜백이 남지 않도록 한다.
+- `ExitPlacementMode()`: `_pendingPrefab`/`_pendingOnPlaced`도 함께 초기화(`ClearMoveState()` 또는 별도 클리어)해 다음 배치에 이전 프리팹/콜백이 남지 않도록 한다.
 
 ### `MakeDefence/Assets/Scripts/Systems/MapTileSystem.cs`
 - `GetPlacedTower()` 삭제 (호출부가 `TowerPlacer.cs` 한 곳뿐이며, 그 호출부도 이번에 제거됨 — grep으로 다른 참조 없음 확인 완료).
@@ -83,7 +84,7 @@ Unitbtn{N}  (신규 UnitSpawnButton, 각자 고유 unitPrefab 보유)
 ## 4. 테스트 계획
 
 ### 수동 (Unity Editor)
-- [ ] `Unitbtn` 클릭 → ghost가 마우스를 따라다니는지, 좌클릭으로 유닛1이 배치되는지 확인.
+- [ ] `Unitbtn` 클릭 → ghost가 마우스를 따라다니는지, 좌클릭으로 유닛1이 배치되는지 확인. 확정 배치된 인스턴스가 ghost와 동일한 프리팹(스탯/스프라이트)인지 확인 — 기본 프리팹이 아니라 해당 버튼의 `unitPrefab`이 실제로 생성됐는지 (Codex 리뷰 지적 반영 확인).
 - [ ] 유닛1이 배치된 상태에서 `Unitbtn1` 클릭 → 유닛1은 그대로 두고 새 ghost(유닛2)가 생성되는지 확인 (기존 버그였던 "유닛1이 이동 모드로 빠지는" 현상이 재현되지 않아야 함).
 - [ ] 유닛2까지 배치 후 `Unitbtn` 재클릭 → 유닛1만 이동 모드로 들어가는지(유닛2는 그대로인지) 확인.
 - [ ] `Unitbtn2` 클릭 → 유닛2 신규 생성 → `Unitbtn2` 재클릭 → 유닛2만 이동 모드로 들어가는지(유닛1은 그대로인지) 확인. (`Unitbtn3`/`Unitbtn4`도 동일 패턴이므로 최소 하나 더 교차 검증)
