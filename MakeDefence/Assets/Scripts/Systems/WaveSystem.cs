@@ -192,6 +192,7 @@ public class WaveSystem : MonoBehaviour
             if (data == null)
             {
                 Debug.LogError($"[WaveSystem] EnemyData null for grade={grade}");
+                StopWave();
                 yield break;
             }
             int routeIndex = i % routeCount;
