@@ -1,9 +1,10 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// 모든 스폰 루트의 스폰 지점 → 본진 경로를 셀 단위로 표시한다. WaveSystem 의 스폰 코루틴이
-// 진행 중일 때만 표시되며, 그 사이 타워 배치/이동/삭제로 경로가 바뀌면
-// PathfindingSystem.OnPathsChanged 를 통해 자동 갱신된다.
+// 모든 스폰 루트의 스폰 지점 → 본진 경로를 셀 단위로 표시한다. WaveSystem 의 웨이브가
+// 진행 중(스폰 시작 ~ 스폰된 마지막 몬스터가 죽거나 본진에 도달해 모두 사라질 때까지)일 때만
+// 표시되며, 그 사이 타워 배치/이동/삭제로 경로가 바뀌면 PathfindingSystem.OnPathsChanged 를
+// 통해 자동 갱신된다.
 public class MonsterPathVisualizer : MonoBehaviour
 {
     [SerializeField] private Color markerColor = new Color(1f, 1f, 1f, 0.35f);
@@ -14,17 +15,18 @@ public class MonsterPathVisualizer : MonoBehaviour
 
     private readonly List<GameObject> _markers = new();
     private Sprite _circleSprite;
-    private bool _isSpawning;
+    private bool _isWaveActive;
 
     private void Start()
     {
         _circleSprite = BuildCircleSprite();
         PathfindingSystem.OnPathsChanged += HandlePathsChanged;
-        WaveSystem.OnSpawningStateChanged += HandleSpawningStateChanged;
+        WaveSystem.OnWaveStarted += HandleWaveStarted;
+        WaveSystem.OnWaveEnded += HandleWaveEnded;
 
-        if (WaveSystem.Instance != null && WaveSystem.Instance.IsSpawning)
+        if (WaveSystem.Instance != null && WaveSystem.Instance.IsWaveActive)
         {
-            _isSpawning = true;
+            _isWaveActive = true;
             RefreshMarkers();
         }
     }
@@ -32,21 +34,25 @@ public class MonsterPathVisualizer : MonoBehaviour
     private void OnDestroy()
     {
         PathfindingSystem.OnPathsChanged -= HandlePathsChanged;
-        WaveSystem.OnSpawningStateChanged -= HandleSpawningStateChanged;
+        WaveSystem.OnWaveStarted -= HandleWaveStarted;
+        WaveSystem.OnWaveEnded -= HandleWaveEnded;
     }
 
-    private void HandleSpawningStateChanged(bool spawning)
+    private void HandleWaveStarted(int stage)
     {
-        _isSpawning = spawning;
-        if (spawning)
-            RefreshMarkers();
-        else
-            ClearMarkers();
+        _isWaveActive = true;
+        RefreshMarkers();
+    }
+
+    private void HandleWaveEnded(bool cleared)
+    {
+        _isWaveActive = false;
+        ClearMarkers();
     }
 
     private void HandlePathsChanged()
     {
-        if (_isSpawning) RefreshMarkers();
+        if (_isWaveActive) RefreshMarkers();
     }
 
     private void ClearMarkers()

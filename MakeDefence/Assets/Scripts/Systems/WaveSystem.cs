@@ -10,11 +10,9 @@ public class WaveSystem : MonoBehaviour
     public static event Action<int> OnWaveStarted;
     public static event Action<bool> OnWaveEnded;  // true = 클리어
     public static event Action<int> OnRiftRewardGranted;  // 균열 클리어 시 추가 큐브 수
-    public static event Action<bool> OnSpawningStateChanged;  // true = 스폰 코루틴 진행 중
 
     public bool IsWaveActive { get; private set; }
     public bool IsRiftWaveActive { get; private set; }
-    public bool IsSpawning { get; private set; }
     public int CurrentStage { get; private set; } = 1;
     public int UnlockedStage { get; private set; } = 1;
 
@@ -124,13 +122,6 @@ public class WaveSystem : MonoBehaviour
         if (_spawnCoroutine != null) StopCoroutine(_spawnCoroutine);
         IsWaveActive = false;
         IsRiftWaveActive = false;
-
-        // StopCoroutine 은 코루틴을 즉시 중단시켜 SpawnEnemies 내부의 종료 처리가 실행되지 않으므로 여기서 직접 정리한다.
-        if (IsSpawning)
-        {
-            IsSpawning = false;
-            OnSpawningStateChanged?.Invoke(false);
-        }
     }
 
     private List<EnemyGrade> BuildSpawnList(int stage)
@@ -186,8 +177,6 @@ public class WaveSystem : MonoBehaviour
     {
         int routeCount = MapTileSystem.Instance.RouteCount;
         Debug.Log($"[WaveSystem] SpawnEnemies routes={routeCount} enemies={spawnList.Count}");
-        IsSpawning = true;
-        OnSpawningStateChanged?.Invoke(true);
 
         int spawnedCount = 0;
         for (int i = 0; i < spawnList.Count; i++)
@@ -197,8 +186,6 @@ public class WaveSystem : MonoBehaviour
             if (data == null)
             {
                 Debug.LogError($"[WaveSystem] EnemyData null for grade={grade}");
-                IsSpawning = false;
-                OnSpawningStateChanged?.Invoke(false);
                 yield break;
             }
             int routeIndex = i % routeCount;
@@ -211,12 +198,6 @@ public class WaveSystem : MonoBehaviour
             spawnedCount++;
             Debug.Log($"[WaveSystem] Spawned {spawnedCount}/{spawnList.Count} grade={grade} route={routeIndex}");
 
-            // 마지막 몬스터 생성 직후 곧바로 스폰 종료 처리 — 이후의 대기 시간만큼 마커 숨김이 늦어지지 않도록.
-            if (i == spawnList.Count - 1)
-            {
-                IsSpawning = false;
-                OnSpawningStateChanged?.Invoke(false);
-            }
             yield return new WaitForSeconds(spawnInterval);
         }
     }
