@@ -11,11 +11,14 @@ public class WaveSystem : MonoBehaviour
     public static event Action<bool> OnWaveEnded;  // true = 클리어
     public static event Action<int> OnRiftRewardGranted;  // 균열 클리어 시 추가 큐브 수
     public static event Action<int> OnRouteCleared;  // 해당 route에 스폰된 몬스터가 모두 사라짐
+    public static event Action<int, int> OnAliveCountChanged;  // (alive, total)
 
     public bool IsWaveActive { get; private set; }
     public bool IsRiftWaveActive { get; private set; }
     public int CurrentStage { get; private set; } = 1;
     public int UnlockedStage { get; private set; } = 1;
+    public int AliveCount => _aliveCount;
+    public int TotalCount => _totalCount;
 
     // tech-debt: 스폰 간격 미확정 — Inspector에서 조정
     [SerializeField] private float spawnInterval = 1f;
@@ -30,6 +33,7 @@ public class WaveSystem : MonoBehaviour
 
     private bool _autoWave;
     private int _aliveCount;
+    private int _totalCount;
     private int[] _aliveCountByRoute;
     private Coroutine _spawnCoroutine;
     private RiftWaveModifiers _currentRiftMods = RiftWaveModifiers.Default;
@@ -87,6 +91,7 @@ public class WaveSystem : MonoBehaviour
         var spawnList = BuildSpawnList(CurrentStage);
         Debug.Log($"[WaveSystem] spawnList count={spawnList.Count}");
         _aliveCount = spawnList.Count;
+        _totalCount = spawnList.Count;
         InitAliveCountByRoute(spawnList.Count);
         _spawnCoroutine = StartCoroutine(SpawnEnemies(spawnList));
 
@@ -95,7 +100,10 @@ public class WaveSystem : MonoBehaviour
         // 바뀌어 있을 수 있다. 그 경우 OnWaveStarted 를 invoke하면 구독자가 이미 끝난 웨이브를
         // 여전히 진행 중으로 오인해 마커가 영구히 걸린다 (Codex 리뷰 지적, P2).
         if (IsWaveActive)
+        {
             OnWaveStarted?.Invoke(CurrentStage);
+            OnAliveCountChanged?.Invoke(_aliveCount, _totalCount);
+        }
     }
 
     /// <summary>
@@ -124,12 +132,16 @@ public class WaveSystem : MonoBehaviour
         for (int i = 0; i < modifiers.ExtraCount; i++)
             spawnList.Add(EnemyGrade.Normal);
         _aliveCount = spawnList.Count;
+        _totalCount = spawnList.Count;
         InitAliveCountByRoute(spawnList.Count);
         _spawnCoroutine = StartCoroutine(SpawnEnemies(spawnList));
 
         // StartWave() 와 동일한 이유로 IsWaveActive 가 이미 false로 꺼졌을 수 있으므로 가드한다.
         if (IsWaveActive)
+        {
             OnWaveStarted?.Invoke(CurrentStage);
+            OnAliveCountChanged?.Invoke(_aliveCount, _totalCount);
+        }
         return true;
     }
 
@@ -242,9 +254,13 @@ public class WaveSystem : MonoBehaviour
         _ => normalData
     };
 
+    // 기지 도달이 곧 플레이어 사망인 경우 Enemy.ReachBase()가 PlayerSystem.TakeDamage(먼저) →
+    // OnPlayerDied → WaveSystem.HandlePlayerDied → StopWave()로 IsWaveActive를 이미 false로
+    // 바꿔놓은 뒤 OnEnemyReachedBase가 invoke된다. 그래서 가드를 IsWaveActive가 아니라
+    // _aliveCount로 걸어야 그 마지막 몬스터의 카운트/알림이 누락되지 않는다 (Codex 리뷰 지적).
     private void HandleEnemyRemoved(Enemy enemy)
     {
-        if (!IsWaveActive) return;
+        if (_aliveCount <= 0) return;
         _aliveCount--;
 
         int routeIndex = enemy.RouteIndex;
@@ -255,7 +271,9 @@ public class WaveSystem : MonoBehaviour
                 OnRouteCleared?.Invoke(routeIndex);
         }
 
-        if (_aliveCount <= 0)
+        OnAliveCountChanged?.Invoke(_aliveCount, _totalCount);
+
+        if (IsWaveActive && _aliveCount <= 0)
             EndWave();
     }
 
