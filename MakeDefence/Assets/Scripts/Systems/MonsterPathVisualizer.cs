@@ -1,8 +1,9 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// 모든 스폰 루트의 스폰 지점 → 본진 경로를 셀 단위로 상시 표시한다. 타워 배치/이동/삭제로
-// 경로가 바뀌면 PathfindingSystem.OnPathsChanged 를 통해 자동 갱신된다.
+// 모든 스폰 루트의 스폰 지점 → 본진 경로를 셀 단위로 표시한다. WaveSystem 의 스폰 코루틴이
+// 진행 중일 때만 표시되며, 그 사이 타워 배치/이동/삭제로 경로가 바뀌면
+// PathfindingSystem.OnPathsChanged 를 통해 자동 갱신된다.
 public class MonsterPathVisualizer : MonoBehaviour
 {
     [SerializeField] private Color markerColor = new Color(1f, 1f, 1f, 0.35f);
@@ -13,24 +14,51 @@ public class MonsterPathVisualizer : MonoBehaviour
 
     private readonly List<GameObject> _markers = new();
     private Sprite _circleSprite;
+    private bool _isSpawning;
 
     private void Start()
     {
         _circleSprite = BuildCircleSprite();
-        PathfindingSystem.OnPathsChanged += RefreshMarkers;
-        RefreshMarkers();
+        PathfindingSystem.OnPathsChanged += HandlePathsChanged;
+        WaveSystem.OnSpawningStateChanged += HandleSpawningStateChanged;
+
+        if (WaveSystem.Instance != null && WaveSystem.Instance.IsSpawning)
+        {
+            _isSpawning = true;
+            RefreshMarkers();
+        }
     }
 
     private void OnDestroy()
     {
-        PathfindingSystem.OnPathsChanged -= RefreshMarkers;
+        PathfindingSystem.OnPathsChanged -= HandlePathsChanged;
+        WaveSystem.OnSpawningStateChanged -= HandleSpawningStateChanged;
     }
 
-    private void RefreshMarkers()
+    private void HandleSpawningStateChanged(bool spawning)
+    {
+        _isSpawning = spawning;
+        if (spawning)
+            RefreshMarkers();
+        else
+            ClearMarkers();
+    }
+
+    private void HandlePathsChanged()
+    {
+        if (_isSpawning) RefreshMarkers();
+    }
+
+    private void ClearMarkers()
     {
         foreach (var marker in _markers)
             Destroy(marker);
         _markers.Clear();
+    }
+
+    private void RefreshMarkers()
+    {
+        ClearMarkers();
 
         if (MapTileSystem.Instance == null || PathfindingSystem.Instance == null) return;
 
