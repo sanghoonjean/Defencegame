@@ -56,9 +56,17 @@ Inspector에서 지정하는 `[SerializeField]` 필드로 표현하는 것이 �
 - `public bool IsDefaultSkillEquipped { get; private set; }` 추가. `EquipSkill` 호출 시
   `isDefault` 값으로 갱신, `UnequipSkill()` 호출 시 `false`로 리셋.
 - `Place(Vector2Int coord)`에서는 `EquipSkill(defaultSkill, isDefault: true)`로 호출.
-- 위 6개 지점에서 "보유 목록 반환" 또는 "판매 보상 지급" 직전에
-  `if (!tower.IsDefaultSkillEquipped)` 가드를 추가해, 기본 스킬인 경우 반환/보상 없이
-  그냥 슬롯만 비운다.
+- 위 6개 지점에서 "보유 목록 반환" 또는 "판매 보상 지급" 여부를 결정할 때 마커를 확인한다.
+
+**⚠️ 순서 주의 (2차 Codex 리뷰 반영)** — `InvenDropHandler`/`InvenSlotDragHandler`/
+`ShopDropHandler`(폴백)/`SellConfirmPopup.OnConfirm`은 기존 코드에서 `UnequipSkill()`을
+먼저 호출한 뒤 `ReturnSkill`/큐브 지급을 수행한다. `UnequipSkill()`이 마커를 `false`로
+리셋하므로, "언이퀴 이후에" 마커를 확인하면 이미 리셋된 값을 읽어 가드가 항상 무력화된다.
+따라서 이 4곳은 **`UnequipSkill()`을 호출하기 전에** `bool wasDefault = tower.IsDefaultSkillEquipped;`로
+값을 캡처해두고, 이후 반환/보상 여부를 `wasDefault`로 판단해야 한다.
+(반면 `InvenUI.cs`/`SkillSlotUI.cs`/`BuildDeleteSummary`는 `UnequipSkill()`을 거치지 않고
+`ReturnSkill`을 먼저 호출한 뒤 새 스킬을 장착하거나 그대로 끝나므로, 마커가 아직 리셋되지 않은
+상태라 순서 문제가 없다.)
 
 ## 2. 수정 파일
 
@@ -70,19 +78,29 @@ Inspector에서 지정하는 `[SerializeField]` 필드로 표현하는 것이 �
   - `Place(Vector2Int coord)`에서 `EquippedSkill == null`이고 `defaultSkill != null`인 경우
     `EquipSkill(defaultSkill, isDefault: true)` 호출 추가
 - `MakeDefence/Assets/Scripts/Systems/InventorySystem.cs`
-  - `DeleteTower()`: `ReturnSkill` 호출 전 `!target.IsDefaultSkillEquipped` 가드 추가
+  - `BuildDeleteSummary()`: `skill` 계산을 `target.EquippedSkill != null && !target.IsDefaultSkillEquipped`로
+    수정. `DeleteTower()`의 `summary.SkillReturned` 가드와 `TowerDeleteConfirmPopup`의 확인 문구
+    ("스킬 1개 반환")가 이 값 하나로 함께 정확해진다 (별도 가드 불필요, 순서 문제도 없음 —
+    `Destroy()` 전에 계산되며 `UnequipSkill()`을 거치지 않음)
 - `MakeDefence/Assets/Scripts/UI/InvenDropHandler.cs`
-  - `ReturnSkill` 호출 전 `!tower.IsDefaultSkillEquipped` 가드 추가
+  - `var wasDefault = tower.IsDefaultSkillEquipped;`를 `UnequipSkill()` 호출 **전**에 캡처,
+    `ReturnSkill`은 `if (!wasDefault)`로 가드
 - `MakeDefence/Assets/Scripts/UI/InvenSlotDragHandler.cs`
-  - 동일 가드 추가
+  - 동일 패턴 (캡처 후 `UnequipSkill()` → 가드된 `ReturnSkill`)
 - `MakeDefence/Assets/Scripts/UI/InvenUI.cs`
-  - 인벤 스킬 교체 시 기존 장착 스킬 `ReturnSkill` 호출 전 가드 추가
+  - 인벤 스킬 교체 시 기존 장착 스킬 `ReturnSkill` 호출 전 `!tower.IsDefaultSkillEquipped` 가드 추가
+    (여기는 `UnequipSkill()`을 거치지 않으므로 순서 문제 없음)
 - `MakeDefence/Assets/Scripts/UI/SkillSlotUI.cs`
-  - 동일 가드 추가
+  - 동일 가드 추가 (순서 문제 없음)
 - `MakeDefence/Assets/Scripts/UI/SellConfirmPopup.cs`
-  - 장착 스킬 판매 확인(`OnConfirm`) 시, 기본 스킬이면 큐브 보상 지급 생략
+  - `OnConfirm()`: 장착 스킬 판매 분기(`tower != null`)에서 `tower.UnequipSkill()` 호출 **전**에
+    `wasDefault`를 캡처, 공용 큐브 지급(`CubeSystem.Instance?.Add(...)`, 126행)을 `!wasDefault`일 때만 실행
+  - `Show(Tower tower, SkillData skill)`: `tower.IsDefaultSkillEquipped`인 경우 확인 문구를
+    "하급 큐브 1개를 획득합니다." 대신 "보상 없이 해제됩니다." 등으로 분기 처리 (보상 없는데
+    보상을 약속하는 문구를 보여주지 않도록)
 - `MakeDefence/Assets/Scripts/UI/ShopDropHandler.cs`
-  - 판매 팝업 폴백 경로(`SellEquippedSkill`)에서 동일 가드 추가
+  - `SellEquippedSkill()`의 `SellConfirmPopup.Instance == null` 폴백 분기: `wasDefault`를
+    `InventorySystem.Instance.UnequipSkill()` 호출 **전**에 캡처, 큐브 지급을 `!wasDefault`로 가드
 
 ## 3. 신규 클래스 / 파일
 
@@ -106,12 +124,22 @@ Inspector에서 지정하는 `[SerializeField]` 필드로 표현하는 것이 �
   - [ ] **(신규)** 기본 스킬을 판매 시도 시 큐브 보상이 지급되지 않는지 확인 (판매 팝업 경로 + 폴백 경로 모두)
   - [ ] **(신규)** 기본 스킬 해제 후 플레이어가 직접 다른 스킬을 장착하면 `IsDefaultSkillEquipped`가
         `false`로 정상 리셋되어, 이후 그 스킬은 정상적으로 반환/판매되는지 확인
+  - [ ] **(신규)** 기본 스킬만 장착된 타워를 삭제 확인 팝업에 띄웠을 때, 문구에 "스킬 1"이 표시되지
+        않는지 확인 (실제로 반환되지 않는데 반환된다고 안내하면 안 됨)
+  - [ ] **(신규)** 기본 스킬 판매 확인 팝업을 띄웠을 때 "하급 큐브 1개 획득" 문구 대신 보상 없음 문구가
+        표시되는지 확인
+  - [ ] **(신규)** 일반 구매 스킬(비-기본)을 삭제/판매/교체하는 기존 플로우는 회귀 없이 그대로
+        인벤토리 반환/큐브 지급이 되는지 확인 (가드가 기존 정상 케이스를 막지 않는지)
 
 ## 5. 위험 요소
 
-- **유닛 타입 ↔ 기본 스킬 매핑은 게임 디자인 결정 사항** — 어떤 유닛에 어떤 스킬을 기본 지급할지는
-  코드에서 유추 불가. 코드 구현 후 각 프리팹의 `defaultSkill` 필드를 Unity Editor에서 실제 값으로
-  채우는 별도 데이터 작업이 필요하다 (플랜 PR 리뷰 시 확인 필요).
+- **유닛 타입 ↔ 기본 스킬 매핑은 게임 디자인 결정 사항 — 코드만으로는 기능이 무효** (2차 Codex
+  리뷰 P2) — `defaultSkill` 필드가 각 `Tower_Unit*` 프리팹에 실제로 할당되지 않으면
+  `Place()`는 항상 `defaultSkill == null` 분기를 타서 기존과 동일하게 미장착 상태로 남는다. 즉
+  이 이슈의 코드 변경만 머지해서는 **런타임 동작이 전혀 바뀌지 않는다**. 구체적인 유닛→스킬
+  매핑(예: Tower_Unit1 → Fireball 등)이 확정되기 전까지는 이슈를 완료로 볼 수 없으며, 구현 PR에는
+  코드 변경과 함께 실제 프리팹 데이터 할당까지 포함하거나(권장), 매핑이 아직 미정이라면 구현 PR
+  단계에서 사용자에게 매핑을 확인받아야 한다.
 - ~~`EquipSkill`은 `ShopSystem._ownedSkills` 보유 목록과 무관하게 동작하므로...~~ →
   **(Codex 리뷰로 확인/해결)** 이 점이 정확히 문제였다. `EquippedSkill != null`을 "보유 스킬 장착
   중"으로 간주하는 6개 지점(`InventorySystem.DeleteTower`, `InvenDropHandler`,
