@@ -34,7 +34,11 @@ public class SellConfirmPopup : MonoBehaviour
         _pendingSourceDisplayIdx = -1;
 
         if (messageText != null)
-            messageText.text = $"'{skill.displayName}'을(를) 판매하시겠습니까?\n하급 큐브 1개를 획득합니다.";
+        {
+            messageText.text = tower != null && tower.IsDefaultSkillEquipped
+                ? $"'{skill.displayName}'을(를) 해제하시겠습니까?\n기본 지급 스킬은 보상이 없습니다."
+                : $"'{skill.displayName}'을(를) 판매하시겠습니까?\n하급 큐브 1개를 획득합니다.";
+        }
 
         panel.SetActive(true);
     }
@@ -86,6 +90,8 @@ public class SellConfirmPopup : MonoBehaviour
         _pendingSourceDisplayIdx = -1;
         Hide();
 
+        bool skipReward = false;
+
         if (support != null)
         {
             if (supportIdx >= 0)
@@ -108,8 +114,9 @@ public class SellConfirmPopup : MonoBehaviour
         }
         else if (tower != null)
         {
-            // 장착 스킬 판매
+            // 장착 스킬 판매 (기본 지급 스킬은 보상 없이 해제만)
             if (tower.EquippedSkill != skill) return;
+            skipReward = tower.IsDefaultSkillEquipped;
             tower.UnequipSkill();
             InventorySystem.Instance?.SelectTower(tower);
         }
@@ -123,7 +130,8 @@ public class SellConfirmPopup : MonoBehaviour
             if (!removed) return;
         }
 
-        CubeSystem.Instance?.Add(CubeType.Lower, 1);
+        if (!skipReward)
+            CubeSystem.Instance?.Add(CubeType.Lower, 1);
     }
 
     private void Hide()

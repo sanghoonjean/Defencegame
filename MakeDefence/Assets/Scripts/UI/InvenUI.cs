@@ -117,7 +117,7 @@ public class InvenUI : MonoBehaviour
                 {
                     if (InventorySystem.Instance?.SelectedTower == null) return;
                     var tower = InventorySystem.Instance.SelectedTower;
-                    if (tower.EquippedSkill != null)
+                    if (tower.EquippedSkill != null && !tower.IsDefaultSkillEquipped)
                         ShopSystem.Instance?.ReturnSkill(tower.EquippedSkill);
                     ShopSystem.Instance?.RemoveByDisplayIndex(displayIdx);
                     InventorySystem.Instance.EquipSkill(s);

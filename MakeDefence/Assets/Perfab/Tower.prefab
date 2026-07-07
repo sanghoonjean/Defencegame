@@ -100,8 +100,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   baseAttackDamage: 0
-  baseAttackCooldown: 4
+  baseAttackSpeed: 1
   baseAttackRange: 5
+  defaultSkill: {fileID: 11400000, guid: 52e03e35f7a3284439ec10cc46d72fd1, type: 2}
 --- !u!61 &2656914260432286792
 BoxCollider2D:
   m_ObjectHideFlags: 0

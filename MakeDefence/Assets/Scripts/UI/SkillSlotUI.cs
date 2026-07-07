@@ -52,8 +52,8 @@ public class SkillSlotUI : MonoBehaviour, IDropHandler
         var tower    = InventorySystem.Instance.SelectedTower;
         var newSkill = drag.Skill;
 
-        // 기존 장착 스킬 → 인벤토리로 반환
-        if (tower.EquippedSkill != null)
+        // 기존 장착 스킬 → 인벤토리로 반환 (기본 지급 스킬은 보유 목록에 편입시키지 않음)
+        if (tower.EquippedSkill != null && !tower.IsDefaultSkillEquipped)
             ShopSystem.Instance?.ReturnSkill(tower.EquippedSkill);
 
         // 새 스킬 인벤토리에서 제거 후 장착 — SourceDisplayIndex 기반 (중복 보유 무결성)
