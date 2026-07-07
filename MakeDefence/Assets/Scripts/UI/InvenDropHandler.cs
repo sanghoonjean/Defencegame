@@ -22,8 +22,10 @@ public class InvenDropHandler : MonoBehaviour, IDropHandler
             if (tower == null || tower.EquippedSkill == null) return;
 
             var skill = tower.EquippedSkill;
+            bool wasDefault = tower.IsDefaultSkillEquipped;
             InventorySystem.Instance.UnequipSkill();
-            ShopSystem.Instance?.ReturnSkill(skill);
+            if (!wasDefault)
+                ShopSystem.Instance?.ReturnSkill(skill);
             return;
         }
 

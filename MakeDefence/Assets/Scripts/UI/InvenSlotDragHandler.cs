@@ -94,8 +94,10 @@ public class InvenSlotDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandl
             var tower = InventorySystem.Instance?.SelectedTower;
             if (tower == null || tower.EquippedSkill == null) return;
             var skill = tower.EquippedSkill;
+            bool wasDefault = tower.IsDefaultSkillEquipped;
             InventorySystem.Instance.UnequipSkill();
-            ShopSystem.Instance?.ReturnSkill(skill);
+            if (!wasDefault)
+                ShopSystem.Instance?.ReturnSkill(skill);
             return;
         }
 

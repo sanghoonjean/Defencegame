@@ -55,7 +55,7 @@ public class InventorySystem : MonoBehaviour
     {
         if (target == null) return new DeleteRefundSummary(false, 0, 0);
 
-        bool skill = target.EquippedSkill != null;
+        bool skill = target.EquippedSkill != null && !target.IsDefaultSkillEquipped;
 
         int supportCount = 0;
         int unlocked = target.UnlockedSupportSlots;

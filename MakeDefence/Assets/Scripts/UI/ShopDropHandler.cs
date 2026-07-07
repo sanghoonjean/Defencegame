@@ -44,8 +44,10 @@ public class ShopDropHandler : MonoBehaviour, IDropHandler
         }
         else
         {
+            bool wasDefault = tower.IsDefaultSkillEquipped;
             InventorySystem.Instance.UnequipSkill();
-            CubeSystem.Instance?.Add(CubeType.Lower, 1);
+            if (!wasDefault)
+                CubeSystem.Instance?.Add(CubeType.Lower, 1);
         }
     }
 

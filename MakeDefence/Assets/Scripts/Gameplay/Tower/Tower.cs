@@ -14,10 +14,17 @@ public class Tower : MonoBehaviour
     [SerializeField] private float baseAttackSpeed = 1f;
     [SerializeField] private float baseAttackRange    = 5f;
 
+    // 최초 설치 시 무료로 지급되는 기본 스킬 (유닛 타입별로 프리팹에서 지정)
+    [SerializeField] private SkillData defaultSkill;
+
     public Vector2Int TileCoord { get; private set; }
 
     // 스킬 슬롯
     public SkillData EquippedSkill { get; private set; }
+
+    /// EquippedSkill이 최초 설치 시 무료로 지급된 기본 스킬인지 여부.
+    /// 보유 목록 반환/판매 보상 지급 시 이 값을 확인해 무료 스킬 복제/큐브 무한 생성을 방지한다.
+    public bool IsDefaultSkillEquipped { get; private set; }
 
     // 보조 옵션 슬롯 (최대 5개, 상위 큐브로 해금)
     private static readonly int[] SupportSlotCost = { 5, 10, 15, 20, 25 };
@@ -72,6 +79,8 @@ public class Tower : MonoBehaviour
     {
         TileCoord = coord;
         ItemSystem.Instance?.RegisterTower(this);
+        if (EquippedSkill == null && defaultSkill != null)
+            EquipSkill(defaultSkill, isDefault: true);
         OnTowerPlaced?.Invoke(this);
     }
 
@@ -107,15 +116,17 @@ public class Tower : MonoBehaviour
         OnRemoved?.Invoke();
     }
 
-    public void EquipSkill(SkillData skill)
+    public void EquipSkill(SkillData skill, bool isDefault = false)
     {
         EquippedSkill = skill;
+        IsDefaultSkillEquipped = isDefault;
         RefreshStats();
     }
 
     public void UnequipSkill()
     {
         EquippedSkill = null;
+        IsDefaultSkillEquipped = false;
         RefreshStats();
     }
 
