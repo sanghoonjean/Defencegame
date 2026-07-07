@@ -48,7 +48,7 @@ public class ProjectileBase : MonoBehaviour
     {
         if (!_launched) return;
 
-        if (_target == null || !_target.gameObject.activeInHierarchy)
+        if (_target == null || !_target.gameObject.activeInHierarchy || _target.IsDead)
         {
             ReturnToPool();
             return;
