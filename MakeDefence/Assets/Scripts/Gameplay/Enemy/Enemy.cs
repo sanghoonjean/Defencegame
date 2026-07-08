@@ -15,6 +15,7 @@ public class Enemy : MonoBehaviour
     public float MaxHp     { get; private set; }
     public float CurrentHp { get; private set; }
     public int RouteIndex  { get; private set; }
+    public bool IsDead     => _isDead;
 
     // transform.position에서 스프라이트 상단까지의 월드 단위 거리 (HP 바를 머리 위에 배치하는 데 사용)
     // 스프라이트 pivot이 중앙이 아닐 수 있어 bounds.extents가 아닌 실제 위치 차이로 계산
@@ -28,6 +29,8 @@ public class Enemy : MonoBehaviour
     private float _stunTimer;
 
     private SpriteRenderer _spriteRenderer;
+    private Animator _animator;
+    private static readonly int DeadTrigger = Animator.StringToHash("Dead");
 
     private float _fireResistance;
     private float _coldResistance;
@@ -37,11 +40,13 @@ public class Enemy : MonoBehaviour
     private Coroutine _dotCoroutine;
     private Coroutine _burnCoroutine;
     private float     _currentBurnDps;
+    private bool      _isDead;
     private const float DotTickInterval = 0.5f;
 
     private void Awake()
     {
         _spriteRenderer = GetComponentInChildren<SpriteRenderer>();
+        _animator = GetComponent<Animator>();
     }
 
     private void OnEnable() => ActiveEnemies.Add(this);
@@ -65,6 +70,7 @@ public class Enemy : MonoBehaviour
         _waypointIndex = 0;
         _playerDamage = Mathf.Max(1, Mathf.RoundToInt(data.playerDamage * riftMods.DamageMult));
         _stunTimer = 0f;
+        _isDead = false;
 
         if (_spriteRenderer != null) _spriteRenderer.flipX = false;
 
@@ -98,6 +104,8 @@ public class Enemy : MonoBehaviour
 
     private void Update()
     {
+        if (_isDead) return;
+
         if (_stunTimer > 0f)
         {
             _stunTimer -= Time.deltaTime;
@@ -197,6 +205,8 @@ public class Enemy : MonoBehaviour
     public void TakeDamage(float damage, float armorPenRatio = 0f, bool isCrit = false,
                            DamageType type = DamageType.Physical)
     {
+        if (_isDead) return;
+
         float effectiveDefense = (type == DamageType.Physical)
             ? _defense * (1f - Mathf.Clamp01(armorPenRatio))
             : 0f;
@@ -217,7 +227,30 @@ public class Enemy : MonoBehaviour
 
     private void Die()
     {
+        if (_isDead) return;
+        _isDead = true;
+        ActiveEnemies.Remove(this);
+
         OnEnemyDied?.Invoke(this);
+
+        if (_animator != null)
+        {
+            _animator.SetTrigger(DeadTrigger);
+            StartCoroutine(ReturnAfterDeathAnimation());
+        }
+        else
+        {
+            ObjectPoolSystem.Instance.Return(this);
+        }
+    }
+
+    private IEnumerator ReturnAfterDeathAnimation()
+    {
+        yield return null;
+        while (!_animator.GetCurrentAnimatorStateInfo(0).IsName("Dead"))
+            yield return null;
+        yield return new WaitForSeconds(_animator.GetCurrentAnimatorStateInfo(0).length);
+
         ObjectPoolSystem.Instance.Return(this);
     }
 
