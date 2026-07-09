@@ -62,8 +62,7 @@ public class GameUIManager : MonoBehaviour
     }
 
     [Header("Tower Mana Bar")]
-    [SerializeField] private float manaBarOffset = 0.15f; // HP 바 아래 간격 (월드 단위)
-    [SerializeField] private Color manaFillColor = new Color(0.2f, 0.5f, 1f, 1f);
+    [SerializeField] private float manaBarOffset = 0.15f; // HP 바 위 간격 (월드 단위)
 
     private static GameUIManager _instance;
     private readonly List<AoeCircle>  _aoeCircles  = new();
@@ -352,12 +351,8 @@ public class GameUIManager : MonoBehaviour
             float fill = t.MaxMana > 0f ? Mathf.Clamp01(t.CurrentMana / t.MaxMana) : 0f;
 
             if (hpLineTex != null && fill > 0f)
-            {
-                GUI.color = manaFillColor;
                 GUI.DrawTextureWithTexCoords(new Rect(mx, my, pxBarWidth * fill, pxBarHeight),
                     hpLineTex, new Rect(0f, 0f, fill, 1f));
-                GUI.color = Color.white;
-            }
             if (hpFrameTex != null)
                 GUI.DrawTexture(new Rect(mx, my, pxBarWidth, pxBarHeight), hpFrameTex);
         }
