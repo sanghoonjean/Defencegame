@@ -48,6 +48,10 @@ public class SkillData : ScriptableObject, IInventoryItem
     [Header("Support Restrictions")]
     public bool isDoTOnly;             // true → Added Fire Damage 미적용 (CausticArrow)
 
+    [Header("Job Class Restriction")]
+    [Tooltip("None이면 모든 직업 장착 가능. 지정 시 해당 직업만 장착 가능.")]
+    public JobClass requiredClass = JobClass.None;
+
     [Header("Damage Classification")]
     [Tooltip("스킬의 베이스 데미지 분류. Brutality Support 는 Physical 만 허용.")]
     public SkillDamageNature damageNature = SkillDamageNature.Physical;

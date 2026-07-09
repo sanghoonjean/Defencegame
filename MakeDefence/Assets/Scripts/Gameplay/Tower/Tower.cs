@@ -9,6 +9,9 @@ public class Tower : MonoBehaviour
     /// 이 타워 인스턴스가 삭제될 때 발생. 스폰 버튼이 자신의 배치 상태를 초기화하는 데 사용.
     public event Action OnRemoved;
 
+    [SerializeField] private JobClass jobClass = JobClass.None;
+    public JobClass Job => jobClass;
+
     // 기본 스탯 (tech-debt: 수치 미확정 — Inspector에서 조정)
     [SerializeField] private float baseAttackDamage   = 20f;
     [SerializeField] private float baseAttackSpeed = 1f;
@@ -203,6 +206,8 @@ public class Tower : MonoBehaviour
             AccumulateSupportOption(opt);
         }
 
+        ApplyJobClassBonus(ref dmgPct, ref spdPct, ref rangePct);
+
         AttackDamage   = baseAttackDamage   * (1f + dmgPct   / 100f);
         AttackCooldown = baseAttackSpeed * (1f - spdPct   / 100f);
         AttackRange    = baseAttackRange    * (1f + rangePct / 100f);
@@ -228,6 +233,24 @@ public class Tower : MonoBehaviour
         }
 
         _attackAnimSpeed = baseAttackSpeed / Mathf.Max(0.01f, AttackCooldown);
+    }
+
+    private void ApplyJobClassBonus(ref float dmgPct, ref float spdPct, ref float rangePct)
+    {
+        switch (jobClass)  // jobClass 필드 직접 참조 (프로퍼티명 Job과 구분)
+        {
+            case JobClass.Warrior:
+                dmgPct    += 20f;
+                CritDamage += 30f;
+                break;
+            case JobClass.Mage:
+                SkillCDReduce += 20f;
+                break;
+            case JobClass.Archer:
+                spdPct   += 20f;
+                rangePct += 20f;
+                break;
+        }
     }
 
     private void AccumulateSupportOption(SupportOptionData opt)
