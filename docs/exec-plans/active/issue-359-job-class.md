@@ -21,7 +21,7 @@ UnitPanelController → JobClassDisplayUI (직업 이름/아이콘 표시)
 | 직업 | 스탯 보너스 | 허용 스킬 |
 |------|------------|----------|
 | 전사 (Warrior) | 데미지 +20%, 치명타 데미지 +30% | MoltenStrike |
-| 마법사 (Mage) | 스킬 CD 감소 +20% | Fireball, ParalysisMagic, LightningSpear, FreezingPulse |
+| 마법사 (Mage) | 스킬 CD 감소 +20%, 마나 재생 +10% | Fireball, ParalysisMagic, LightningSpear, FreezingPulse |
 | 궁수 (Archer) | 공격 속도 +20%, 사거리 +20% | LightningArrow, CausticArrow, PoisonCloud |
 
 ## 2. 수정 파일
