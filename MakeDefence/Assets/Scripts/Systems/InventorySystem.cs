@@ -123,18 +123,9 @@ public class InventorySystem : MonoBehaviour
     public bool EquipSkill(SkillData skill)
     {
         if (SelectedTower == null) return false;
-        if (!IsSkillCompatible(SelectedTower, skill)) return false;
         SelectedTower.EquipSkill(skill);
         OnTowerSelected?.Invoke(SelectedTower);
         return true;
-    }
-
-    public static bool IsSkillCompatible(Tower tower, SkillData skill)
-    {
-        if (tower == null || skill == null) return false;
-        if (skill.requiredClass == JobClass.None) return true;
-        if (tower.Job == JobClass.None) return true;
-        return tower.Job == skill.requiredClass;
     }
 
     public bool UnequipSkill()
