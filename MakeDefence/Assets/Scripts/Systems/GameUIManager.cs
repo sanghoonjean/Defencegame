@@ -61,11 +61,15 @@ public class GameUIManager : MonoBehaviour
         public float      extraYOffset;
     }
 
+    [Header("Tower Mana Bar")]
+    [SerializeField] private float manaBarOffset = 0.15f; // HP 바 위 간격 (월드 단위)
+
     private static GameUIManager _instance;
     private readonly List<AoeCircle>  _aoeCircles  = new();
     private readonly List<RectAoe>    _rectAoes    = new();
     private readonly List<ConeAoe>    _coneAoes    = new();
     private readonly List<DamageText> _damageTexts = new();
+    private readonly List<Tower>      _placedTowers = new();
 
     private Material  _rangeMat;
 
@@ -109,6 +113,25 @@ public class GameUIManager : MonoBehaviour
         _rangeMat.SetInt("_ZTest",    (int)UnityEngine.Rendering.CompareFunction.Always);
         _rangeMat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
         _rangeMat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+    }
+
+    private void OnEnable()
+    {
+        Tower.OnTowerPlaced += OnTowerPlaced;
+    }
+
+    private void OnDisable()
+    {
+        Tower.OnTowerPlaced -= OnTowerPlaced;
+    }
+
+    private void OnTowerPlaced(Tower tower)
+    {
+        if (!_placedTowers.Contains(tower))
+        {
+            _placedTowers.Add(tower);
+            tower.OnRemoved += () => _placedTowers.Remove(tower);
+        }
     }
 
     private void OnDestroy()
@@ -310,6 +333,28 @@ public class GameUIManager : MonoBehaviour
                     hpLineTex, new Rect(0f, 0f, fill, 1f));
             if (hpFrameTex != null)
                 GUI.DrawTexture(new Rect(x, y, pxBarWidth, pxBarHeight), hpFrameTex);
+        }
+
+        // 타워 마나 바
+        for (int i = _placedTowers.Count - 1; i >= 0; i--)
+        {
+            var t = _placedTowers[i];
+            if (t == null) { _placedTowers.RemoveAt(i); continue; }
+            if (!t.HasManaSystem) continue;
+
+            Vector3 screenPos = cam.WorldToScreenPoint(t.transform.position);
+            if (screenPos.z < 0f) continue;
+
+            float pxManaOffset = (yOffset + pxBarHeight / pixelsPerUnit + manaBarOffset) * pixelsPerUnit;
+            float mx   = screenPos.x - pxBarWidth * 0.5f;
+            float my   = Screen.height - screenPos.y - pxManaOffset - pxBarHeight;
+            float fill = t.MaxMana > 0f ? Mathf.Clamp01(t.CurrentMana / t.MaxMana) : 0f;
+
+            if (hpLineTex != null && fill > 0f)
+                GUI.DrawTextureWithTexCoords(new Rect(mx, my, pxBarWidth * fill, pxBarHeight),
+                    hpLineTex, new Rect(0f, 0f, fill, 1f));
+            if (hpFrameTex != null)
+                GUI.DrawTexture(new Rect(mx, my, pxBarWidth, pxBarHeight), hpFrameTex);
         }
 
         DrawDamageTexts(cam);

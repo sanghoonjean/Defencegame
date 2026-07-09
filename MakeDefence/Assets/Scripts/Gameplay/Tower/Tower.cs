@@ -14,6 +14,16 @@ public class Tower : MonoBehaviour
     [SerializeField] private float baseAttackSpeed = 1f;
     [SerializeField] private float baseAttackRange    = 5f;
 
+    // 마나 (maxMana = 0 이면 마나 시스템 비활성화)
+    [SerializeField] private float maxMana       = 100f;
+    [SerializeField] private float manaRegenRate = 20f;  // 초당 회복량
+
+    public float MaxMana       => maxMana;
+    public float CurrentMana   { get; private set; }
+    public bool  HasManaSystem => maxMana > 0f;
+
+    public event Action<float, float> OnManaChanged; // (current, max)
+
     // 최초 설치 시 무료로 지급되는 기본 스킬 (유닛 타입별로 프리팹에서 지정)
     [SerializeField] private SkillData defaultSkill;
 
@@ -72,6 +82,7 @@ public class Tower : MonoBehaviour
         _animator = GetComponent<Animator>();
         if (_animator != null)
             _hasDirectionParams = HasAnimatorParam("DirectionX") && HasAnimatorParam("DirectionY");
+        CurrentMana = maxMana;
         RefreshStats();
     }
 
@@ -261,6 +272,14 @@ public class Tower : MonoBehaviour
 
     private void Update()
     {
+        if (HasManaSystem)
+        {
+            float prev = CurrentMana;
+            CurrentMana = Mathf.Min(maxMana, CurrentMana + manaRegenRate * Time.deltaTime);
+            if (!Mathf.Approximately(prev, CurrentMana))
+                OnManaChanged?.Invoke(CurrentMana, maxMana);
+        }
+
         if (EquippedSkill == null)
         {
             if (_animator != null)
@@ -274,14 +293,16 @@ public class Tower : MonoBehaviour
         _attackTimer += Time.deltaTime;
 
         var target = FindTarget();
-        bool attacking = target != null;
+        bool hasEnoughMana = !HasManaSystem || CurrentMana >= EquippedSkill.manaCost;
+        bool attacking = target != null && hasEnoughMana;
         _animator?.SetBool(AttackBool, attacking);
         if (_animator != null)
             _animator.speed = attacking ? _attackAnimSpeed : 1f;
 
-        if (target == null)
+        if (target == null || !hasEnoughMana)
         {
-            _attackTimer = 0f;
+            if (target != null) _attackTimer = AttackCooldown; // 마나 충전되면 바로 공격
+            else _attackTimer = 0f;
             return;
         }
 
@@ -313,6 +334,12 @@ public class Tower : MonoBehaviour
         {
             _animator.SetFloat(DirectionXParam, dir.x);
             _animator.SetFloat(DirectionYParam, dir.y);
+        }
+
+        if (HasManaSystem && EquippedSkill != null && EquippedSkill.manaCost > 0f)
+        {
+            CurrentMana -= EquippedSkill.manaCost;
+            OnManaChanged?.Invoke(CurrentMana, maxMana);
         }
 
         // Brutality 가 비호환 스킬을 차단한 경우 큐브 드롭도 막음 (실제 공격이 일어나지 않음)

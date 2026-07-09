@@ -42,6 +42,9 @@ public class SkillData : ScriptableObject, IInventoryItem
     public float     stunDuration;     // FreezingPulse 스턴 지속시간
     public float     dotDuration;      // Nanobot 전용
 
+    [Header("Mana")]
+    public float manaCost = 0f;
+
     [Header("Support Restrictions")]
     public bool isDoTOnly;             // true → Added Fire Damage 미적용 (CausticArrow)
 
