@@ -16,7 +16,7 @@ public class Tower : MonoBehaviour
 
     // 마나 (maxMana = 0 이면 마나 시스템 비활성화)
     [SerializeField] private float maxMana       = 100f;
-    [SerializeField] private float manaRegenRate = 10f;  // 초당 회복량
+    [SerializeField] private float manaRegenRate = 20f;  // 초당 회복량
 
     public float MaxMana       => maxMana;
     public float CurrentMana   { get; private set; }
