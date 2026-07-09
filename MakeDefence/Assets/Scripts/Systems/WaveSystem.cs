@@ -204,10 +204,10 @@ public class WaveSystem : MonoBehaviour
 
     private static int GetEnemyCount(int stage)
     {
-        if (stage <= 4) return 15;
-        if (stage <= 8) return 20;
-        if (stage <= 12) return 25;
-        return 30;
+        if (stage <= 4) return 45;
+        if (stage <= 8) return 60;
+        if (stage <= 12) return 75;
+        return 90;
     }
 
     // 진입부에서 방어됨 — SpawnEnemies 는 항상 routeCount >= 1 상태로 진입한다고 가정.
@@ -222,6 +222,11 @@ public class WaveSystem : MonoBehaviour
         }
         return true;
     }
+
+    // 스폰을 5마리 단위로 뭉쳐서 내보낸다 — 배치 내에서는 대기 없이 연속 스폰하고,
+    // 배치 사이에만 spawnInterval 만큼 대기한다.
+    private const int SpawnBatchSize = 5;
+    private const float SpawnJitterRadius = 2f;
 
     private IEnumerator SpawnEnemies(List<EnemyGrade> spawnList)
     {
@@ -246,10 +251,13 @@ public class WaveSystem : MonoBehaviour
                 includeStart: true);
             var enemy = ObjectPoolSystem.Instance.Get();
             enemy.Initialize(data, CurrentStage, path, routeIndex, _currentRiftMods);
+            enemy.transform.position += (Vector3)(UnityEngine.Random.insideUnitCircle * SpawnJitterRadius);
             spawnedCount++;
             Debug.Log($"[WaveSystem] Spawned {spawnedCount}/{spawnList.Count} grade={grade} route={routeIndex}");
 
-            yield return new WaitForSeconds(spawnInterval);
+            bool isLast = i == spawnList.Count - 1;
+            if (!isLast && spawnedCount % SpawnBatchSize == 0)
+                yield return new WaitForSeconds(spawnInterval);
         }
     }
 
