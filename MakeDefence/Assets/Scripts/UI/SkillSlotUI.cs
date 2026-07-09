@@ -52,6 +52,9 @@ public class SkillSlotUI : MonoBehaviour, IDropHandler
         var tower    = InventorySystem.Instance.SelectedTower;
         var newSkill = drag.Skill;
 
+        // 인벤 변경 전에 호환성 검사 — 실패 시 인벤 상태 보존
+        if (!InventorySystem.IsSkillCompatible(tower, newSkill)) return;
+
         // 기존 장착 스킬 → 인벤토리로 반환 (기본 지급 스킬은 보유 목록에 편입시키지 않음)
         if (tower.EquippedSkill != null && !tower.IsDefaultSkillEquipped)
             ShopSystem.Instance?.ReturnSkill(tower.EquippedSkill);

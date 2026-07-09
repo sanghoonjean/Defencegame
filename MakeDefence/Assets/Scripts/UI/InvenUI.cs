@@ -117,6 +117,8 @@ public class InvenUI : MonoBehaviour
                 {
                     if (InventorySystem.Instance?.SelectedTower == null) return;
                     var tower = InventorySystem.Instance.SelectedTower;
+                    // 인벤 변경 전에 호환성 검사 — 실패 시 인벤 상태 보존
+                    if (!InventorySystem.IsSkillCompatible(tower, s)) return;
                     if (tower.EquippedSkill != null && !tower.IsDefaultSkillEquipped)
                         ShopSystem.Instance?.ReturnSkill(tower.EquippedSkill);
                     ShopSystem.Instance?.RemoveByDisplayIndex(displayIdx);
