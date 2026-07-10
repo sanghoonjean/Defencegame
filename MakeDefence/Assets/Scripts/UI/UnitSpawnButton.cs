@@ -38,7 +38,7 @@ public class UnitSpawnButton : MonoBehaviour
             if (JobSelectPopup.Instance != null)
                 JobSelectPopup.Instance.Show(OnJobSelected);
             else
-                EnterPlacement(JobClass.None);
+                EnterPlacement(null); // 팝업 미연결 시 프리팹의 직업 그대로 유지
         }
     }
 
@@ -47,12 +47,13 @@ public class UnitSpawnButton : MonoBehaviour
         EnterPlacement(job);
     }
 
-    private void EnterPlacement(JobClass job)
+    // job 이 null 이면 프리팹에 지정된 직업을 덮어쓰지 않는다.
+    private void EnterPlacement(JobClass? job)
     {
         InputManager.Instance.SetBuildMode(BuildMode.Tower);
         TowerPlacer.Instance.EnterPlacementMode(unitPrefab, tower =>
         {
-            tower.SetJob(job);
+            if (job.HasValue) tower.SetJob(job.Value);
             OnUnitPlaced(tower);
         });
     }
