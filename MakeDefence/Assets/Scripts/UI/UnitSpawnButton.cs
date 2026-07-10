@@ -29,9 +29,31 @@ public class UnitSpawnButton : MonoBehaviour
         InputManager.Instance.SetBuildMode(BuildMode.Tower);
 
         if (_placedTower != null)
+        {
             TowerPlacer.Instance.EnterMoveMode(_placedTower);
+        }
         else
-            TowerPlacer.Instance.EnterPlacementMode(unitPrefab, OnUnitPlaced);
+        {
+            // 첫 배치: 직업 선택 팝업 → 선택 후 배치 모드 진입
+            if (JobSelectPopup.Instance != null)
+                JobSelectPopup.Instance.Show(OnJobSelected);
+            else
+                EnterPlacement(JobClass.None);
+        }
+    }
+
+    private void OnJobSelected(JobClass job)
+    {
+        EnterPlacement(job);
+    }
+
+    private void EnterPlacement(JobClass job)
+    {
+        TowerPlacer.Instance.EnterPlacementMode(unitPrefab, tower =>
+        {
+            tower.SetJob(job);
+            OnUnitPlaced(tower);
+        });
     }
 
     private void OnUnitPlaced(Tower tower)

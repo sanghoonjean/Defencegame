@@ -12,6 +12,12 @@ public class Tower : MonoBehaviour
     [SerializeField] private JobClass jobClass = JobClass.None;
     public JobClass Job => jobClass;
 
+    public void SetJob(JobClass job)
+    {
+        jobClass = job;
+        RefreshStats();
+    }
+
     // 기본 스탯 (tech-debt: 수치 미확정 — Inspector에서 조정)
     [SerializeField] private float baseAttackDamage   = 20f;
     [SerializeField] private float baseAttackSpeed = 1f;
