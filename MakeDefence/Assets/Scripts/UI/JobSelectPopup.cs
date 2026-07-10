@@ -41,7 +41,8 @@ public class JobSelectPopup : MonoBehaviour
 
     private void Confirm(JobClass job)
     {
+        var callback = _onSelected;
         Hide();
-        _onSelected?.Invoke(job);
+        callback?.Invoke(job);
     }
 }
