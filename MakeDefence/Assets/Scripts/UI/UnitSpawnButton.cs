@@ -26,12 +26,36 @@ public class UnitSpawnButton : MonoBehaviour
         if (TowerPlacer.Instance.IsPlacingTower)
             TowerPlacer.Instance.ExitPlacementMode();
 
-        InputManager.Instance.SetBuildMode(BuildMode.Tower);
-
         if (_placedTower != null)
+        {
+            // 재배치: 즉시 BuildMode 설정 후 이동 모드
+            InputManager.Instance.SetBuildMode(BuildMode.Tower);
             TowerPlacer.Instance.EnterMoveMode(_placedTower);
+        }
         else
-            TowerPlacer.Instance.EnterPlacementMode(unitPrefab, OnUnitPlaced);
+        {
+            // 첫 배치: 팝업이 닫힌 뒤에 BuildMode 설정 (팝업 중 맵 클릭 방지)
+            if (JobSelectPopup.Instance != null)
+                JobSelectPopup.Instance.Show(OnJobSelected);
+            else
+                EnterPlacement(null); // 팝업 미연결 시 프리팹의 직업 그대로 유지
+        }
+    }
+
+    private void OnJobSelected(JobClass job)
+    {
+        EnterPlacement(job);
+    }
+
+    // job 이 null 이면 프리팹에 지정된 직업을 덮어쓰지 않는다.
+    private void EnterPlacement(JobClass? job)
+    {
+        InputManager.Instance.SetBuildMode(BuildMode.Tower);
+        TowerPlacer.Instance.EnterPlacementMode(unitPrefab, tower =>
+        {
+            if (job.HasValue) tower.SetJob(job.Value);
+            OnUnitPlaced(tower);
+        });
     }
 
     private void OnUnitPlaced(Tower tower)

@@ -9,6 +9,15 @@ public class Tower : MonoBehaviour
     /// 이 타워 인스턴스가 삭제될 때 발생. 스폰 버튼이 자신의 배치 상태를 초기화하는 데 사용.
     public event Action OnRemoved;
 
+    [SerializeField] private JobClass jobClass = JobClass.None;
+    public JobClass Job => jobClass;
+
+    public void SetJob(JobClass job)
+    {
+        jobClass = job;
+        RefreshStats();
+    }
+
     // 기본 스탯 (tech-debt: 수치 미확정 — Inspector에서 조정)
     [SerializeField] private float baseAttackDamage   = 20f;
     [SerializeField] private float baseAttackSpeed = 1f;
@@ -18,9 +27,11 @@ public class Tower : MonoBehaviour
     [SerializeField] private float maxMana       = 100f;
     [SerializeField] private float manaRegenRate = 20f;  // 초당 회복량
 
-    public float MaxMana       => maxMana;
-    public float CurrentMana   { get; private set; }
-    public bool  HasManaSystem => maxMana > 0f;
+    public float MaxMana        => maxMana;
+    public float CurrentMana    { get; private set; }
+    public bool  HasManaSystem  => maxMana > 0f;
+    // 직업 보너스로 추가되는 마나 재생량 (초당). RefreshStats에서 계산, Update에서 합산.
+    public float ManaRegenBonus { get; private set; }
 
     public event Action<float, float> OnManaChanged; // (current, max)
 
@@ -181,6 +192,7 @@ public class Tower : MonoBehaviour
         PierceCount    = 0;
         BrutalityMultiplier = 1f;
         IsBrutalityActive   = false;
+        ManaRegenBonus      = 0f;
 
         // 아이템 옵션 합산
         if (ItemSystem.Instance != null)
@@ -203,9 +215,13 @@ public class Tower : MonoBehaviour
             AccumulateSupportOption(opt);
         }
 
-        AttackDamage   = baseAttackDamage   * (1f + dmgPct   / 100f);
-        AttackCooldown = baseAttackSpeed * (1f - spdPct   / 100f);
-        AttackRange    = baseAttackRange    * (1f + rangePct / 100f);
+        // dmgPct/CritDamage/SkillCDReduce 등 직업 보너스 합산 (속도·사거리 %는 별도 변수로 분리)
+        float jobSpdPct = 0f, jobRangePct = 0f;
+        ApplyJobClassBonus(ref dmgPct, ref jobSpdPct, ref jobRangePct);
+
+        AttackDamage   = baseAttackDamage * (1f + dmgPct / 100f);
+        AttackCooldown = baseAttackSpeed  * (1f - spdPct / 100f);
+        AttackRange    = baseAttackRange  * (1f + rangePct / 100f);
 
         AttackCooldown = Mathf.Max(0.1f, AttackCooldown);
         AttackRange    = Mathf.Max(0.5f, AttackRange);
@@ -227,7 +243,34 @@ public class Tower : MonoBehaviour
             AttackRange    = EquippedSkill.baseRange;
         }
 
+        // 직업 속도·사거리 보너스는 스킬 오버라이드 이후에 적용 (스킬 기본값에 곱산)
+        AttackCooldown *= (1f - jobSpdPct   / 100f);
+        AttackRange    *= (1f + jobRangePct / 100f);
+
+        AttackCooldown = Mathf.Max(0.1f, AttackCooldown);
+        AttackRange    = Mathf.Max(0.5f, AttackRange);
+
         _attackAnimSpeed = baseAttackSpeed / Mathf.Max(0.01f, AttackCooldown);
+    }
+
+    // spdPct·rangePct 는 호출 측에서 jobSpdPct/jobRangePct 로 분리해 스킬 오버라이드 후 적용
+    private void ApplyJobClassBonus(ref float dmgPct, ref float spdPct, ref float rangePct)
+    {
+        switch (jobClass)
+        {
+            case JobClass.Warrior:
+                dmgPct     += 20f;
+                CritDamage += 30f;
+                break;
+            case JobClass.Mage:
+                SkillCDReduce += 20f;
+                ManaRegenBonus = manaRegenRate * 0.1f;
+                break;
+            case JobClass.Archer:
+                spdPct   += 20f;
+                rangePct += 20f;
+                break;
+        }
     }
 
     private void AccumulateSupportOption(SupportOptionData opt)
@@ -275,7 +318,7 @@ public class Tower : MonoBehaviour
         if (HasManaSystem)
         {
             float prev = CurrentMana;
-            CurrentMana = Mathf.Min(maxMana, CurrentMana + manaRegenRate * Time.deltaTime);
+            CurrentMana = Mathf.Min(maxMana, CurrentMana + (manaRegenRate + ManaRegenBonus) * Time.deltaTime);
             if (!Mathf.Approximately(prev, CurrentMana))
                 OnManaChanged?.Invoke(CurrentMana, maxMana);
         }
