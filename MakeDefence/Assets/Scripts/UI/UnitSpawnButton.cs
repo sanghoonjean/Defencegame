@@ -30,9 +30,9 @@ public class UnitSpawnButton : MonoBehaviour
         _button = GetComponent<Button>();
         _button.onClick.AddListener(OnClick);
 
-        // 시작 시 유닛이 없으므로 전용 삭제 버튼과 아이콘은 숨긴다.
+        // 시작 시 유닛이 없으므로 전용 삭제 버튼은 숨기고 빈 슬롯(추가) 아이콘을 표시한다.
         if (deleteButton != null) deleteButton.SetActive(false);
-        ApplyIcon(null);
+        ApplyIcon(null, fallbackToEmpty: true);
     }
 
     private void OnClick()
@@ -88,8 +88,9 @@ public class UnitSpawnButton : MonoBehaviour
         _placedTower.OnRemoved += HandleTowerRemoved;
 
         // 유닛이 생성된 뒤에만 전용 삭제 버튼과 유닛 아이콘을 노출한다.
+        // 유닛 아이콘 미설정 시 emptyIcon 으로 대체하지 않고 숨긴다 (점유 슬롯 오인 방지).
         if (deleteButton != null) deleteButton.SetActive(true);
-        ApplyIcon(tower.UnitIcon);
+        ApplyIcon(tower.UnitIcon, fallbackToEmpty: false);
     }
 
     private void HandleTowerRemoved()
@@ -98,17 +99,18 @@ public class UnitSpawnButton : MonoBehaviour
             _placedTower.OnRemoved -= HandleTowerRemoved;
         _placedTower = null;
 
-        // 유닛이 삭제되면 전용 삭제 버튼과 유닛 아이콘을 다시 숨긴다.
+        // 유닛이 삭제되면 전용 삭제 버튼을 숨기고 빈 슬롯(추가) 아이콘으로 되돌린다.
         if (deleteButton != null) deleteButton.SetActive(false);
-        ApplyIcon(null);
+        ApplyIcon(null, fallbackToEmpty: true);
     }
 
-    // 유닛 아이콘을 설정한다. icon 이 null(유닛 미생성)이면 빈 슬롯용 emptyIcon 으로 대체한다.
+    // 유닛 아이콘을 설정한다. fallbackToEmpty 가 true(빈 슬롯)면 icon 이 null 일 때 emptyIcon 으로 대체하고,
+    // false(유닛 배치됨)면 대체 없이 그대로 둔다 — 점유된 슬롯이 '추가 가능'처럼 보이는 것을 방지.
     // 최종 스프라이트가 없으면 아이콘 Image 를 숨긴다. iconImage 미연결(null) 시에도 안전하게 no-op.
-    private void ApplyIcon(Sprite icon)
+    private void ApplyIcon(Sprite icon, bool fallbackToEmpty)
     {
         if (iconImage == null) return;
-        Sprite sprite     = icon != null ? icon : emptyIcon;
+        Sprite sprite     = icon != null ? icon : (fallbackToEmpty ? emptyIcon : null);
         iconImage.sprite  = sprite;
         iconImage.enabled = sprite != null;
     }
