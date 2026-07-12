@@ -13,7 +13,7 @@ public class ShopSystem : MonoBehaviour
 
     [Header("Stone")]
     [SerializeField] private Sprite stoneIcon;
-    [SerializeField] private string stoneDisplayName = "차원석";
+    [SerializeField] private string stoneDisplayName = "Dimension Stone";
     [Tooltip("게임 시작 시 자동 지급되는 차원석 개수 (DimensionStoneInventory.initialStones 이전).")]
     [SerializeField] private int initialStones = 1;
 

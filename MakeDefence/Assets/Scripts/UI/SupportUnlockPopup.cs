@@ -28,7 +28,7 @@ public class SupportUnlockPopup : MonoBehaviour
         _pendingTower = tower;
 
         if (costText != null)
-            costText.text = $"상위 큐브 {cost}개를 소모하여 슬롯을 해금합니까?";
+            costText.text = $"Unlock this slot for {cost} Upper Cube(s)?";
 
         bool canAfford = CubeSystem.Instance != null &&
                          CubeSystem.Instance.GetCount(CubeType.Upper) >= cost;

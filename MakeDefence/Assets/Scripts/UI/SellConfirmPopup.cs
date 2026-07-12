@@ -36,8 +36,8 @@ public class SellConfirmPopup : MonoBehaviour
         if (messageText != null)
         {
             messageText.text = tower != null && tower.IsDefaultSkillEquipped
-                ? $"'{skill.displayName}'을(를) 해제하시겠습니까?\n기본 지급 스킬은 보상이 없습니다."
-                : $"'{skill.displayName}'을(를) 판매하시겠습니까?\n하급 큐브 1개를 획득합니다.";
+                ? $"Unequip '{skill.displayName}'?\nDefault skills give no reward."
+                : $"Sell '{skill.displayName}'?\nYou will gain 1 Lower Cube.";
         }
 
         panel.SetActive(true);
@@ -58,7 +58,7 @@ public class SellConfirmPopup : MonoBehaviour
             string name = string.IsNullOrEmpty(option.displayName)
                 ? option.optionType.ToString()
                 : option.displayName;
-            messageText.text = $"'{name}'을(를) 판매하시겠습니까?\n하급 큐브 1개를 획득합니다.";
+            messageText.text = $"Sell '{name}'?\nYou will gain 1 Lower Cube.";
         }
 
         panel.SetActive(true);
@@ -71,7 +71,7 @@ public class SellConfirmPopup : MonoBehaviour
         _pendingSourceDisplayIdx = sourceDisplayIdx;
 
         if (messageText != null)
-            messageText.text = $"'{skill.displayName}'을(를) 판매하시겠습니까?\n하급 큐브 1개를 획득합니다.";
+            messageText.text = $"Sell '{skill.displayName}'?\nYou will gain 1 Lower Cube.";
 
         panel.SetActive(true);
     }

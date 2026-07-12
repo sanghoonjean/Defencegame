@@ -26,9 +26,9 @@ private void Refresh(Tower tower)
 
         jobLabel.text = tower.Job switch
         {
-            JobClass.Warrior => "전사",
-            JobClass.Mage    => "마법사",
-            JobClass.Archer  => "궁수",
+            JobClass.Warrior => "Warrior",
+            JobClass.Mage    => "Mage",
+            JobClass.Archer  => "Archer",
             _                => "",
         };
     }

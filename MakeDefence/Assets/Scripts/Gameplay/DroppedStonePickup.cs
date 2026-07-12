@@ -27,7 +27,7 @@ public class DroppedStonePickup : MonoBehaviour
         textColor   = new Color(0.816f, 0.663f, 1.000f, 1f),
     };
 
-    [SerializeField] private string displayName = "차원석";
+    [SerializeField] private string displayName = "Dimension Stone";
 
     [Header("Spawn Effect")]
     [SerializeField] private float spawnEffectDuration = 0.25f;
