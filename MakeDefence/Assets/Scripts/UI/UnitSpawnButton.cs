@@ -10,13 +10,22 @@ public class UnitSpawnButton : MonoBehaviour
 {
     [SerializeField] private Tower unitPrefab;
 
+    [Tooltip("이 버튼이 유닛을 배치했을 때만 보이는 전용 삭제 버튼. 유닛이 없으면 SetActive(false).")]
+    [SerializeField] private GameObject deleteButton;
+
     private Button _button;
     private Tower _placedTower;
+
+    /// <summary>이 버튼이 현재 배치해 둔 유닛. 없으면 null. (짝 삭제 버튼이 삭제 대상으로 사용)</summary>
+    public Tower PlacedTower => _placedTower;
 
     private void Awake()
     {
         _button = GetComponent<Button>();
         _button.onClick.AddListener(OnClick);
+
+        // 시작 시 유닛이 없으므로 전용 삭제 버튼은 숨긴다.
+        if (deleteButton != null) deleteButton.SetActive(false);
     }
 
     private void OnClick()
@@ -70,6 +79,9 @@ public class UnitSpawnButton : MonoBehaviour
     {
         _placedTower = tower;
         _placedTower.OnRemoved += HandleTowerRemoved;
+
+        // 유닛이 생성된 뒤에만 전용 삭제 버튼을 노출한다.
+        if (deleteButton != null) deleteButton.SetActive(true);
     }
 
     private void HandleTowerRemoved()
@@ -77,5 +89,8 @@ public class UnitSpawnButton : MonoBehaviour
         if (_placedTower != null)
             _placedTower.OnRemoved -= HandleTowerRemoved;
         _placedTower = null;
+
+        // 유닛이 삭제되면 전용 삭제 버튼을 다시 숨긴다.
+        if (deleteButton != null) deleteButton.SetActive(false);
     }
 }
