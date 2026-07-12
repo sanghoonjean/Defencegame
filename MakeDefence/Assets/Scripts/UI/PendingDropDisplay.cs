@@ -10,7 +10,7 @@ using UnityEngine.UI;
 public class PendingDropDisplay : MonoBehaviour
 {
     [SerializeField] private Text pendingText;
-    [SerializeField] private string prefix = "수확 대기: ";
+    [SerializeField] private string prefix = "Pending: ";
 
     private readonly StringBuilder _sb = new();
 

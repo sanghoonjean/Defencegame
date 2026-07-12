@@ -76,22 +76,22 @@ public class TowerDeleteConfirmPopup : MonoBehaviour
 
     private static string BuildMessage(InventorySystem.DeleteRefundSummary s)
     {
-        var sb = new System.Text.StringBuilder("타워를 삭제하시겠습니까?\n");
+        var sb = new System.Text.StringBuilder("Delete this tower?\n");
 
         bool hasReturn = s.SkillReturned || s.SupportReturned > 0;
         if (hasReturn)
         {
-            sb.Append("회수: ");
-            if (s.SkillReturned) sb.Append("스킬 1");
+            sb.Append("Return: ");
+            if (s.SkillReturned) sb.Append("Skill 1");
             if (s.SkillReturned && s.SupportReturned > 0) sb.Append(", ");
-            if (s.SupportReturned > 0) sb.Append($"서포트 {s.SupportReturned}");
-            sb.Append(" → 인벤\n");
+            if (s.SupportReturned > 0) sb.Append($"Support {s.SupportReturned}");
+            sb.Append(" → Inventory\n");
         }
 
         if (s.ItemsSold > 0)
-            sb.Append($"아이템 {s.ItemsSold}개 판매, ");
+            sb.Append($"{s.ItemsSold} item(s) sold, ");
 
-        sb.Append($"하급 큐브 {s.LowerCubes}개를 획득합니다.");
+        sb.Append($"Gain {s.LowerCubes} Lower Cube(s).");
         return sb.ToString();
     }
 
