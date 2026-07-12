@@ -12,6 +12,11 @@ public class Tower : MonoBehaviour
     [SerializeField] private JobClass jobClass = JobClass.None;
     public JobClass Job => jobClass;
 
+    // 이 유닛(직업)을 대표하는 아이콘. 스폰 버튼이 배치 후 버튼에 표시하는 데 사용.
+    // 미지정(null)이면 버튼은 아이콘을 숨긴다.
+    [SerializeField] private Sprite unitIcon;
+    public Sprite UnitIcon => unitIcon;
+
     public void SetJob(JobClass job)
     {
         jobClass = job;

@@ -100,6 +100,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   jobClass: 1
+  unitIcon: {fileID: 21300000, guid: 036d8680b23623e46b9641de62f9cf25, type: 3}
   baseAttackDamage: 18
   baseAttackSpeed: 0.9
   baseAttackRange: 7

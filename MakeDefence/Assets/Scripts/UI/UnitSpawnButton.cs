@@ -13,6 +13,9 @@ public class UnitSpawnButton : MonoBehaviour
     [Tooltip("이 버튼이 유닛을 배치했을 때만 보이는 전용 삭제 버튼. 유닛이 없으면 SetActive(false).")]
     [SerializeField] private GameObject deleteButton;
 
+    [Tooltip("배치된 유닛의 아이콘을 표시하는 전용 자식 Image. 유닛이 없으면 숨긴다.")]
+    [SerializeField] private Image iconImage;
+
     private Button _button;
     private Tower _placedTower;
 
@@ -24,8 +27,9 @@ public class UnitSpawnButton : MonoBehaviour
         _button = GetComponent<Button>();
         _button.onClick.AddListener(OnClick);
 
-        // 시작 시 유닛이 없으므로 전용 삭제 버튼은 숨긴다.
+        // 시작 시 유닛이 없으므로 전용 삭제 버튼과 아이콘은 숨긴다.
         if (deleteButton != null) deleteButton.SetActive(false);
+        ApplyIcon(null);
     }
 
     private void OnClick()
@@ -80,8 +84,9 @@ public class UnitSpawnButton : MonoBehaviour
         _placedTower = tower;
         _placedTower.OnRemoved += HandleTowerRemoved;
 
-        // 유닛이 생성된 뒤에만 전용 삭제 버튼을 노출한다.
+        // 유닛이 생성된 뒤에만 전용 삭제 버튼과 유닛 아이콘을 노출한다.
         if (deleteButton != null) deleteButton.SetActive(true);
+        ApplyIcon(tower.UnitIcon);
     }
 
     private void HandleTowerRemoved()
@@ -90,7 +95,17 @@ public class UnitSpawnButton : MonoBehaviour
             _placedTower.OnRemoved -= HandleTowerRemoved;
         _placedTower = null;
 
-        // 유닛이 삭제되면 전용 삭제 버튼을 다시 숨긴다.
+        // 유닛이 삭제되면 전용 삭제 버튼과 유닛 아이콘을 다시 숨긴다.
         if (deleteButton != null) deleteButton.SetActive(false);
+        ApplyIcon(null);
+    }
+
+    // 아이콘 스프라이트를 설정하고, 스프라이트가 없으면 아이콘 Image 를 숨긴다.
+    // iconImage 미연결(null) 시에도 안전하게 no-op.
+    private void ApplyIcon(Sprite icon)
+    {
+        if (iconImage == null) return;
+        iconImage.sprite  = icon;
+        iconImage.enabled = icon != null;
     }
 }
