@@ -63,6 +63,8 @@ public class GameUIManager : MonoBehaviour
 
     [Header("Tower Mana Bar")]
     [SerializeField] private float manaBarOffset = 0.15f; // HP 바 위 간격 (월드 단위)
+    [Tooltip("타워 MP 바 채움 스프라이트. 미지정 시 HP 라인 텍스처로 폴백.")]
+    [SerializeField] private Texture2D mpLineTex;
 
     private static GameUIManager _instance;
     private readonly List<AoeCircle>  _aoeCircles  = new();
@@ -350,9 +352,10 @@ public class GameUIManager : MonoBehaviour
             float my   = Screen.height - screenPos.y - pxManaOffset - pxBarHeight;
             float fill = t.MaxMana > 0f ? Mathf.Clamp01(t.CurrentMana / t.MaxMana) : 0f;
 
-            if (hpLineTex != null && fill > 0f)
+            Texture2D mpTex = mpLineTex != null ? mpLineTex : hpLineTex;
+            if (mpTex != null && fill > 0f)
                 GUI.DrawTextureWithTexCoords(new Rect(mx, my, pxBarWidth * fill, pxBarHeight),
-                    hpLineTex, new Rect(0f, 0f, fill, 1f));
+                    mpTex, new Rect(0f, 0f, fill, 1f));
             if (hpFrameTex != null)
                 GUI.DrawTexture(new Rect(mx, my, pxBarWidth, pxBarHeight), hpFrameTex);
         }
