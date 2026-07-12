@@ -16,7 +16,7 @@ Unitbtn{N} (UnitSpawnButton, unitPrefab 보유)
 
 - 버튼 GameObject 구조: `Button` + 배경 `Image`(TargetGraphic) + `Text` 자식 1개 + `UnitSpawnButton`.
 - **배치한 유닛을 나타내는 아이콘 표시가 없다.** 배치 후에도 버튼 외형이 그대로라 어떤 버튼이 어떤 유닛을 소유 중인지 알 수 없다.
-- 직업 전용 프리팹(`Tower_Warrior`/`Tower_Mage`/`Tower_Archer`)은 각각 `jobClass`가 고정 저장돼 있으나, 유닛을 대표하는 **아이콘 스프라이트 필드는 없다**.
+- 직업 전용 프리팹(`Tower_Warrior`/`Tower_Mage`/`Tower_Archor`)은 각각 `jobClass`가 고정 저장돼 있으나, 유닛을 대표하는 **아이콘 스프라이트 필드는 없다**. (궁수 프리팹 파일명은 오타 `Archor` — 실제 에셋 이름 그대로 사용)
 
 ### 변경 후 흐름
 
@@ -49,7 +49,7 @@ Unitbtn{N} (UnitSpawnButton + iconImage 참조 추가)
 - `HandleTowerRemoved()`: 끝에 `ApplyIcon(null)` 호출 — 스프라이트 제거 + 숨김.
 - `iconImage`가 null(미연결)이어도 NRE 없이 안전 동작(널 가드).
 
-### `MakeDefence/Assets/Perfab/Tower_Warrior.prefab` / `Tower_Mage.prefab` / `Tower_Archer.prefab` (UnityMCP)
+### `MakeDefence/Assets/Perfab/Tower_Warrior.prefab` / `Tower_Mage.prefab` / `Tower_Archor.prefab` (UnityMCP)
 - 각 프리팹의 `Tower` 컴포넌트 `unitIcon` 필드에 직업별 아이콘 스프라이트를 연결.
   - 후보(`Assets/GUI_Parts/free_fantasy_rpg_icons/`): 전사 → `axe1`/`club` 등 근접 무기, 법사 → `fire`/`crystal` 등, 궁수 → `archery1`.
   - 최종 아이콘 선정은 인스펙터에서 조정 가능(placeholder 허용).
