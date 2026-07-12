@@ -83,7 +83,7 @@ TextMesh:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1189030688832214026}
-  m_Text: "\uCC28\uC6D0\uC11D"
+  m_Text: Dimension Stone
   m_OffsetZ: 0
   m_CharacterSize: 0.05
   m_LineSpacing: 1
@@ -233,10 +233,7 @@ MonoBehaviour:
     borderColor: {r: 0.69, g: 0.498, b: 1, a: 1}
     bgColor: {r: 0.239, g: 0.165, b: 0.376, a: 0.9}
     textColor: {r: 0.816, g: 0.663, b: 1, a: 1}
-  displayName: "\uCC28\uC6D0\uC11D"
-  labelPulse:
-    amplitude: 0.25
-    frequency: 1.5
+  displayName: Dimension Stone
   spawnEffectDuration: 0.25
 --- !u!1 &6272787754757390191
 GameObject:
