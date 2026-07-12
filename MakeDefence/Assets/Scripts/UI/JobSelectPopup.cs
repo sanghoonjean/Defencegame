@@ -15,6 +15,11 @@ public class JobSelectPopup : MonoBehaviour
     [SerializeField] private Button      mageButton;
     [SerializeField] private Button      archerButton;
 
+    [Header("직업 전용 타워 프리팹 (미연결 시 버튼 기본 프리팹으로 폴백)")]
+    [SerializeField] private Tower warriorPrefab;
+    [SerializeField] private Tower magePrefab;
+    [SerializeField] private Tower archerPrefab;
+
     private Action<JobClass> _onSelected;
 
     private void Awake()
@@ -44,5 +49,17 @@ public class JobSelectPopup : MonoBehaviour
         var callback = _onSelected;
         Hide();
         callback?.Invoke(job);
+    }
+
+    /// 선택한 직업에 해당하는 전용 타워 프리팹을 반환. 미연결이면 null (호출 측에서 폴백).
+    public Tower ResolvePrefab(JobClass job)
+    {
+        return job switch
+        {
+            JobClass.Warrior => warriorPrefab,
+            JobClass.Mage    => magePrefab,
+            JobClass.Archer  => archerPrefab,
+            _                => null,
+        };
     }
 }

@@ -11085,7 +11085,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -14338,7 +14338,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -21291,7 +21291,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2
@@ -21702,6 +21702,12 @@ MonoBehaviour:
   warriorButton: {fileID: 1787500262}
   mageButton: {fileID: 254420377}
   archerButton: {fileID: 1149639537}
+  warriorPrefab: {fileID: 8686689521313228520, guid: a4be4e6484a473b4993822470e79834a,
+    type: 3}
+  magePrefab: {fileID: 8686689521313228520, guid: b6dca4cf8076b9e4da3a921602d23213,
+    type: 3}
+  archerPrefab: {fileID: 8686689521313228520, guid: d703364fc8a299a48bd5234acc9b076a,
+    type: 3}
 --- !u!1 &1787500258
 GameObject:
   m_ObjectHideFlags: 0
@@ -24288,7 +24294,7 @@ MonoBehaviour:
   m_spriteAsset: {fileID: 0}
   m_tintAllSprites: 0
   m_StyleSheet: {fileID: 0}
-  m_TextStyleHashCode: 0
+  m_TextStyleHashCode: -1183493901
   m_overrideHtmlColors: 0
   m_faceColor:
     serializedVersion: 2

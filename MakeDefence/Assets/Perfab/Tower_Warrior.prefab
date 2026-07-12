@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 2656914260432286792}
   - component: {fileID: -2139829209652678342}
   m_Layer: 0
-  m_Name: Tower_Unit4
+  m_Name: Tower_Warrior
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -76,7 +76,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 10
-  m_Sprite: {fileID: 1052035845, guid: 3b4143b1181027b4fbd61810d4b81b42, type: 3}
+  m_Sprite: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -99,10 +99,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c7a4647631cf33842b6d80245ce36578, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  baseAttackDamage: 28
-  baseAttackSpeed: 1.8
-  baseAttackRange: 8
-  defaultSkill: {fileID: 11400000, guid: 52e03e35f7a3284439ec10cc46d72fd1, type: 2}
+  jobClass: 1
+  baseAttackDamage: 18
+  baseAttackSpeed: 0.9
+  baseAttackRange: 7
+  maxMana: 100
+  manaRegenRate: 20
+  defaultSkill: {fileID: 11400000, guid: a84310908a050d046a1fad21f79df22f, type: 2}
 --- !u!61 &2656914260432286792
 BoxCollider2D:
   m_ObjectHideFlags: 0
@@ -158,7 +161,7 @@ Animator:
   m_GameObject: {fileID: 178163349432098654}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 9100000, guid: fa39c6c8d7e115344adba4b21951f2a4, type: 2}
+  m_Controller: {fileID: 9100000, guid: 2bd001e313296c243a20ce52abcb5bee, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0

@@ -81,7 +81,7 @@ AnimatorController:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: Tower
+  m_Name: Tower_Archor
   serializedVersion: 5
   m_AnimatorParameters:
   - m_Name: IsAttacking
@@ -124,7 +124,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: d8dcd7b7ff4998d49aee54952d1f3532, type: 2}
+  m_Motion: {fileID: 7400000, guid: c0aa50fd905f0b94a91e688bb734ad6b, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 
@@ -151,7 +151,7 @@ AnimatorState:
   m_MirrorParameterActive: 0
   m_CycleOffsetParameterActive: 0
   m_TimeParameterActive: 0
-  m_Motion: {fileID: 7400000, guid: d90c7d0be8222c044a15491d3cad2ca6, type: 2}
+  m_Motion: {fileID: 7400000, guid: 69a04f1c25d489b4caec228da7ad1d2b, type: 2}
   m_Tag: 
   m_SpeedParameter: 
   m_MirrorParameter: 

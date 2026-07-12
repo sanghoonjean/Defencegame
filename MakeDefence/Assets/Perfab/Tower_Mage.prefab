@@ -14,7 +14,7 @@ GameObject:
   - component: {fileID: 2656914260432286792}
   - component: {fileID: -2139829209652678342}
   m_Layer: 0
-  m_Name: Tower_Unit1
+  m_Name: Tower_Mage
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -76,7 +76,7 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 10
-  m_Sprite: {fileID: 1052035845, guid: 3b4143b1181027b4fbd61810d4b81b42, type: 3}
+  m_Sprite: {fileID: 0}
   m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
@@ -99,9 +99,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c7a4647631cf33842b6d80245ce36578, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  jobClass: 2
   baseAttackDamage: 35
   baseAttackSpeed: 1.4
   baseAttackRange: 4.5
+  maxMana: 100
+  manaRegenRate: 20
   defaultSkill: {fileID: 11400000, guid: 52e03e35f7a3284439ec10cc46d72fd1, type: 2}
 --- !u!61 &2656914260432286792
 BoxCollider2D:
