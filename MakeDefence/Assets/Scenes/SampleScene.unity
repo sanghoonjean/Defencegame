@@ -23421,7 +23421,7 @@ MonoBehaviour:
   dmgDuration: 1.2
   dmgXOffset: -20
   dmgYOffset: 10
-  manaBarOffset: 0.15
+  manaBarOffset: -0.35
   mpLineTex: {fileID: 2800000, guid: 2149333343f36db48b541fa2f07ab91c, type: 3}
 --- !u!1 &1919269109
 GameObject:
