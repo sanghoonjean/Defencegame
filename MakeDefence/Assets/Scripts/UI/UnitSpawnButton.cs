@@ -13,8 +13,11 @@ public class UnitSpawnButton : MonoBehaviour
     [Tooltip("이 버튼이 유닛을 배치했을 때만 보이는 전용 삭제 버튼. 유닛이 없으면 SetActive(false).")]
     [SerializeField] private GameObject deleteButton;
 
-    [Tooltip("배치된 유닛의 아이콘을 표시하는 전용 자식 Image. 유닛이 없으면 숨긴다.")]
+    [Tooltip("배치된 유닛의 아이콘을 표시하는 전용 자식 Image. 유닛이 없으면 빈 슬롯 아이콘을 표시한다.")]
     [SerializeField] private Image iconImage;
+
+    [Tooltip("유닛 미생성(빈 슬롯) 상태에서 표시할 '추가' 아이콘. 미지정 시 빈 슬롯에는 아무것도 표시하지 않는다.")]
+    [SerializeField] private Sprite emptyIcon;
 
     private Button _button;
     private Tower _placedTower;
@@ -100,12 +103,13 @@ public class UnitSpawnButton : MonoBehaviour
         ApplyIcon(null);
     }
 
-    // 아이콘 스프라이트를 설정하고, 스프라이트가 없으면 아이콘 Image 를 숨긴다.
-    // iconImage 미연결(null) 시에도 안전하게 no-op.
+    // 유닛 아이콘을 설정한다. icon 이 null(유닛 미생성)이면 빈 슬롯용 emptyIcon 으로 대체한다.
+    // 최종 스프라이트가 없으면 아이콘 Image 를 숨긴다. iconImage 미연결(null) 시에도 안전하게 no-op.
     private void ApplyIcon(Sprite icon)
     {
         if (iconImage == null) return;
-        iconImage.sprite  = icon;
-        iconImage.enabled = icon != null;
+        Sprite sprite     = icon != null ? icon : emptyIcon;
+        iconImage.sprite  = sprite;
+        iconImage.enabled = sprite != null;
     }
 }

@@ -1488,6 +1488,7 @@ MonoBehaviour:
     type: 3}
   deleteButton: {fileID: 1879657351}
   iconImage: {fileID: 1204340418}
+  emptyIcon: {fileID: 21300000, guid: d72634cd18b643345b8d6aa8074ce8f4, type: 3}
 --- !u!1001 &93282611
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -2174,7 +2175,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 155343393}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
@@ -2187,7 +2188,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: d72634cd18b643345b8d6aa8074ce8f4, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -2829,6 +2830,7 @@ MonoBehaviour:
     type: 3}
   deleteButton: {fileID: 1066489960}
   iconImage: {fileID: 1834418350}
+  emptyIcon: {fileID: 21300000, guid: d72634cd18b643345b8d6aa8074ce8f4, type: 3}
 --- !u!1 &224000001
 GameObject:
   m_ObjectHideFlags: 0
@@ -9930,7 +9932,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 368438749}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
@@ -9943,7 +9945,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: d72634cd18b643345b8d6aa8074ce8f4, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -12510,6 +12512,7 @@ MonoBehaviour:
     type: 3}
   deleteButton: {fileID: 786362528}
   iconImage: {fileID: 155343395}
+  emptyIcon: {fileID: 21300000, guid: d72634cd18b643345b8d6aa8074ce8f4, type: 3}
 --- !u!1 &645977990
 GameObject:
   m_ObjectHideFlags: 0
@@ -16891,7 +16894,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1204340417}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
@@ -16904,7 +16907,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: d72634cd18b643345b8d6aa8074ce8f4, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -17806,6 +17809,7 @@ MonoBehaviour:
     type: 3}
   deleteButton: {fileID: 1014692065}
   iconImage: {fileID: 368438750}
+  emptyIcon: {fileID: 21300000, guid: d72634cd18b643345b8d6aa8074ce8f4, type: 3}
 --- !u!1 &1377574016
 GameObject:
   m_ObjectHideFlags: 0
@@ -20502,6 +20506,7 @@ MonoBehaviour:
     type: 3}
   deleteButton: {fileID: 1441372388}
   iconImage: {fileID: 2055637082}
+  emptyIcon: {fileID: 21300000, guid: d72634cd18b643345b8d6aa8074ce8f4, type: 3}
 --- !u!1 &1678567864
 GameObject:
   m_ObjectHideFlags: 0
@@ -22467,7 +22472,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1834418349}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
@@ -22480,7 +22485,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: d72634cd18b643345b8d6aa8074ce8f4, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -24057,7 +24062,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2055637081}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
   m_Name: 
@@ -24070,7 +24075,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: d72634cd18b643345b8d6aa8074ce8f4, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
