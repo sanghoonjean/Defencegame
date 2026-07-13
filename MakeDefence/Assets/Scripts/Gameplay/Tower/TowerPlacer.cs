@@ -137,6 +137,10 @@ public class TowerPlacer : MonoBehaviour
 
         _movingTower.SetGhostVisual(false);
         RestoreGhostColors();
+
+        // 이동한 타워도 '최근 타워'로 취급해 Unit_Panel 에 표시한다.
+        InventorySystem.Instance?.SelectTower(_movingTower);
+
         ClearMoveState();
         return true;
     }
@@ -148,6 +152,10 @@ public class TowerPlacer : MonoBehaviour
         tower.Place(coord);
         MapTileSystem.Instance.PlaceTower(coord, tower);
         _pendingOnPlaced?.Invoke(tower);
+
+        // 배치 직후 자동 선택 — 타워를 클릭하지 않아도 Unit_Panel 에 방금 배치한
+        // 타워 정보가 바로 표시된다. (직업 설정 콜백 이후에 선택해야 스탯이 반영됨)
+        InventorySystem.Instance?.SelectTower(tower);
     }
 
     private void ClearMoveState()
