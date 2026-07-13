@@ -12,6 +12,7 @@ public class Enemy : MonoBehaviour
     public static readonly List<Enemy> ActiveEnemies = new();
 
     public EnemyGrade Grade { get; private set; }
+    public int Level       { get; private set; }
     public float MaxHp     { get; private set; }
     public float CurrentHp { get; private set; }
     public int RouteIndex  { get; private set; }
@@ -76,15 +77,17 @@ public class Enemy : MonoBehaviour
 
         if (data.fixedStats)
         {
+            Level = stage; // 난이도 공식 미적용 — 레벨은 참조 전용
             CurrentHp = data.baseHp     * riftMods.HpMult;
             _defense  = data.baseDefense * riftMods.DefenseMult;
             _speed    = data.baseSpeed   * riftMods.SpeedMult;
         }
         else
         {
-            float hpMult = 1f + stage * 0.05f;
-            float defMult = 1f + stage * 0.05f;
-            float speedMult = 1f + stage * 0.02f;
+            Level = EnemyLevel.Calculate(stage, data.grade);
+            float hpMult = 1f + Level * 0.05f;
+            float defMult = 1f + Level * 0.05f;
+            float speedMult = 1f + Level * 0.02f;
             CurrentHp = Mathf.Floor(data.baseHp * hpMult * riftMods.HpMult);
             _defense  = Mathf.Floor(data.baseDefense * defMult * riftMods.DefenseMult);
             _speed    = data.baseSpeed * speedMult * riftMods.SpeedMult;
