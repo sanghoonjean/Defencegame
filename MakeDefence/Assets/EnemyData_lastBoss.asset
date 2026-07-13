@@ -12,9 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a401794b14b46549966bd2175500388, type: 3}
   m_Name: EnemyData_lastBoss
   m_EditorClassIdentifier: 
-  grade: 0
+  grade: 4
   baseHp: 5000
   baseDefense: 0
   baseSpeed: 2
   playerDamage: 100
   fixedStats: 0
+  fireResistance: 0
+  coldResistance: 0
+  lightningResistance: 0
+  poisonResistance: 0
