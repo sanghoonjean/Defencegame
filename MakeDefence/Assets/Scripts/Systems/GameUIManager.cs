@@ -72,6 +72,7 @@ public class GameUIManager : MonoBehaviour
     private readonly List<ConeAoe>    _coneAoes    = new();
     private readonly List<DamageText> _damageTexts = new();
     private readonly List<Tower>      _placedTowers = new();
+    private readonly List<Rect>       _blockerRects = new();
 
     private Material  _rangeMat;
 
@@ -314,6 +315,8 @@ public class GameUIManager : MonoBehaviour
         float pxBarWidth    = barWidth  * pixelsPerUnit;
         float pxBarHeight   = barHeight * pixelsPerUnit;
 
+        CollectBlockerRects();
+
         var enemies = Enemy.ActiveEnemies;
         for (int i = 0; i < enemies.Count; i++)
         {
@@ -329,6 +332,9 @@ public class GameUIManager : MonoBehaviour
             float x    = screenPos.x - pxBarWidth * 0.5f;
             float y    = Screen.height - screenPos.y - pxYOffset - pxBarHeight;
             float fill = Mathf.Clamp01(e.CurrentHp / e.MaxHp);
+
+            // 열려 있는 UI 패널과 겹치는 바는 그리지 않음 (IMGUI 는 Canvas 위에 그려짐)
+            if (IsBlocked(new Rect(x, y, pxBarWidth, pxBarHeight))) continue;
 
             if (hpLineTex != null && fill > 0f)
                 GUI.DrawTextureWithTexCoords(new Rect(x, y, pxBarWidth * fill, pxBarHeight),
@@ -352,6 +358,8 @@ public class GameUIManager : MonoBehaviour
             float my   = Screen.height - screenPos.y - pxManaOffset - pxBarHeight;
             float fill = t.MaxMana > 0f ? Mathf.Clamp01(t.CurrentMana / t.MaxMana) : 0f;
 
+            if (IsBlocked(new Rect(mx, my, pxBarWidth, pxBarHeight))) continue;
+
             Texture2D mpTex = mpLineTex != null ? mpLineTex : hpLineTex;
             if (mpTex != null && fill > 0f)
                 GUI.DrawTextureWithTexCoords(new Rect(mx, my, pxBarWidth * fill, pxBarHeight),
@@ -361,6 +369,27 @@ public class GameUIManager : MonoBehaviour
         }
 
         DrawDamageTexts(cam);
+    }
+
+    /// <summary>열려 있는(보이는) UIScreenBlocker 패널들의 스크린 Rect 를 수집.</summary>
+    private void CollectBlockerRects()
+    {
+        _blockerRects.Clear();
+        var blockers = UIScreenBlocker.Active;
+        for (int i = 0; i < blockers.Count; i++)
+        {
+            var b = blockers[i];
+            if (b == null || !b.IsVisible) continue;
+            _blockerRects.Add(b.GetGUIRect());
+        }
+    }
+
+    /// <summary>바 Rect 가 열려 있는 패널과 겹치면 true — 해당 바는 그리지 않는다.</summary>
+    private bool IsBlocked(Rect barRect)
+    {
+        for (int i = 0; i < _blockerRects.Count; i++)
+            if (_blockerRects[i].Overlaps(barRect)) return true;
+        return false;
     }
 
     private void DrawDamageTexts(Camera cam)
