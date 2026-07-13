@@ -72,10 +72,10 @@ public class InputManager : MonoBehaviour
         }
 
         var coord = new Vector2Int(Mathf.FloorToInt(worldPos.x), Mathf.FloorToInt(worldPos.y));
-        bool placed = CurrentBuildMode == BuildMode.Tower
-            && TowerPlacer.Instance != null && TowerPlacer.Instance.TryPlace(coord);
+        if (CurrentBuildMode == BuildMode.Tower && TowerPlacer.Instance != null)
+            TowerPlacer.Instance.TryPlace(coord);
 
-        if (!placed)
-            InventorySystem.Instance?.Deselect();
+        // 빈 칸 클릭으로는 선택을 해제하지 않는다 — Unit_Panel 이 최근 타워 정보를
+        // 계속 표시하도록 선택은 다른 타워 선택 또는 타워 삭제 시에만 바뀐다.
     }
 }
