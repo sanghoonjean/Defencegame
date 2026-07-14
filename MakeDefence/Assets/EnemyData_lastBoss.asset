@@ -14,10 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   grade: 4
   baseHp: 5000
-  baseDefense: 0
+  baseDefense: 200
   baseSpeed: 2
   playerDamage: 100
-  fixedStats: 0
+  fixedStats: 1
   fireResistance: 0
   coldResistance: 0
   lightningResistance: 0
