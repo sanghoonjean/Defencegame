@@ -49,6 +49,10 @@ public class InvenUI : MonoBehaviour
         drag.Init(img);
         drag.SourceDisplayIndex = _slots.Count;
 
+        // 아이템 호버 툴팁 — 드래그 핸들러의 아이템 데이터를 읽어 표시
+        if (slot.gameObject.GetComponent<ItemTooltipTrigger>() == null)
+            slot.gameObject.AddComponent<ItemTooltipTrigger>();
+
         _slots.Add(new SlotRef { image = img, button = btn, drag = drag });
         return true;
     }
@@ -82,6 +86,9 @@ public class InvenUI : MonoBehaviour
 
     private void Refresh()
     {
+        // 클릭 장착 등으로 아이템이 빠진 뒤 툴팁이 남지 않도록 갱신 시 숨김
+        ItemTooltipUI.Hide();
+
         var order = ShopSystem.Instance?.OwnedDisplayOrder;
         int count = order?.Count ?? 0;
         Debug.Log($"[InvenUI] Refresh — 슬롯 수: {_slots.Count}, displayOrder 수: {count}");
