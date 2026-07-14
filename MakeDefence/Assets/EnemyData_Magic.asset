@@ -12,9 +12,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a401794b14b46549966bd2175500388, type: 3}
   m_Name: EnemyData_Magic
   m_EditorClassIdentifier: 
-  grade: 0
+  grade: 1
   baseHp: 1050
   baseDefense: 0
   baseSpeed: 1
   playerDamage: 4
   fixedStats: 0
+  fireResistance: 0
+  coldResistance: 0
+  lightningResistance: 0
+  poisonResistance: 0

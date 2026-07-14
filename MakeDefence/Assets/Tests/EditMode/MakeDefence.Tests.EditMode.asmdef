@@ -5,7 +5,8 @@
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner",
         "MakeDefence.Rift.Core",
-        "MakeDefence.Pathfinding"
+        "MakeDefence.Pathfinding",
+        "MakeDefence.Enemy.Core"
     ],
     "includePlatforms": [
         "Editor"

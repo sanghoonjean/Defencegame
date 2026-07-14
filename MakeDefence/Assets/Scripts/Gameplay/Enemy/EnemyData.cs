@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public enum EnemyGrade { Normal, Magic, Rare, Unique, LastBoss }
+// EnemyGrade 는 Core/EnemyGrade.cs (MakeDefence.Enemy.Core) 로 이동 (#388 리뷰 반영)
 
 [CreateAssetMenu(fileName = "EnemyData", menuName = "MakeDefence/Enemy Data")]
 public class EnemyData : ScriptableObject
