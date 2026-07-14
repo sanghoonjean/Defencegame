@@ -9,8 +9,8 @@ using UnityEngine.UI;
 public static class StoneGradeBadge
 {
     private const string BadgeName = "StoneGradeBadge";
-    private const int    FontSize  = 14;
-    private static readonly Vector2 BadgeSize   = new(20f, 18f);
+    private const int    FontSize  = 28;
+    private static readonly Vector2 BadgeSize   = new(34f, 32f);
     private static readonly Vector2 BadgeOffset = new(-2f, 2f);
 
     public static void Set(Image iconImage, DimensionStone stone)
