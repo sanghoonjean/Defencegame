@@ -102,6 +102,9 @@ public class InvenUI : MonoBehaviour
             _slots[i].image.sprite = hasItem ? item.Icon : null;
             _slots[i].image.color  = hasItem ? Color.white : Color.clear;
 
+            // 차원석 등급 배지 (#394) — Stone 이 아니면 숨김
+            StoneGradeBadge.Set(_slots[i].image, hasItem ? item.Stone : null);
+
             if (_slots[i].button == null) continue;
             _slots[i].button.onClick.RemoveAllListeners();
 

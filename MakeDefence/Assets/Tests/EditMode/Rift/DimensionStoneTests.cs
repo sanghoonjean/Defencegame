@@ -118,4 +118,66 @@ public class DimensionStoneTests
         stone.AddRandomOption();
         Assert.AreNotEqual(stone.Options.Count, copy.Options.Count);
     }
+
+    // --- 등급 (#394) ---
+
+    [Test]
+    public void CreateRandom_WithGrade_StoresGrade()
+    {
+        Assert.AreEqual(StoneGrade.Normal, DimensionStone.CreateRandom(StoneGrade.Normal).Grade);
+        Assert.AreEqual(StoneGrade.Unique, DimensionStone.CreateRandom(StoneGrade.Unique).Grade);
+    }
+
+    [Test]
+    public void GradeFloor_PerGrade()
+    {
+        Assert.AreEqual(0f,    DimensionStone.GradeFloor(StoneGrade.Normal));
+        Assert.AreEqual(0.25f, DimensionStone.GradeFloor(StoneGrade.Magic));
+        Assert.AreEqual(0.5f,  DimensionStone.GradeFloor(StoneGrade.Rare));
+        Assert.AreEqual(0.75f, DimensionStone.GradeFloor(StoneGrade.Unique));
+    }
+
+    [Test]
+    public void RollRange_RaisesMinKeepsMax()
+    {
+        // MonsterHpBoost 기본 범위 5~30
+        var (nMin, nMax) = DimensionStone.RollRange(DimensionStoneOptionType.MonsterHpBoost, StoneGrade.Normal);
+        var (uMin, uMax) = DimensionStone.RollRange(DimensionStoneOptionType.MonsterHpBoost, StoneGrade.Unique);
+        Assert.AreEqual(5f, nMin, 1e-4f);
+        Assert.AreEqual(30f, nMax, 1e-4f);
+        Assert.AreEqual(23.75f, uMin, 1e-4f);  // Lerp(5, 30, 0.75)
+        Assert.AreEqual(30f, uMax, 1e-4f);
+    }
+
+    [Test]
+    public void CreateRandom_UniqueGrade_OptionValuesRespectRaisedMin()
+    {
+        var stone = DimensionStone.CreateRandom(StoneGrade.Unique);
+        while (stone.AddRandomOption()) { }
+
+        foreach (var opt in stone.Options)
+        {
+            var (min, _) = DimensionStone.RollRange(opt.Type, StoneGrade.Unique);
+            // roll 값은 Mathf.Round 를 거치므로 최대 0.5 낮아질 수 있음
+            Assert.GreaterOrEqual(opt.Value, min - 0.5f,
+                $"{opt.Type} 값 {opt.Value} 이 Unique 최솟값 {min} 미만");
+        }
+    }
+
+    [Test]
+    public void CloneAndReroll_PreserveGrade()
+    {
+        var stone = DimensionStone.CreateRandom(StoneGrade.Rare);
+        Assert.AreEqual(StoneGrade.Rare, stone.Clone().Grade);
+
+        stone.Reroll();
+        Assert.AreEqual(StoneGrade.Rare, stone.Grade);
+
+        // Reroll 후에도 등급 반영 범위 유지
+        foreach (var opt in stone.Options)
+        {
+            var (min, _) = DimensionStone.RollRange(opt.Type, StoneGrade.Rare);
+            Assert.GreaterOrEqual(opt.Value, min - 0.5f);
+        }
+    }
 }

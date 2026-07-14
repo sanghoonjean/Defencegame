@@ -18,6 +18,9 @@ public class DimensionStone
 {
     public const int MaxOptions = 6;
 
+    // 등급 (#394) — 생성 시점에 확정, Reroll/Clone 시 유지
+    public StoneGrade Grade { get; private set; } = StoneGrade.Normal;
+
     private readonly List<DimensionStoneOption> _options = new();
     public IReadOnlyList<DimensionStoneOption> Options => _options;
 
@@ -34,10 +37,35 @@ public class DimensionStone
     };
 
     public static DimensionStone CreateRandom()
+        => CreateRandom(new StoneGradeTable().Roll());
+
+    public static DimensionStone CreateRandom(StoneGrade grade)
     {
-        var stone = new DimensionStone();
+        var stone = new DimensionStone { Grade = grade };
         stone.AddRandomOption();
         return stone;
+    }
+
+    /// <summary>
+    /// 등급별 옵션 roll 최솟값 상향 비율 (#394). max 는 고정.
+    /// tech-debt: 수치 미확정 — 잠정값.
+    /// </summary>
+    public static float GradeFloor(StoneGrade grade)
+    {
+        switch (grade)
+        {
+            case StoneGrade.Magic:  return 0.25f;
+            case StoneGrade.Rare:   return 0.5f;
+            case StoneGrade.Unique: return 0.75f;
+            default:                return 0f;
+        }
+    }
+
+    /// <summary>등급이 반영된 옵션 roll 범위. 테스트/검증용 공개.</summary>
+    public static (float min, float max) RollRange(DimensionStoneOptionType type, StoneGrade grade)
+    {
+        var (min, max) = Ranges[type];
+        return (Mathf.Lerp(min, max, GradeFloor(grade)), max);
     }
 
     public void Reroll()
@@ -101,7 +129,7 @@ public class DimensionStone
 
     public DimensionStone Clone()
     {
-        var copy = new DimensionStone();
+        var copy = new DimensionStone { Grade = Grade };
         foreach (var opt in _options)
             copy._options.Add(new DimensionStoneOption(opt.Type, opt.Value));
         return copy;
@@ -116,9 +144,9 @@ public class DimensionStone
         return result;
     }
 
-    private static DimensionStoneOption RollOption(DimensionStoneOptionType type)
+    private DimensionStoneOption RollOption(DimensionStoneOptionType type)
     {
-        var (min, max) = Ranges[type];
+        var (min, max) = RollRange(type, Grade);
         return new DimensionStoneOption(type, Mathf.Round(Random.Range(min, max)));
     }
 }
