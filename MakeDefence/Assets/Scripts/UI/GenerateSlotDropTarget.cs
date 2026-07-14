@@ -79,6 +79,9 @@ public class GenerateSlotDropTarget : MonoBehaviour,
         {
             iconImage.color = emptyColor;
         }
+
+        // 차원석 등급 배지 (#394) — 비어 있으면 숨김
+        StoneGradeBadge.Set(iconImage, stone);
     }
 
     // --- Drop (InvenSlot[Stone payload] → GenerateSlot) ---

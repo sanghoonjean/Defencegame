@@ -23,6 +23,9 @@ public class DroppedStoneSystem : MonoBehaviour
     [Header("Drop Table (Lower 큐브와 동일)")]
     [SerializeField] private StoneDropChanceTable dropTable = new();
 
+    [Header("Grade Table (#394)")]
+    [SerializeField] private StoneGradeTable gradeTable = new();
+
     [Header("Effect Tuning")]
     [SerializeField] private float fadeDuration = 0.3f;
     [SerializeField] private float spawnArrangementRadius = 0.5f;
@@ -131,7 +134,7 @@ public class DroppedStoneSystem : MonoBehaviour
         if (ShopSystem.Instance != null)
         {
             for (int i = 0; i < harvested; i++)
-                ShopSystem.Instance.AddStone(DimensionStone.CreateRandom());
+                ShopSystem.Instance.AddStone(DimensionStone.CreateRandom(gradeTable.Roll()));
         }
 
         foreach (var pickup in snapshot)
@@ -153,7 +156,7 @@ public class DroppedStoneSystem : MonoBehaviour
     private void GrantClearBonus()
     {
         if (ShopSystem.Instance == null) return;
-        ShopSystem.Instance.AddStone(DimensionStone.CreateRandom());
+        ShopSystem.Instance.AddStone(DimensionStone.CreateRandom(gradeTable.Roll()));
         Debug.Log("[DroppedStoneSystem] 클리어 보장 차원석 +1");
     }
 }
