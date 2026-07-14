@@ -85,9 +85,9 @@ public class Enemy : MonoBehaviour
         else
         {
             Level = EnemyLevel.Calculate(stage, data.grade);
-            float hpMult = 1f + Level * 0.05f;
-            float defMult = 1f + Level * 0.05f;
-            float speedMult = 1f + Level * 0.02f;
+            float hpMult = EnemyLevel.HpMultiplier(Level);
+            float defMult = EnemyLevel.DefenseMultiplier(Level);
+            float speedMult = EnemyLevel.SpeedMultiplier(Level);
             CurrentHp = Mathf.Floor(data.baseHp * hpMult * riftMods.HpMult);
             _defense  = Mathf.Floor(data.baseDefense * defMult * riftMods.DefenseMult);
             _speed    = data.baseSpeed * speedMult * riftMods.SpeedMult;
