@@ -3,20 +3,32 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 
 /// <summary>
-/// 인벤 슬롯 호버 시 아이템 상세 툴팁을 표시한다.
-/// 같은 GameObject 의 InvenSlotDragHandler 에서 스킬/서포트/차원석 데이터를 읽는다.
-/// InvenUI.TryRegisterSlot 에서 런타임 부착 — 씬 수정 불필요.
+/// 슬롯 호버 시 아이템 상세 툴팁을 표시한다.
+/// 기본은 같은 GameObject 의 InvenSlotDragHandler 에서 스킬/서포트/차원석 데이터를 읽고,
+/// 데이터 출처가 다른 슬롯(장착/상점, #402)은 TextSource 델리게이트로 텍스트를 위임한다.
+/// 각 슬롯 UI 가 런타임 부착 — 씬 수정 불필요.
 /// </summary>
 public class ItemTooltipTrigger : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IBeginDragHandler
 {
+    /// <summary>지정 시 InvenSlotDragHandler 대신 이 델리게이트가 툴팁 텍스트를 공급한다.
+    /// 호버 시점에 호출되므로 장착 상태 변화를 따로 반영할 필요가 없다. null/빈 문자열 반환 = 미표시.</summary>
+    public System.Func<string> TextSource { get; set; }
+
     private InvenSlotDragHandler _slot;
 
     private void Awake() => _slot = GetComponent<InvenSlotDragHandler>();
 
     public void OnPointerEnter(PointerEventData eventData)
     {
-        if (_slot == null || !_slot.HasItem) return;
-        ItemTooltipUI.Show((RectTransform)transform, BuildText(_slot));
+        string content = TextSource != null ? TextSource() : BuildFromSlot();
+        if (string.IsNullOrEmpty(content)) return;
+        ItemTooltipUI.Show((RectTransform)transform, content);
+    }
+
+    private string BuildFromSlot()
+    {
+        if (_slot == null || !_slot.HasItem) return null;
+        return BuildText(_slot);
     }
 
     public void OnPointerExit(PointerEventData eventData) => ItemTooltipUI.Hide();
@@ -34,7 +46,7 @@ public class ItemTooltipTrigger : MonoBehaviour, IPointerEnterHandler, IPointerE
         return null;
     }
 
-    private static string BuildSkillText(SkillData skill)
+    public static string BuildSkillText(SkillData skill)
     {
         var sb = new StringBuilder();
         sb.Append("<b>").Append(skill.displayName).Append("</b>");
@@ -46,7 +58,7 @@ public class ItemTooltipTrigger : MonoBehaviour, IPointerEnterHandler, IPointerE
         return sb.ToString();
     }
 
-    private static string BuildSupportText(SupportOptionData support)
+    public static string BuildSupportText(SupportOptionData support)
     {
         var sb = new StringBuilder();
         sb.Append("<b>").Append(support.displayName).Append("</b>");
@@ -57,7 +69,7 @@ public class ItemTooltipTrigger : MonoBehaviour, IPointerEnterHandler, IPointerE
         return sb.ToString();
     }
 
-    private static string BuildStoneText(DimensionStone stone)
+    public static string BuildStoneText(DimensionStone stone)
     {
         var sb = new StringBuilder();
         string name = ShopSystem.Instance != null ? ShopSystem.Instance.StoneDisplayName : "Dimension Stone";

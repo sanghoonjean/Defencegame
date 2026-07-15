@@ -21,6 +21,10 @@ public class SupportSlotUI : MonoBehaviour, IPointerClickHandler, IDropHandler
                     ?? gameObject.AddComponent<InvenSlotDragHandler>();
         _dragHandler.Init(iconImage);
         _dragHandler.SourceDisplayIndex = -1; // 장착 슬롯 → 인벤 인덱스 없음
+
+        // 장착 서포트 호버 툴팁 (#402) — 드래그 핸들러의 Support 를 기본 소스로 읽음
+        if (gameObject.GetComponent<ItemTooltipTrigger>() == null)
+            gameObject.AddComponent<ItemTooltipTrigger>();
     }
 
     private void OnEnable()
