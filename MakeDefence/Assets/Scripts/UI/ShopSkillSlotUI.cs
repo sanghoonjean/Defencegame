@@ -26,6 +26,11 @@ public class ShopSkillSlotUI : MonoBehaviour
             buyButton.onClick.AddListener(OnBuyClicked);
         else
             Debug.LogError($"[ShopSkillSlotUI] buyButton을 찾지 못함 ({gameObject.name})");
+
+        // 상점 스킬 호버 툴팁 (#402)
+        var tooltip = gameObject.GetComponent<ItemTooltipTrigger>()
+                   ?? gameObject.AddComponent<ItemTooltipTrigger>();
+        tooltip.TextSource = () => skillData != null ? ItemTooltipTrigger.BuildSkillText(skillData) : null;
     }
 
     private void OnEnable()

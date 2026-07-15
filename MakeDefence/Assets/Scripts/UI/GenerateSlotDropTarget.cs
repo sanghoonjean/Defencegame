@@ -46,6 +46,15 @@ public class GenerateSlotDropTarget : MonoBehaviour,
             _cachedSprite = iconImage.sprite;
         if (_cachedSprite == null && defaultStoneSprite != null)
             _cachedSprite = defaultStoneSprite;
+
+        // 장착 차원석 호버 툴팁 (#402) — 호버 시점에 라이브 조회
+        var tooltip = gameObject.GetComponent<ItemTooltipTrigger>()
+                   ?? gameObject.AddComponent<ItemTooltipTrigger>();
+        tooltip.TextSource = () =>
+        {
+            var stone = WaveGeneratorSystem.Instance != null ? WaveGeneratorSystem.Instance.LoadedStone : null;
+            return stone != null ? ItemTooltipTrigger.BuildStoneText(stone) : null;
+        };
     }
 
     private void OnEnable()

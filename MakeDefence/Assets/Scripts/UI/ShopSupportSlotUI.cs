@@ -24,6 +24,11 @@ public class ShopSupportSlotUI : MonoBehaviour
             buyButton.onClick.AddListener(OnBuyClicked);
         else
             Debug.LogError($"[ShopSupportSlotUI] buyButton을 찾지 못함 ({gameObject.name})");
+
+        // 상점 서포트 호버 툴팁 (#402)
+        var tooltip = gameObject.GetComponent<ItemTooltipTrigger>()
+                   ?? gameObject.AddComponent<ItemTooltipTrigger>();
+        tooltip.TextSource = () => optionData != null ? ItemTooltipTrigger.BuildSupportText(optionData) : null;
     }
 
     private void Start()

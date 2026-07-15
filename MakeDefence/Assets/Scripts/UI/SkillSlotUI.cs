@@ -21,6 +21,15 @@ public class SkillSlotUI : MonoBehaviour, IDropHandler
         _dragHandler = gameObject.GetComponent<SkillSlotDragHandler>()
                     ?? gameObject.AddComponent<SkillSlotDragHandler>();
         _dragHandler.Init(iconImage);
+
+        // 장착 스킬 호버 툴팁 (#402) — 호버 시점에 라이브 조회
+        var tooltip = gameObject.GetComponent<ItemTooltipTrigger>()
+                   ?? gameObject.AddComponent<ItemTooltipTrigger>();
+        tooltip.TextSource = () =>
+        {
+            var skill = InventorySystem.Instance?.SelectedTower?.EquippedSkill;
+            return skill != null ? ItemTooltipTrigger.BuildSkillText(skill) : null;
+        };
     }
 
     private void OnEnable()
